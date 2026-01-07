@@ -76,7 +76,8 @@ typedef struct gyroData_st
 };
 
 // Kalman filter struct
-typedef struct {
+typedef struct 
+{
     double angle{ 0.0 };     // The angle calculated by the Kalman filter
     double bias{ 0.0 };      // The gyro bias calculated by the Kalman filter
     double rate{ 0.0 };      // Unbiased rate
@@ -122,7 +123,7 @@ void SetupController(void);
 void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut);
 
 // Function to evaluate the arm status based on switch state
-E_armState EvalArmState(const uint16_t armStateChannel);
+void EvalArmState(const rcSignals_st* rcSig);
 
 // Function to evaluate the flight mode state based on switch state
 E_flightMode EvalFlightMode(const uint16_t flightModeChannel);

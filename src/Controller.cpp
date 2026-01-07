@@ -27,10 +27,12 @@ extern DummySerial SerialUSB;
 float parabolicConst4Rate[3];
 float maxYawRate = 500.0f;
 
+E_armState armState{ DISARMED };
+
 pid_st pidRate;
+pid_st pidCascade;
 gyroData_st gyroData;
 accData_st accData;
-pid_st pidCascade;
 
 void SetupController(void)
 {
@@ -107,9 +109,10 @@ void SetupController(void)
 
 void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 {
-    E_armState armState = EvalArmState(ctrlIn->rcSignals.armStateSwitch);
     E_flightMode flightMode = EvalFlightMode(ctrlIn->rcSignals.flightModeSwitch);
     axis controlSignal;
+
+    EvalArmState(&ctrlIn->rcSignals);
 
 //    //debug PID
 //    if (ctrlIn->rcSignals.Switch2Way > 1800)
@@ -351,15 +354,22 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
     ctrlOut->armState = armState;
 }
 
-E_armState EvalArmState(const uint16_t armStateChannel)
+void EvalArmState(const rcSignals_st* rcSig)
 {
-    if (armStateChannel > 1800u)
+    if (rcSig->armStateSwitch > 1800u)
     {
-        return E_armState::ARMED;
+        if (rcSig->throttle <= 1010)
+        {
+            armState = E_armState::ARMED;
+        }
+        else
+        {
+            //keep previous state
+        }
     }
     else
     {
-        return E_armState::DISARMED;
+        armState = E_armState::DISARMED;
     }
 }
 

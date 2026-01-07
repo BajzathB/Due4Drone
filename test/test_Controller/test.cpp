@@ -4,13 +4,15 @@
 
 extern pid_st pidRate;
 extern pid_st pidCascade;
+extern E_armState armState;
 
 TEST(test_Controller, Controller_Call) {
     SetupController();
     controllerIn_st testIn;
     controllerOut_st testOut;
     RunController(&testIn, &testOut);
-    EvalArmState(1000);
+	rcSignals_st testSig;
+    EvalArmState(&testSig);
     EvalFlightMode(1000);
     ParabolicScale(1000);
     LinearInterpol(1000,1000,2000,-45,45);
@@ -30,14 +32,35 @@ TEST(test_Controller, Controller_Call) {
 
 TEST(test_Controller, EvalArmState_Test)
 {
-    uint16_t testArmState{ 1000 };
-
+	rcSignals_st testSig;
+    
     //1st: lower than 1800
-    EXPECT_EQ(EvalArmState(testArmState), DISARMED);
+	testSig.armStateSwitch = 1000;
+	EvalArmState(&testSig);
+    EXPECT_EQ(armState, DISARMED);
 
-    //2nd: higher than 1800
-    testArmState = 2000;
-    EXPECT_EQ(EvalArmState(testArmState), ARMED);
+	//2nd: higher than 1800, throttle also high
+	testSig.armStateSwitch = 2000;
+	testSig.throttle = 1500;
+	EvalArmState(&testSig);
+	EXPECT_EQ(armState, DISARMED);
+
+    //3rd: higher than 1800
+	testSig.armStateSwitch = 2000;
+	testSig.throttle = 1010;
+	EvalArmState(&testSig);
+    EXPECT_EQ(armState, ARMED);
+
+	//4th: keep being armed
+	testSig.throttle = 1250;
+	EvalArmState(&testSig);
+	EXPECT_EQ(armState, ARMED);
+
+	//5th: disarm
+	testSig.armStateSwitch = 1000;
+	testSig.throttle = 1250;
+	EvalArmState(&testSig);
+	EXPECT_EQ(armState, DISARMED);
 }
 
 TEST(test_Controller, EvalFlightMode_Test)
