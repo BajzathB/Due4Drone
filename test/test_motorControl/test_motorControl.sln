@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.35229.62
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_motorControl", "test_motorControl.vcxproj", "{FA371216-F951-454F-8F7E-5C54587DBD55}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Debug|x64.ActiveCfg = Debug|x64
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Debug|x64.Build.0 = Debug|x64
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Debug|x86.ActiveCfg = Debug|Win32
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Debug|x86.Build.0 = Debug|Win32
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Release|x64.ActiveCfg = Release|x64
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Release|x64.Build.0 = Release|x64
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Release|x86.ActiveCfg = Release|Win32
+		{FA371216-F951-454F-8F7E-5C54587DBD55}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4087849C-5620-4B81-9403-67B204CD6448}
+	EndGlobalSection
+EndGlobal
