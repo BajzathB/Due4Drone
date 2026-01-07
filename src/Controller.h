@@ -103,9 +103,9 @@ typedef struct accData_st
     float rollAnglePT2Acc;
     float pitchAnglePT2Acc;
 
-    double q_angle{ 0.001 };   // Process noise variance for angle
-    double q_bias{ 0.003 };    // Process noise variance for gyro bias
-    double r_measure{ 0.03 }; // Measurement noise variance
+    double q_angle{ 0.00001 };   // Process noise variance for angle
+    double q_bias{ 0.00003 };    // Process noise variance for gyro bias
+    double r_measure{ 20.0 }; // Measurement noise variance
     kalmanFilterAngle3d_st angleKF;
     kalmanFilterAngle3d_st angleKFPT10;
     kalmanFilterAngle3d_st angleKFPT20;

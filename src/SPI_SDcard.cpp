@@ -53,8 +53,8 @@
 //to switch header on hardware and unit test compilation
 #ifdef UNIT_TEST
 
-#include "test/helper/support4Testing.h"
-#include "test/helper/support4Testing.hpp"
+#include "../test/helper/support4Testing.h"
+#include "../test/helper/support4Testing.hpp"
 
 extern DummySerial SerialUSB;
 extern Spi* SPI0;

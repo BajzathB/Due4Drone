@@ -29,8 +29,8 @@
 
 #ifdef UNIT_TEST
 
-#include "test/helper/support4Testing.h"
-#include "test/helper/support4Testing.hpp"
+#include "../test/helper/support4Testing.h"
+#include "../test/helper/support4Testing.hpp"
 
 extern DummySerial SerialUSB;
 extern Pio* PIOB;
