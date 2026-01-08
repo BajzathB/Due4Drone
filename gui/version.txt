@@ -1,0 +1,10 @@
+Android Studio Koala | 2024.1.1
+Build #AI-241.15989.150.2411.11948838, built on June 10, 2024
+Runtime version: 17.0.10+0--11609105 amd64
+VM: OpenJDK 64-Bit Server VM by JetBrains s.r.o.
+Windows 11.0
+GC: G1 Young Generation, G1 Old Generation
+Memory: 3992M
+Cores: 16
+Registry:
+  ide.experimental.ui=true

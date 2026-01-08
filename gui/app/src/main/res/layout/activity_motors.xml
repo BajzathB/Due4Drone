@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/motors"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:foregroundGravity="top">
+
+    <com.example.d4djv3.XShapeView
+        android:id="@+id/XShapeView"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_marginStart="325dp"
+        android:layout_marginTop="85dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/round_motor_fl"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        app:cardCornerRadius="40dp"
+        app:layout_constraintBottom_toTopOf="@+id/XShapeView"
+        app:layout_constraintEnd_toStartOf="@+id/XShapeView">
+
+        <ImageView
+            android:id="@+id/image_motor_fl"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#A0A0A0" />
+
+        <TextView
+            android:id="@+id/textView_motor_fl"
+            android:layout_width="55dp"
+            android:layout_height="45dp"
+            android:layout_gravity="center"
+            android:text="125"
+            android:textSize="30dp"
+            app:layout_constraintStart_toStartOf="@+id/cv_round"
+            app:layout_constraintTop_toTopOf="@+id/cv_round" />
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/round_motor_fr"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        app:cardCornerRadius="40dp"
+        app:layout_constraintBottom_toTopOf="@+id/XShapeView"
+        app:layout_constraintStart_toEndOf="@+id/XShapeView">
+
+        <ImageView
+            android:id="@+id/image_motor_fr"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#A0A0A0" />
+
+        <TextView
+            android:id="@+id/textView_motor_fr"
+            android:layout_width="55dp"
+            android:layout_height="45dp"
+            android:layout_gravity="center"
+            android:text="125"
+            android:textSize="30dp"
+            app:layout_constraintStart_toStartOf="@+id/cv_round"
+            app:layout_constraintTop_toTopOf="@+id/cv_round" />
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/round_motor_rl"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        app:cardCornerRadius="40dp"
+        app:layout_constraintEnd_toStartOf="@+id/XShapeView"
+        app:layout_constraintTop_toBottomOf="@+id/XShapeView">
+
+        <ImageView
+            android:id="@+id/image_motor_rl"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#A0A0A0" />
+
+        <TextView
+            android:id="@+id/textView_motor_rl"
+            android:layout_width="55dp"
+            android:layout_height="45dp"
+            android:layout_gravity="center"
+            android:text="125"
+            android:textSize="30dp"
+            app:layout_constraintStart_toStartOf="@+id/cv_round"
+            app:layout_constraintTop_toTopOf="@+id/cv_round" />
+
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/round_motor_rr"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        app:cardCornerRadius="40dp"
+        app:layout_constraintStart_toEndOf="@+id/XShapeView"
+        app:layout_constraintTop_toBottomOf="@+id/XShapeView">
+
+        <ImageView
+            android:id="@+id/image_motor_rr"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#A0A0A0" />
+
+        <TextView
+            android:id="@+id/textView_motor_rr"
+            android:layout_width="55dp"
+            android:layout_height="45dp"
+            android:layout_gravity="center"
+            android:text="125"
+            android:textSize="30dp"
+            app:layout_constraintStart_toStartOf="@+id/cv_round"
+            app:layout_constraintTop_toTopOf="@+id/cv_round" />
+
+    </androidx.cardview.widget.CardView>
+
+    <CheckBox
+        android:id="@+id/checkBox_m_fl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="@+id/XShapeView"
+        app:layout_constraintTop_toTopOf="@+id/XShapeView" />
+
+    <CheckBox
+        android:id="@+id/checkBox_m_fr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="@+id/XShapeView"
+        app:layout_constraintTop_toTopOf="@+id/XShapeView" />
+
+    <CheckBox
+        android:id="@+id/checkBox_m_rl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/XShapeView"
+        app:layout_constraintStart_toStartOf="@+id/XShapeView" />
+
+    <CheckBox
+        android:id="@+id/checkBox_m_rr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/XShapeView"
+        app:layout_constraintEnd_toEndOf="@+id/XShapeView" />
+
+    <CheckBox
+        android:id="@+id/checkBox_m_all"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/XShapeView"
+        app:layout_constraintEnd_toEndOf="@+id/XShapeView"
+        app:layout_constraintStart_toStartOf="@+id/XShapeView"
+        app:layout_constraintTop_toTopOf="@+id/XShapeView" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

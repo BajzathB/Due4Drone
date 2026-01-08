@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/stream"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    tools:context=".StreamActivity">
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_pt1_X"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/textView5"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_raw_X" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_pt1_Y"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_pt1_X"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_raw_Y" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_pt1_Z"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_pt1_Y"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_raw_Z" />
+
+    <EditText
+        android:id="@+id/editTextText_gyroFilterValue"
+        android:layout_width="120dp"
+        android:layout_height="45dp"
+        android:ems="10"
+        android:inputType="text"
+        android:text=""
+        android:textAlignment="center"
+        app:layout_constraintStart_toEndOf="@+id/buttonGyroFilterGet"
+        app:layout_constraintTop_toBottomOf="@+id/buttonGyroFilterDec" />
+
+    <Button
+        android:id="@+id/buttonGyroFilterGet"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:paddingLeft="5dp"
+        android:paddingTop="5dp"
+        android:paddingRight="5dp"
+        android:paddingBottom="5dp"
+        android:text="G"
+        app:layout_constraintStart_toStartOf="@+id/buttonGyroFilterDec"
+        app:layout_constraintTop_toBottomOf="@+id/buttonGyroFilterDec" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_raw_X"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/textView4"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_raw_Y"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_raw_X"
+        app:layout_constraintTop_toTopOf="@+id/checkBox_gyro_raw_X" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_raw_Z"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_raw_Y"
+        app:layout_constraintTop_toTopOf="@+id/checkBox_gyro_raw_Y" />
+
+    <com.jjoe64.graphview.GraphView
+        android:id="@+id/graph"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="65dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_raw_Z" />
+
+    <Button
+        android:id="@+id/buttonGraphPlus"
+        android:layout_width="40dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="-16dp"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp"
+        android:text="+"
+        app:layout_constraintStart_toStartOf="@+id/graph"
+        app:layout_constraintTop_toTopOf="@+id/graph" />
+
+    <Button
+        android:id="@+id/buttonGraphMinus"
+        android:layout_width="40dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="-8dp"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp"
+        android:text="-"
+        app:layout_constraintBottom_toBottomOf="@+id/graph"
+        app:layout_constraintStart_toStartOf="@+id/graph" />
+
+    <Button
+        android:id="@+id/buttonGyroFilterSet"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:paddingLeft="5dp"
+        android:paddingTop="5dp"
+        android:paddingRight="5dp"
+        android:paddingBottom="5dp"
+        android:text="S"
+        app:layout_constraintStart_toEndOf="@+id/editTextText_gyroFilterValue"
+        app:layout_constraintTop_toTopOf="@+id/editTextText_gyroFilterValue" />
+
+    <Button
+        android:id="@+id/buttonGyroFilterDec"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_marginEnd="14dp"
+        android:paddingLeft="5dp"
+        android:paddingTop="5dp"
+        android:paddingRight="5dp"
+        android:paddingBottom="5dp"
+        android:text="-"
+        app:layout_constraintEnd_toStartOf="@+id/textBTcmdResult"
+        app:layout_constraintTop_toTopOf="@+id/spinner_accFilterParams" />
+
+    <Button
+        android:id="@+id/buttonGyroFilterInc"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:paddingLeft="5dp"
+        android:paddingTop="5dp"
+        android:paddingRight="5dp"
+        android:paddingBottom="5dp"
+        android:text="+"
+        app:layout_constraintBottom_toTopOf="@+id/editTextText_gyroFilterValue"
+        app:layout_constraintEnd_toEndOf="@+id/buttonGyroFilterSet" />
+
+    <TextView
+        android:id="@+id/textBTcmdResult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="65dp"
+        android:layout_marginTop="4dp"
+        android:text="Waiting for cmd"
+        android:textAlignment="gravity"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_kf_Y" />
+
+    <Button
+        android:id="@+id/buttonGraphXMinus"
+        android:layout_width="40dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="70dp"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp"
+        android:text="-"
+        app:layout_constraintBottom_toTopOf="@+id/buttonGraphMinus"
+        app:layout_constraintStart_toStartOf="@+id/graph" />
+
+    <Button
+        android:id="@+id/buttonGraphXPlus"
+        android:layout_width="40dp"
+        android:layout_height="wrap_content"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp"
+        android:text="+"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonGraphXMinus"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="72dp"
+        android:layout_marginTop="5dp"
+        android:text="x:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="25dp"
+        android:text="y:"
+        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintTop_toTopOf="@+id/textView" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="25dp"
+        android:text="z:"
+        app:layout_constraintStart_toEndOf="@+id/textView2"
+        app:layout_constraintTop_toTopOf="@+id/textView2" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="8dp"
+        android:text="raw:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/checkBox_gyro_raw_X" />
+
+    <TextView
+        android:id="@+id/textView5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:text="pt1:"
+        app:layout_constraintEnd_toStartOf="@+id/checkBox_gyro_raw_X"
+        app:layout_constraintTop_toBottomOf="@+id/textView4" />
+
+    <TextView
+        android:id="@+id/textView6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="kf:"
+        app:layout_constraintEnd_toEndOf="@+id/textView7"
+        app:layout_constraintTop_toBottomOf="@+id/textView7" />
+
+    <TextView
+        android:id="@+id/textView7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="pt2:"
+        app:layout_constraintEnd_toEndOf="@+id/textView5"
+        app:layout_constraintTop_toBottomOf="@+id/textView5" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_pt2_X"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/textView7"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_pt1_X" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_pt2_Y"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_pt2_X"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_pt1_Y" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_pt2_Z"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_pt2_Y"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_pt1_Z" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_kf_X"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/textView6"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_pt2_X" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_kf_Y"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_kf_X"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_pt2_Y" />
+
+    <CheckBox
+        android:id="@+id/checkBox_gyro_kf_Z"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        app:layout_constraintStart_toEndOf="@+id/checkBox_gyro_kf_Y"
+        app:layout_constraintTop_toBottomOf="@+id/checkBox_gyro_pt2_Z" />
+
+    <Spinner
+        android:id="@+id/spinner_accFilterParams"
+        android:layout_width="110dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:foregroundGravity="center"
+        app:layout_constraintStart_toEndOf="@+id/buttonGyroFilterDec"
+        app:layout_constraintTop_toBottomOf="@+id/textBTcmdResult" />
+
+    <TextView
+        android:id="@+id/textView10"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="gyro"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="@+id/textView4"
+        tools:layout_editor_absoluteY="5dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
