@@ -88,6 +88,17 @@ extern spi_st SPI;
 SpiSDcard_st SDcard;
 Meas2Card meas2Card;
 
+void InitSDCard()
+{
+	//default global time value
+	SDcard.globalTime.year = 21;
+	SDcard.globalTime.month = 5;
+	SDcard.globalTime.day = 15;
+	SDcard.globalTime.hour = 12;
+	SDcard.globalTime.min = 0;
+	SDcard.globalTime.sec = 0;
+}
+
 void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 {
 	switch (SDcard.MainState)
@@ -121,7 +132,7 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 
 			if (SDcard.writeMeasData)
 			{
-				writeData(spiInput->rcSignals.measurementSwitch);
+				writeData(spiInput->rcSignals.measurementSwitch, spiInput->sysTime);
 			}
 
 			break;
@@ -1180,7 +1191,73 @@ bool getAllFileClusters(volatile uint8_t* rawFileData, fileInfo* fileInfo)
 	return allClusterFound;
 }
 
-void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file)
+void setFileTime(volatile uint32_t* block, float sysTime)
+{
+
+	////set dummy creat time, 15-11 hours, 10-5 minute, 4-0 second, 12-00-00 = 01100-000000-00000 = 01100000-00000000
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 14] = 0b00000000;
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 15] = 0b01100000;
+	////set dummy create date, 15-9 year, 8-5 month, 4-0 day, 2021.05.15 = 41-5-15 ?= 0101001-0101-01111 = 01010010-10101111
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 16] = 0b10101111;
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 17] = 0b01010010;
+	////set dummy last access date, same as create date
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 18] = 0b10101111;
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 19] = 0b01010010;
+	////high byte set is later
+	////set dummy modify time, same as create time
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 22] = 0b00000000;
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 23] = 0b01100000; 
+	////set dummy last modify time, same as create date
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 24] = 0b10101111;
+	//block[SDcard.rootDirEmptySlotNumber * 32 + 25] = 0b01010010;
+
+
+	uint16_t elapsedTimeSinceSync = uint16_t(sysTime - SDcard.sysTimeAtGlobalTime);
+	date currentGlobalTime{};
+	uint8_t intermidiateVal{ 0 };
+
+	intermidiateVal = SDcard.globalTime.sec + (elapsedTimeSinceSync % 60);
+	currentGlobalTime.sec = (intermidiateVal % 60) / 2;	// 1/2 due to standard
+	intermidiateVal /= 60;
+	intermidiateVal += SDcard.globalTime.min + ((elapsedTimeSinceSync / 60) % 60);
+	currentGlobalTime.min = intermidiateVal % 60;
+	intermidiateVal /= 60;
+	intermidiateVal += SDcard.globalTime.hour + ((elapsedTimeSinceSync / 3600) % 60);
+	currentGlobalTime.hour = intermidiateVal % 60;
+	//just copy the rest, not expected to go over
+	currentGlobalTime.day = SDcard.globalTime.day;
+	currentGlobalTime.month = SDcard.globalTime.month;
+	currentGlobalTime.year = SDcard.globalTime.year + 20;	// +20 due to standard
+
+	//second
+	block[SDcard.rootDirEmptySlotNumber * 32 + 14] = currentGlobalTime.sec & 0x1F;
+	//minute
+	block[SDcard.rootDirEmptySlotNumber * 32 + 14] |= (currentGlobalTime.min & 0x07) << 5;
+	block[SDcard.rootDirEmptySlotNumber * 32 + 15] = (currentGlobalTime.min & 0x38) >> 3;
+	//hour
+	block[SDcard.rootDirEmptySlotNumber * 32 + 15] |= (currentGlobalTime.hour & 0x1F) << 3;
+	//day
+	block[SDcard.rootDirEmptySlotNumber * 32 + 16] = currentGlobalTime.day & 0x1F;
+	//month
+	block[SDcard.rootDirEmptySlotNumber * 32 + 16] |= (currentGlobalTime.month & 0x07) << 5;
+	block[SDcard.rootDirEmptySlotNumber * 32 + 17] = (currentGlobalTime.month & 0x08) >> 3;
+	//year
+	block[SDcard.rootDirEmptySlotNumber * 32 + 17] |= (currentGlobalTime.year & 0x7F) << 1;
+
+
+	//set dummy last access date, same as create date
+	block[SDcard.rootDirEmptySlotNumber * 32 + 18] = block[SDcard.rootDirEmptySlotNumber * 32 + 16];
+	block[SDcard.rootDirEmptySlotNumber * 32 + 19] = block[SDcard.rootDirEmptySlotNumber * 32 + 17];
+	//high byte set is later
+	//set dummy modify time, same as create time
+	block[SDcard.rootDirEmptySlotNumber * 32 + 22] = block[SDcard.rootDirEmptySlotNumber * 32 + 14];
+	block[SDcard.rootDirEmptySlotNumber * 32 + 23] = block[SDcard.rootDirEmptySlotNumber * 32 + 15];
+	//set dummy last modify time, same as create date
+	block[SDcard.rootDirEmptySlotNumber * 32 + 24] = block[SDcard.rootDirEmptySlotNumber * 32 + 16];
+	block[SDcard.rootDirEmptySlotNumber * 32 + 25] = block[SDcard.rootDirEmptySlotNumber * 32 + 17];
+}
+
+void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, float sysTime)
 {
 	//return if something is null pointer
 	if (NULL == block || NULL == file) return;
@@ -1244,23 +1321,12 @@ void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file)
 	block[SDcard.rootDirEmptySlotNumber * 32 + 11] = 0x20; // or 0x00;
 	//disable checksums?
 	block[SDcard.rootDirEmptySlotNumber * 32 + 12] = 0x10; // 0x18;
-	//set dummy creat time, 15-11 hours, 10-5 minute, 4-0 second, 12-00-00 = 01100-000000-00000 = 01100000-00000000
+
 	block[SDcard.rootDirEmptySlotNumber * 32 + 13] = 0x4E;    //?
-	block[SDcard.rootDirEmptySlotNumber * 32 + 14] = 0b00000000;
-	block[SDcard.rootDirEmptySlotNumber * 32 + 15] = 0b01100000;
-	//set dummy create date, 15-9 year, 8-5 month, 4-0 day, 2021.05.15 = 41-5-15 ?= 0101001-0101-01111 = 01010010-10101111
-	block[SDcard.rootDirEmptySlotNumber * 32 + 16] = 0b10101111;
-	block[SDcard.rootDirEmptySlotNumber * 32 + 17] = 0b01010010;
-	//set dummy last access date, same as create date
-	block[SDcard.rootDirEmptySlotNumber * 32 + 18] = 0b10101111;
-	block[SDcard.rootDirEmptySlotNumber * 32 + 19] = 0b01010010;
-	//high byte set is later
-	//set dummy modify time, same as create time
-	block[SDcard.rootDirEmptySlotNumber * 32 + 22] = 0b00000000;
-	block[SDcard.rootDirEmptySlotNumber * 32 + 23] = 0b01100000;
-	//set dummy last modify time, same as create date
-	block[SDcard.rootDirEmptySlotNumber * 32 + 24] = 0b10101111;
-	block[SDcard.rootDirEmptySlotNumber * 32 + 25] = 0b01010010;
+
+	//set time
+	setFileTime(block, sysTime);
+
 	//low byte set
 	//size set
 	//set position-low and high
@@ -1909,7 +1975,7 @@ void addMeasHeader(void)
 	}
 }
 
-void writeData(uint16_t measSwitch)
+void writeData(uint16_t measSwitch, float sysTime)
 {
 	//desired block? = 0x4000 + cluster*64 + blockcount
 	//6th block is set in root, found data in 4th pos, a hardcoded -2 offset is here --------------------------------------------->|<-
@@ -1935,7 +2001,7 @@ void writeData(uint16_t measSwitch)
 			SDcard.SDWriteState = SDWRITE_START;
 
 			//add newfile to rootdir
-			addFileInfo2RootDir(&SDcard.rootDirInfo[1], &SDcard.newFile);
+			addFileInfo2RootDir(&SDcard.rootDirInfo[1], &SDcard.newFile, sysTime);
 #ifdef LOG_SD_WRITE 
 			SerialUSB.println("writeData done, write ROOT");
 			SerialUSB.print("newfile: "); printFileInfo(&SDcard.newFile);
@@ -2106,4 +2172,23 @@ E_SDMainStates ReinitSDCard(void)
     SDcard.SDReadState = SDREAD_START;
 
     return SDcard.MainState;
+}
+
+void setGlobalTime(const date newTime, const float currentSysTime)
+{
+	SDcard.globalTime.year = newTime.year;
+	SDcard.globalTime.month = newTime.month;
+	SDcard.globalTime.day = newTime.day;
+	SDcard.globalTime.hour = newTime.hour;
+	SDcard.globalTime.min = newTime.min;
+	SDcard.globalTime.sec = newTime.sec;
+
+	SDcard.sysTimeAtGlobalTime = currentSysTime;
+
+  // SerialUSB.print("GlobalTime: ");SerialUSB.print(SDcard.globalTime.year);SerialUSB.print(".");
+  // SerialUSB.print(SDcard.globalTime.month);SerialUSB.print(".");
+  // SerialUSB.print(SDcard.globalTime.day);SerialUSB.print("-");
+  // SerialUSB.print(SDcard.globalTime.hour);SerialUSB.print(":");
+  // SerialUSB.print(SDcard.globalTime.min);SerialUSB.print(":");
+  // SerialUSB.println(SDcard.globalTime.sec);
 }

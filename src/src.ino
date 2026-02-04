@@ -49,6 +49,7 @@ void loop()
 
   UpdateSysTime();
   controlIn.loopTime = getSysLoopTime();
+  controlIn.sysTime = getSysTime();
   spiInput.sysTime = getSysTime();
 
   getRcChannels(&controlIn.rcSignals);

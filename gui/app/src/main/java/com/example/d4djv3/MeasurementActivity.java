@@ -106,6 +106,9 @@ public class MeasurementActivity extends BaseActivity
         final Button buttonGetMeasState = findViewById(R.id.buttonGetMeasState);
         final Button buttonResetMeas = findViewById(R.id.buttonResetMeas);
         final Button buttonReinitSDCard = findViewById(R.id.buttonReInitSDCard);
+        final Button buttonGlobelTimeSet = findViewById(R.id.buttonGlobalTimeSet);
+        final Button buttonGlobelTimeGet = findViewById(R.id.buttonGlobalTimeGet);
+
 
         buttonGetMeasState.setOnClickListener(v ->
         {
@@ -122,402 +125,413 @@ public class MeasurementActivity extends BaseActivity
             final EditText textMeasState = findViewById(R.id.editTextMeasState);
             BTSocket.getInstance().BTGetCommand(1002, textMeasState);
         });
+        buttonGlobelTimeSet.setOnClickListener(v ->
+        {
+            final TextView textViewGlobalTime = findViewById(R.id.textViewGlobalTime);
+            BTSocket.getInstance().BTSetGlobalTime(1, textViewGlobalTime);
+        });
+        buttonGlobelTimeGet.setOnClickListener(v ->
+        {
+            final TextView textViewGlobalTime = findViewById(R.id.textViewGlobalTime);
+            BTSocket.getInstance().BTGetGlobalTime(1, textViewGlobalTime);
+
+        });
         checkBoxGrawX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGrawX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(2, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(101, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGrawY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGrawY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(3, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(102, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGrawZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGrawZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(4, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(103, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGpt1X.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGpt1X.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(5, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(104, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGpt1Y.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGpt1Y.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(6, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(105, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGpt1Z.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGpt1Z.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(7, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(106, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGpt2X.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGpt2X.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(8, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(107, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGpt2Y.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGpt2Y.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(9, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(108, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxGpt2Z.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxGpt2Z.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(10, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(109, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxArawX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxArawX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(11, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(110, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxArawY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxArawY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(12, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(111, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxArawZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxArawZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(13, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(112, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxApt1X.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxApt1X.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(14, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(113, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxApt1Y.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxApt1Y.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(15, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(114, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxApt1Z.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxApt1Z.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(16, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(115, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxApt2X.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxApt2X.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(17, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(116, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxApt2Y.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxApt2Y.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(18, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(117, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxApt2Z.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxApt2Z.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(19, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(118, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleRawRoll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleRawRoll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(20, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(119, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleRawPitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleRawPitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(21, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(120, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAnglePT1Roll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAnglePT1Roll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(22, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(121, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAnglePT1Pitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAnglePT1Pitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(23, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(122, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAnglePT2Roll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAnglePT2Roll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(24, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(123, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAnglePT2Pitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAnglePT2Pitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(25, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(124, isChecked);
             setHdrCharCnt(isChecked, 5);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFrawRoll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFrawRoll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(26, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(125, isChecked);
             setHdrCharCnt(isChecked, 7);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFrawPitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFrawPitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(27, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(126, isChecked);
             setHdrCharCnt(isChecked, 7);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT10Roll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT10Roll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(28, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(127, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT10Pitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT10Pitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(29, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(128, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT20Roll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT20Roll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(30, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(129, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT20Pitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT20Pitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(31, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(130, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT11Roll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT11Roll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(32, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(131, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT11Pitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT11Pitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(33, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(132, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT21Roll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT21Roll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(34, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(133, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT21Pitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT21Pitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(35, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(134, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT22Roll.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT22Roll.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(36, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(135, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxAngleKFPT22Pitch.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxAngleKFPT22Pitch.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(37, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(136, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxrefSigX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxrefSigX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(38, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(137, isChecked);
             setHdrCharCnt(isChecked, 7);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxrefSigY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxrefSigY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(39, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(138, isChecked);
             setHdrCharCnt(isChecked, 7);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxrefSigZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxrefSigZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(40, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(139, isChecked);
             setHdrCharCnt(isChecked, 7);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxSensorX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxSensorX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(41, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(140, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxSensorY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxSensorY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(42, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(141, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxSensorZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxSensorZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(43, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(142, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxPoutX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxPoutX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(44, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(143, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxPoutY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxPoutY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(45, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(144, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxPoutZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxPoutZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(46, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(145, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxIoutX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxIoutX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(47, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(146, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxIoutY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxIoutY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(48, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(147, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxIoutZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxIoutZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(49, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(148, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxDoutX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxDoutX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(50, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(149, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxDoutY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxDoutY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(51, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(150, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxDoutZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxDoutZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(52, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(151, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxFFoutX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxFFoutX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(53, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(152, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxFFoutY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxFFoutY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(54, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(153, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxFFoutZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxFFoutZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(55, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(154, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxUX.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxUX.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(56, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(155, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxUY.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxUY.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(57, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(156, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });
         checkBoxUZ.setOnClickListener(v ->
         {
             boolean isChecked = checkBoxUZ.isChecked();
-            BTSocket.getInstance().BTSetMeasurement(58, isChecked);
+            BTSocket.getInstance().BTSetMeasurement(157, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });

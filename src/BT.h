@@ -9,6 +9,7 @@
 
 #include "stdint.h"
 #include "Controller.h"
+#include "SPI_SDcard.h"
 
 enum E_rxstate : uint8_t
 {
@@ -43,7 +44,7 @@ struct txframe_st
 	uint64_t streamDataFlags2{ 0 };
 
 	bool sendParam{ false };
-	float paramData{ 0.0 };
+	double paramData{ 0.0 };
 	uint8_t numberOfFrac{ 0 };
 };
 
@@ -66,25 +67,29 @@ void SetupBT(void);
 void RunBT(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut);
 
 // Method to process received message
-void BTReceive(void);
+void BTReceive(const controllerIn_st* ctrlIn);
 
 // Method to assemble and send message
 void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut);
 
 // Method to process received frame
-void ProcessRxFrame(void);
+void ProcessRxFrame(const controllerIn_st* ctrlIn);
 
 // Function to convert input string to value from SET cmd
 bool ConvertStrToBool(volatile buffer_* input);
 uint8_t ConvertStrToUint8(volatile buffer_* input);
 uint16_t ConvertStrToUint16(volatile buffer_* input);
-float ConvertStrToFloat(volatile buffer_* input);
+float ConvertStrToDouble(volatile buffer_* input);
+date ConvertStrToGlobalTime(const volatile buffer_* input);
+
+// Functions to convert input value to a number for GET cmd
+float ConvertDateToFloat(const date* globalTime);
 
 // Method to check if frame ending is received
 bool isFrameEndReceived(void);
 
 // Method to calculate character from value and fill Tx frame
-void CalcCharAndFillOutput(float value, uint8_t numOfFrac);
+void CalcCharAndFillOutput(double value, uint8_t numOfFrac);
 
 // Method to set stream data flag bit
 void SetSteamFlag(const uint16_t steamDataID);

@@ -87,7 +87,7 @@ void SetupSPI(void)
 
 	EnableIntHandling();
 
-
+	InitSDCard();
 
 	//SPI.SdCtr = 0;
 	////clock sync data

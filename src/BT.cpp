@@ -116,7 +116,7 @@ void RunBT(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
 	// SerialUSB.print(uint32_t(strFlags >> 32));
 	// SerialUSB.println(uint32_t(flag >> 32));
 
-	BTReceive();
+	BTReceive(ctrlIn);
 	
 	BTTransmit(ctrlIn,ctrlOut);
 
@@ -160,11 +160,11 @@ void USART1_Handler(void)
 	}
 }
 
-void BTReceive(void)
+void BTReceive(const controllerIn_st* ctrlIn)
 {
 	if (FRAME_RECEIVED == BT.rxDataState)
 	{
-		ProcessRxFrame();
+		ProcessRxFrame(ctrlIn);
 
 		//setup new receive
 		USART1->US_RPR = (uint32_t)BT.input.vector;
@@ -306,7 +306,7 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
     }
 }
 
-void ProcessRxFrame(void)
+void ProcessRxFrame(const controllerIn_st* ctrlIn)
 {
 	if (isFrameEndReceived())
 	{
@@ -324,48 +324,51 @@ void ProcessRxFrame(void)
 
 			switch (BT.rxFrame.id)
 			{
-				case ID_control_PID_rate_P_X: pidRateSet->P.x = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_I_X: pidRateSet->I.x = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_D_X: pidRateSet->D.x = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_P_Y: pidRateSet->P.y = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_I_Y: pidRateSet->I.y = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_D_Y: pidRateSet->D.y = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_P_Z: pidRateSet->P.z = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_I_Z: pidRateSet->I.z = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_D_Z: pidRateSet->D.z = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_FF_X: pidRateSet->FFr.x = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_FF_Y: pidRateSet->FFr.y = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_FF_DX: pidRateSet->FFdr.x = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_FF_DY: pidRateSet->FFdr.y = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_saturation_I: pidRateSet->saturationI = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_saturation_PID: pidRateSet->saturationPID = ConvertStrToFloat(&BT.input); break;
-				case ID_control_PID_rate_Dterm_C: pidRateSet->DTermC = ConvertStrToFloat(&BT.input); break;
-				case ID_gyro_filter_paramC: gyroDataSet->paramC = ConvertStrToFloat(&BT.input); break;
-				case ID_gyro_kalman_filter_q: gyroDataSet->KF.q = ConvertStrToFloat(&BT.input);	break;
-				case ID_gyro_kalman_filter_r: gyroDataSet->KF.r = ConvertStrToFloat(&BT.input);	break;
-				case ID_acc_filter_paramC: accDataSet->paramC = ConvertStrToFloat(&BT.input); break;
-				case ID_acc_kalman_filter_q_angle: accDataSet->q_angle = ConvertStrToFloat(&BT.input);	break;
-				case ID_acc_kalman_filter_q_bias: accDataSet->q_bias = ConvertStrToFloat(&BT.input);	break;
-				case ID_acc_kalman_filter_r: accDataSet->r_measure = ConvertStrToFloat(&BT.input);	break;
-				case ID_spi_acc_offset_x: spi->acc.offset.x = ConvertStrToFloat(&BT.input);	break;
-				case ID_spi_acc_offset_y: spi->acc.offset.y = ConvertStrToFloat(&BT.input);	break;
-				case ID_spi_acc_offset_z: spi->acc.offset.z = ConvertStrToFloat(&BT.input);	break;
-                case ID_control_PID_cascade_P_X: pidCascadseSet->P.x = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_I_X: pidCascadseSet->I.x = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_D_X: pidCascadseSet->D.x = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_P_Y: pidCascadseSet->P.y = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_I_Y: pidCascadseSet->I.y = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_D_Y: pidCascadseSet->D.y = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_P_Z: pidCascadseSet->P.z = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_I_Z: pidCascadseSet->I.z = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_D_Z: pidCascadseSet->D.z = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_saturation_I: pidCascadseSet->saturationI = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_saturation_PID: pidCascadseSet->saturationPID = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_Dterm_C: pidCascadseSet->DTermC = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_FF_X: pidCascadseSet->FFr.x = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_FF_Y: pidCascadseSet->FFr.y = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_FF_DX: pidCascadseSet->FFdr.x = ConvertStrToFloat(&BT.input); break;
-                case ID_control_PID_cascade_FF_DY: pidCascadseSet->FFdr.y = ConvertStrToFloat(&BT.input); break;
+				case ID_control_PID_rate_P_X: pidRateSet->P.x = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_I_X: pidRateSet->I.x = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_D_X: pidRateSet->D.x = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_P_Y: pidRateSet->P.y = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_I_Y: pidRateSet->I.y = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_D_Y: pidRateSet->D.y = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_P_Z: pidRateSet->P.z = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_I_Z: pidRateSet->I.z = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_D_Z: pidRateSet->D.z = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_FF_X: pidRateSet->FFr.x = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_FF_Y: pidRateSet->FFr.y = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_FF_DX: pidRateSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_FF_DY: pidRateSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_saturation_I: pidRateSet->saturationI = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_saturation_PID: pidRateSet->saturationPID = ConvertStrToDouble(&BT.input); break;
+				case ID_control_PID_rate_Dterm_C: pidRateSet->DTermC = ConvertStrToDouble(&BT.input); break;
+				case ID_gyro_filter_paramC: gyroDataSet->paramC = ConvertStrToDouble(&BT.input); break;
+				case ID_gyro_kalman_filter_q: gyroDataSet->KF.q = ConvertStrToDouble(&BT.input);	break;
+				case ID_gyro_kalman_filter_r: gyroDataSet->KF.r = ConvertStrToDouble(&BT.input);	break;
+				case ID_acc_filter_paramC: accDataSet->paramC = ConvertStrToDouble(&BT.input); break;
+				case ID_acc_kalman_filter_q_angle: accDataSet->q_angle = ConvertStrToDouble(&BT.input);	break;
+				case ID_acc_kalman_filter_q_bias: accDataSet->q_bias = ConvertStrToDouble(&BT.input);	break;
+				case ID_acc_kalman_filter_r: accDataSet->r_measure = ConvertStrToDouble(&BT.input);	break;
+				case ID_spi_acc_offset_x: spi->acc.offset.x = ConvertStrToDouble(&BT.input);	break;
+				case ID_spi_acc_offset_y: spi->acc.offset.y = ConvertStrToDouble(&BT.input);	break;
+				case ID_spi_acc_offset_z: spi->acc.offset.z = ConvertStrToDouble(&BT.input);	break;
+                case ID_control_PID_cascade_P_X: pidCascadseSet->P.x = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_I_X: pidCascadseSet->I.x = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_D_X: pidCascadseSet->D.x = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_P_Y: pidCascadseSet->P.y = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_I_Y: pidCascadseSet->I.y = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_D_Y: pidCascadseSet->D.y = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_P_Z: pidCascadseSet->P.z = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_I_Z: pidCascadseSet->I.z = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_D_Z: pidCascadseSet->D.z = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_saturation_I: pidCascadseSet->saturationI = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_saturation_PID: pidCascadseSet->saturationPID = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_Dterm_C: pidCascadseSet->DTermC = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_FF_X: pidCascadseSet->FFr.x = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_FF_Y: pidCascadseSet->FFr.y = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_FF_DX: pidCascadseSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
+                case ID_control_PID_cascade_FF_DY: pidCascadseSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
+
+				//
+				case ID_update_global_time: setGlobalTime(ConvertStrToGlobalTime(&BT.input), ctrlIn->sysTime); break;
 
 				// meas 2 sdcard
 				case ID_meas_2_card_sysTime: meas2card->measureSysTime = ConvertStrToBool(&BT.input); break;
@@ -495,6 +498,8 @@ void ProcessRxFrame(void)
                 case ID_SDCARD_RESET_MEASRUEMENT: BT.txFrame.paramData = ResetMeasurement(); BT.txFrame.numberOfFrac = 0; break;
                 case ID_SDCARD_REINIT_SDCARD: BT.txFrame.paramData = ReinitSDCard(); BT.txFrame.numberOfFrac = 0; break;
 
+				//
+				case ID_update_global_time: BT.txFrame.paramData = ConvertDateToFloat(&sdcard->globalTime);
 
 				//MEAS2SDCARD
 				case ID_meas_2_card_sysTime: BT.txFrame.paramData = meas2card->measureSysTime; BT.txFrame.numberOfFrac = 0; break;
@@ -719,7 +724,7 @@ uint16_t ConvertStrToUint16(volatile buffer_* input)
 	return returnVal;
 }
 
-float ConvertStrToFloat(volatile buffer_* input)
+float ConvertStrToDouble(volatile buffer_* input)
 {
 	int8_t first_char = 3;
 	int8_t last_char = input->ctr - 2; //13-2-1, 2=\r\n 1=because array start with 0
@@ -764,12 +769,41 @@ float ConvertStrToFloat(volatile buffer_* input)
 	return returnVal;
 }
 
+date ConvertStrToGlobalTime(const volatile buffer_* input)
+{
+	date globalTime{};
+
+	globalTime.year =  (input->vector[3] - '0') * 10 + input->vector[4] - '0';
+	globalTime.month = (input->vector[5] - '0') * 10 + input->vector[6] - '0';
+	globalTime.day =   (input->vector[7] - '0') * 10 + input->vector[8] - '0';
+	globalTime.hour =  (input->vector[9] - '0') * 10 + input->vector[10] - '0';
+	globalTime.min =  (input->vector[11] - '0') * 10 + input->vector[12] - '0';
+	globalTime.sec =  (input->vector[13] - '0') * 10 + input->vector[14] - '0';
+
+	return globalTime;
+}
+
+float ConvertDateToFloat(const date* globalTime)
+{
+	double output;
+
+	output = double(globalTime->sec) + double(globalTime->min) * 100
+		+ double(globalTime->hour) * 10000 + double(globalTime->day) * 1000000
+		+ double(globalTime->month) * 100000000 + double(globalTime->year) * 10000000000;
+
+    SerialUSB.println("GlobalTime to double: ");
+    SerialUSB.println(output);
+    SerialUSB.println(output, HEX);
+
+	return output;
+}
+
 bool isFrameEndReceived(void)
 {
 	return ('\r' == BT.input.vector[BT.input.ctr - 2] && '\n' == BT.input.vector[BT.input.ctr - 1]);
 }
 
-void CalcCharAndFillOutput(float value, uint8_t numOfFrac)
+void CalcCharAndFillOutput(double value, uint8_t numOfFrac)
 {
 	uint8_t currentCtr = 0;
 	//increment with a small value to solve the numerical accurecy problem, (without this a 0.005 would be 0.0049)
@@ -795,7 +829,7 @@ void CalcCharAndFillOutput(float value, uint8_t numOfFrac)
 
 			currentInt = (uint8_t)value; //creat the integer part
 			BT.output.vector[BT.output.ctr++] = '0' + currentInt; //set correct ASCII char for sending
-			value -= (float)currentInt;  //substitute it from the original
+			value -= (double)currentInt;  //substitute it from the original
 			value *= 10;  //multiplie by 10 for the next round
 		}
 
@@ -809,7 +843,7 @@ void CalcCharAndFillOutput(float value, uint8_t numOfFrac)
 
 				currentFrac = (uint8_t)value;  //creat the integer part
 				BT.output.vector[BT.output.ctr++] = '0' + currentFrac; //set correct ASCII char for sending
-				value -= (float)currentFrac; //substitute it from the original
+				value -= (double)currentFrac; //substitute it from the original
 				value *= 10;  //multiplie by 10 for the next round
 			}
 		}
@@ -829,7 +863,7 @@ void CalcCharAndFillOutput(float value, uint8_t numOfFrac)
 				value *= 10;  //multiplie by 10 for the next round
 				currentFrac = (uint8_t)value;  //creat the integer part
 				BT.output.vector[BT.output.ctr++] = '0' + currentFrac; //set correct ASCII char for sending
-				value -= (float)currentFrac; //substitute it from the original
+				value -= (double)currentFrac; //substitute it from the original
 			}
 		}
 

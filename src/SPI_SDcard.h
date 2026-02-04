@@ -80,6 +80,16 @@ typedef struct fileInfo
 	uint8_t  blockCount;	//0-63 value to track the given block inside a cluster
 }fileInfo;
 
+typedef struct date
+{
+	uint8_t year{ 0 };	//last 2 digit of year
+	uint8_t month{ 0 };
+	uint8_t day{ 0 };
+	uint8_t hour{ 0 };
+	uint8_t min{ 0 };
+	uint8_t sec{ 0 };
+}date;
+
 typedef struct SpiSDcard_st
 {
 	uint32_t SdCtr{ 0 };
@@ -127,6 +137,9 @@ typedef struct SpiSDcard_st
     bool writingMultiFATBlock{ false };
 	float measTimePrev{ 0 };
     bool writeMeasData{ false };
+
+	date globalTime{};
+	float sysTimeAtGlobalTime{ 0 };
 
 }SpiSDcard_st;
 
@@ -198,6 +211,8 @@ typedef struct Meas2Card
 
 }Meas2Card;
 
+// Method to init SD card logic
+void InitSDCard();
 
 // Method to run SD card communication and logic
 void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput);
@@ -253,8 +268,11 @@ fileInfo getFileInfo(volatile uint8_t* rawFileData);
 // Function to extract cluster postions from FAT
 bool getAllFileClusters(volatile uint8_t* rawFileData, fileInfo* fileInfo);
 
+// Method to set file time in ROOT
+void setFileTime(volatile uint32_t* block, float sysTime);
+
 // Method to add file into to root block
-void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file);
+void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, float sysTime);
 
 // Method to add file cluster info into FAT
 bool addFileFATInfo(volatile uint32_t* block, fileInfo* file, E_SDFATWriteStates FATState);
@@ -293,7 +311,7 @@ void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numb
 void addMeasHeader(void);
 
 // Method to write data to sd card paralel to saving
-void writeData(uint16_t measSwitch);
+void writeData(uint16_t measSwitch, float sysTime);
 
 // Method to write data to sd card paralel to saving
 void writeRoot(void);
@@ -315,3 +333,7 @@ E_SDMainStates ResetMeasurement(void);
 
 // Re-init sdcard, starting from cmd0
 E_SDMainStates ReinitSDCard(void);
+
+// Method to set global time value
+// data is copied due to temp value and only done a few times per power cycle
+void setGlobalTime(const date newTime, const float currentSysTime);

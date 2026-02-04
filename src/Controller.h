@@ -26,7 +26,8 @@ typedef struct controllerIn_st
 	sigOut gyro;
 	sigOut acc;
     rcSignals_st rcSignals;
-    float loopTime{0};
+    float loopTime{ 0 };
+    float sysTime{ 0 };
 }controllerIn_st;
 
 typedef struct controllerOut_st 

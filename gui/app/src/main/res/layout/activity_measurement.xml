@@ -746,11 +746,11 @@
             android:id="@+id/textViewBTcmdResult"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="130dp"
-            android:layout_marginTop="24dp"
+            android:layout_marginStart="78dp"
+            android:layout_marginTop="16dp"
             android:text="Waiting for cmd"
-            app:layout_constraintStart_toEndOf="@+id/textView41"
-            app:layout_constraintTop_toTopOf="@+id/textView41" />
+            app:layout_constraintStart_toStartOf="@+id/buttonGlobalTimeSet"
+            app:layout_constraintTop_toBottomOf="@+id/buttonGlobalTimeSet" />
 
         <Button
             android:id="@+id/buttonCmdLamp"
@@ -795,7 +795,7 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:gravity="center"
-            android:text="104"
+            android:text="262"
             app:layout_constraintStart_toEndOf="@+id/textView59"
             app:layout_constraintTop_toTopOf="@+id/textView59" />
 
@@ -837,6 +837,34 @@
             android:gravity="center"
             app:layout_constraintStart_toEndOf="@+id/buttonGetMeasState"
             app:layout_constraintTop_toTopOf="@+id/buttonGetMeasState" />
+
+        <Button
+            android:id="@+id/buttonGlobalTimeSet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="50dp"
+            android:text="Set time"
+            app:layout_constraintStart_toEndOf="@+id/textView41"
+            tools:layout_editor_absoluteY="25dp" />
+
+        <TextView
+            android:id="@+id/textViewGlobalTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:layout_marginTop="14dp"
+            android:text="25.05.15-12:00:00"
+            app:layout_constraintStart_toEndOf="@+id/buttonGlobalTimeSet"
+            app:layout_constraintTop_toTopOf="@+id/buttonGlobalTimeSet" />
+
+        <Button
+            android:id="@+id/buttonGlobalTimeGet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:text="Get time"
+            app:layout_constraintStart_toEndOf="@+id/textViewGlobalTime"
+            app:layout_constraintTop_toTopOf="@+id/buttonGlobalTimeSet" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

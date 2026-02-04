@@ -18,9 +18,9 @@ TEST(test_BT, BT_Call)
 	controllerOut_st testOut;
 	RunBT(&testIn, &testOut);
 	USART1_Handler();
-	BTReceive();
+	BTReceive(&testIn);
 	BTTransmit(&testIn, &testOut);
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	buffer_ testBuffer;
 	testBuffer.vector[3] = '1';
 	testBuffer.vector[4] = '\r';
@@ -29,7 +29,10 @@ TEST(test_BT, BT_Call)
 	ConvertStrToBool(&testBuffer);
 	ConvertStrToUint8(&testBuffer);
 	ConvertStrToUint16(&testBuffer);
-	ConvertStrToFloat(&testBuffer);
+	ConvertStrToDouble(&testBuffer);
+	ConvertStrToGlobalTime(&testBuffer);
+	date testGlobaltime{};
+	ConvertDateToFloat(&testGlobaltime);
 	SetSteamFlag(0);
 	SetSteamFlag2(0);
 	SetStreamData(0,0);
@@ -199,7 +202,7 @@ TEST(test_BT, ConvertStrToFloat_Test)
 	testBuffer.vector[6] = '\r';
 	testBuffer.vector[7] = '\n';
 	testBuffer.ctr = 8;
-	EXPECT_EQ(ConvertStrToFloat(&testBuffer), 123);
+	EXPECT_EQ(ConvertStrToDouble(&testBuffer), 123);
 
 	//2nd
 	testBuffer.vector[0] = 0;
@@ -214,7 +217,7 @@ TEST(test_BT, ConvertStrToFloat_Test)
 	testBuffer.vector[9] = '\r';
 	testBuffer.vector[10] = '\n';
 	testBuffer.ctr = 11;
-	EXPECT_EQ(ConvertStrToFloat(&testBuffer), 432109);
+	EXPECT_EQ(ConvertStrToDouble(&testBuffer), 432109);
 
 	//3rd
 	testBuffer.vector[0] = 0;
@@ -226,7 +229,7 @@ TEST(test_BT, ConvertStrToFloat_Test)
 	testBuffer.vector[6] = '\r';
 	testBuffer.vector[7] = '\n';
 	testBuffer.ctr = 8;
-	EXPECT_EQ(ConvertStrToFloat(&testBuffer), 2.5);
+	EXPECT_EQ(ConvertStrToDouble(&testBuffer), 2.5);
 
 	//4th
 	testBuffer.vector[0] = 0;
@@ -242,7 +245,7 @@ TEST(test_BT, ConvertStrToFloat_Test)
 	testBuffer.vector[10] = '\r';
 	testBuffer.vector[11] = '\n';
 	testBuffer.ctr = 12;
-	EXPECT_NEAR(ConvertStrToFloat(&testBuffer), -67.931, 0.001);
+	EXPECT_NEAR(ConvertStrToDouble(&testBuffer), -67.931, 0.001);
 
 	//5th
 	testBuffer.vector[0] = 0;
@@ -261,7 +264,81 @@ TEST(test_BT, ConvertStrToFloat_Test)
 	testBuffer.vector[13] = '\r';
 	testBuffer.vector[14] = '\n';
 	testBuffer.ctr = 15;
-	EXPECT_NEAR(ConvertStrToFloat(&testBuffer), 2831.93174, 0.0001);
+	EXPECT_NEAR(ConvertStrToDouble(&testBuffer), 2831.93174, 0.0001);
+}
+
+TEST(test_BT, ConvertStrToGlobalTime_Test)
+{
+	buffer_ testBuffer;
+	date testDate;
+
+	//default
+	testBuffer.vector[3] = '2';
+	testBuffer.vector[4] = '5';
+	testBuffer.vector[5] = '0';
+	testBuffer.vector[6] = '5';
+	testBuffer.vector[7] = '1';
+	testBuffer.vector[8] = '5';
+	testBuffer.vector[9] = '1';
+	testBuffer.vector[10] = '2';
+	testBuffer.vector[11] = '0';
+	testBuffer.vector[12] = '0';
+	testBuffer.vector[13] = '0';
+	testBuffer.vector[14] = '0';
+	testDate = ConvertStrToGlobalTime(&testBuffer);
+	EXPECT_EQ(testDate.year, 25);
+	EXPECT_EQ(testDate.month, 5);
+	EXPECT_EQ(testDate.day, 15);
+	EXPECT_EQ(testDate.hour, 12);
+	EXPECT_EQ(testDate.min, 0);
+	EXPECT_EQ(testDate.sec, 0);
+
+	//
+	testBuffer.vector[3] = '2';
+	testBuffer.vector[4] = '4';
+	testBuffer.vector[5] = '1';
+	testBuffer.vector[6] = '2';
+	testBuffer.vector[7] = '0';
+	testBuffer.vector[8] = '7';
+	testBuffer.vector[9] = '0';
+	testBuffer.vector[10] = '9';
+	testBuffer.vector[11] = '3';
+	testBuffer.vector[12] = '5';
+	testBuffer.vector[13] = '2';
+	testBuffer.vector[14] = '4';
+	testDate = ConvertStrToGlobalTime(&testBuffer);
+	EXPECT_EQ(testDate.year, 24);
+	EXPECT_EQ(testDate.month, 12);
+	EXPECT_EQ(testDate.day, 7);
+	EXPECT_EQ(testDate.hour, 9);
+	EXPECT_EQ(testDate.min, 35);
+	EXPECT_EQ(testDate.sec, 24);
+}
+
+TEST(test_BT, ConvertDateToFloat_Test)
+{
+	date testGlobaltime{};
+
+	//0
+	EXPECT_EQ(ConvertDateToFloat(&testGlobaltime), 0);
+
+	//
+	testGlobaltime.sec = 11;
+	testGlobaltime.min = 22;
+	testGlobaltime.hour = 33;
+	testGlobaltime.day = 44;
+	testGlobaltime.month = 55;
+	testGlobaltime.year = 66;
+	EXPECT_EQ(ConvertDateToFloat(&testGlobaltime), 665544332211);
+
+	//
+	testGlobaltime.sec = 11;
+	testGlobaltime.min = 50;
+	testGlobaltime.hour = 17;
+	testGlobaltime.day = 04;
+	testGlobaltime.month = 02;
+	testGlobaltime.year = 26;
+	EXPECT_EQ(ConvertDateToFloat(&testGlobaltime), 260204175011);
 }
 
 TEST(test_BT, SetSteamFlag_Test)
@@ -441,6 +518,7 @@ TEST(test_BT, SetStreamData_Test)
 TEST(test_BT, ProcessRxFrame_Test)
 {
 	pid_st* testPID{ getPIDrates() };
+	controllerIn_st testIn;
 
 	//1st: no frame end
 	BT.input.vector[0] = CMD_NONE;
@@ -450,7 +528,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 4;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_NONE);
 	EXPECT_EQ(BT.rxFrame.id, 0);
 
@@ -464,7 +542,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_NONE);
 	EXPECT_EQ(BT.rxFrame.id, 0);
 
@@ -478,7 +556,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_GET);
 	EXPECT_EQ(BT.rxFrame.id, 1999);
 	EXPECT_EQ(BT.txFrame.sendParam, false);
@@ -493,7 +571,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
 	testPID->P.x = 55.0f;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_GET);
 	EXPECT_EQ(BT.rxFrame.id, 2000);
 	EXPECT_EQ(BT.txFrame.sendParam, true);
@@ -509,7 +587,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
 	EXPECT_EQ(BT.rxFrame.id, 5);
 
@@ -523,7 +601,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_SET);
 	EXPECT_EQ(BT.rxFrame.id, 100);
 	
@@ -541,7 +619,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 10;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_SET);
 	EXPECT_EQ(BT.rxFrame.id, ID_control_PID_rate_P_X);
 	EXPECT_NEAR(testPID->P.x, 48.92, 0.01);
@@ -557,7 +635,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
 	EXPECT_EQ(BT.rxFrame.id, ID_pidRate_sensor_signal_X);
 	EXPECT_EQ(BT.txFrame.streamDataFlags, 1);
@@ -572,7 +650,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 10;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame();
+	ProcessRxFrame(&testIn);
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
 	EXPECT_EQ(BT.rxFrame.id, ID_gyro_signal_X);
 	EXPECT_EQ(BT.txFrame.streamDataFlags, 9);
@@ -587,10 +665,35 @@ TEST(test_BT, ProcessRxFrame_Test)
     BT.input.ctr = 6;
     BT.rxFrame.cmd = CMD_NONE;
     BT.rxFrame.id = 0;
-    ProcessRxFrame();
+    ProcessRxFrame(&testIn);
     EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
     EXPECT_EQ(BT.rxFrame.id, ID_pidRate_sensor_signal_X);
     EXPECT_EQ(BT.txFrame.streamDataFlags, 8);
+
+	//10th set global time
+	BT.input.vector[0] = CMD_SET;
+	BT.input.vector[1] = 0x01;
+	BT.input.vector[2] = 0x00;
+	BT.input.vector[3] = '2';
+	BT.input.vector[4] = '6';
+	BT.input.vector[5] = '0';
+	BT.input.vector[6] = '2';
+	BT.input.vector[7] = '0';
+	BT.input.vector[8] = '4';
+	BT.input.vector[9] = '1';
+	BT.input.vector[10] = '7';
+	BT.input.vector[11] = '5';
+	BT.input.vector[12] = '0';
+	BT.input.vector[13] = '1';
+	BT.input.vector[14] = '1';
+	BT.input.vector[15] = '\r';
+	BT.input.vector[16] = '\n';
+	BT.input.ctr = 17;
+	BT.rxFrame.cmd = CMD_NONE;
+	BT.rxFrame.id = 0;
+	ProcessRxFrame(&testIn);
+	EXPECT_EQ(BT.rxFrame.cmd, CMD_SET);
+	EXPECT_EQ(BT.rxFrame.id, ID_update_global_time);
 }
 
 TEST(test_BT, CalcCharAndFillOutput_Test)
@@ -680,7 +783,7 @@ TEST(test_BT, CalcCharAndFillOutput_Test)
 	EXPECT_EQ(BT.output.vector[8], '8');
 
 	//8th: 4-3 + negative
-	testNumber = -1478.348;
+	testNumber = -1478.3485;
 	numberOfFrac = 4;
 	BT.output.ctr = 0;
 	BT.output.vector[BT.output.ctr++] = 0;
