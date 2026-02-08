@@ -1,5 +1,5 @@
 R
-Px,I,D,Py,I,D,Pz,I,D,FFrx,y,FFdrx,y,satI,satPID,DTermC,GparamC,AparamC,KFQAng,KFQbias,KFRmeas
+Px,Ix,Dx,Py,Iy,Dy,Pz,Iz,Dz,FFrx,FFry,FFdrx,FFdry,satI,satPID,DTermC,GparamC,AparamC,KFQAng,KFQbias,KFRmeas
 175,25,1900,200,25,2100,100,50,0,0,0,0,7,75,10,10.0,16.0,0.001,0.003,0.03
 sysTime,aRawR,aRawP,aPT2R,aPT2P,aKFPT21R,aKFPT21P
 129.003,-4.161,1.469,-3.984,1.455,-3.899,1.430

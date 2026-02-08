@@ -410,9 +410,9 @@ void SetupAcc(void)
 	// setting default acc values
     SPI.acc.const_raw2real = 24.0f * 9.81 / 32768.0f;
     //offset manually tuned
-    SPI.acc.offset.x = -0.23;
-    SPI.acc.offset.y = 0.23;
-    SPI.acc.offset.z = 0.01;
+    SPI.acc.offset.x = 0.0125;
+    SPI.acc.offset.y = 0.022;
+    SPI.acc.offset.z = 0.005;
     SPI.acc.offsetCalcDone = true;  //this is done manually
     SPI.acc.newData = false;
 

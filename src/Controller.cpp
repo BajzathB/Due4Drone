@@ -181,6 +181,12 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
             sqrt(accData.PT2.signal.x * accData.PT2.signal.x + accData.PT2.signal.z * accData.PT2.signal.z)) * 180 / 3.14;
         accData.pitchAnglePT2Acc = atan2(-accData.PT2.signal.x, 
             sqrt(accData.PT2.signal.y * accData.PT2.signal.y + accData.PT2.signal.z * accData.PT2.signal.z)) * 180 / 3.14;
+
+        //SerialUSB.print(ctrlIn->acc.signal.x); SerialUSB.print('\t');
+        //SerialUSB.print(ctrlIn->acc.signal.y); SerialUSB.print('\t');
+        //SerialUSB.print(ctrlIn->acc.signal.z); SerialUSB.print('\t');
+        //SerialUSB.print(accData.rollAngle); SerialUSB.print('\t');
+        //SerialUSB.println(accData.pitchAngle);
     }
     //kalman filter angle
     {
@@ -271,8 +277,8 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
              //outter cascade: angle
              pidCascade.refSignal.x = rollAngle;
              pidCascade.refSignal.y = pitchAngle;
-             pidCascade.sensor.signal.x = -accData.angleKFPT22.roll.angle;
-             pidCascade.sensor.signal.y = accData.angleKFPT22.pitch.angle;
+             pidCascade.sensor.signal.x = -accData.angleKFPT10.roll.angle;
+             pidCascade.sensor.signal.y = accData.angleKFPT10.pitch.angle;
              pidCascade.sensor.newData = false;  //no D term
              pidCascade.deltaT = ctrlIn->loopTime;
 

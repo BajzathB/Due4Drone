@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_01_05";
-fileNumber = 8; %1 is ., 2 is ..
+directory = "2026_02_08";
+fileNumber = 16; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -40,9 +40,9 @@ meas = readtable(file, opts);
 
 % figure(2);
 % clf(2);
-% % plot(meas.sysTime, [meas.ARawX meas.APT1X meas.APT2X]);
+% plot(meas.sysTime, [meas.ARawX meas.APT1X meas.APT2X]);
 % % plot(meas.sysTime, [meas.ARawY meas.APT1Y meas.APT2Y]);
-% plot(meas.sysTime, [meas.ARawZ meas.APT1Z meas.APT2Z]);
+% % plot(meas.sysTime, [meas.ARawZ meas.APT1Z meas.APT2Z]);
 % xlabel('time');
 % ylabel('m2/s');
 % legend('raw','pt1','pt2');
@@ -50,21 +50,22 @@ meas = readtable(file, opts);
 
 % figure(3);
 % clf(3);
-% plot(meas.sysTime, [meas.aRawR meas.aPT2R meas.aKFRawR meas.aKFPT21R]);
+% plot(meas.sysTime, [meas.aRawR meas.aPT2R meas.aKFRawR meas.aKFPT10R meas.aKFPT11R]);
+% % plot(meas.sysTime, [meas.aPT1R meas.aKFRawR meas.aKFPT21R]);
 % % plot(meas.sysTime, [meas.aPT2P meas.aKFPT21P]);
 % xlabel('time');
 % ylabel('°angle');
-% legend('aRaw', 'apt2', 'aKFRaw', 'aKFPT21');
+% legend('aRaw', 'apt1', 'aKFRaw', 'aKFPT10', 'aKFPT11', 'aKFPT21');
 % title('Angle')
 
 figure(4);
 clf(4);
-plot(meas.sysTime, [meas.aPT1R meas.aPT2R meas.aKFRawR meas.aKFPT10R meas.aKFPT11R]);
-legend('aPT1', 'aPT2', 'aKFRaw', 'aKFPT10', 'aKFPT11');
+plot(meas.sysTime, [meas.aPT1R meas.aKFRawR meas.aKFPT10R meas.aKFPT11R]);
+legend('aPT1', 'aKFRaw', 'aKFPT10', 'aKFPT11');
 usedParams = file + newline ...
     + sprintf(", GparamC: %.f", header.GparamC) ...
-    + sprintf(", AparamC: %.f", header.AparamC) ...
-    + sprintf(", KFQangle: %.6f", header.KFQAng) ...
+    + sprintf(", AparamC: %.f\n", header.AparamC) ...
+    + sprintf("KFQangle: %.6f", header.KFQAng) ...
     + sprintf(", KFQbias: %.6f", header.KFQbias) ...
     + sprintf(", KFRmeas: %.f", header.KFRmeas);
 title(usedParams, 'Interpreter', 'none');
