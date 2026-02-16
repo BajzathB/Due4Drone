@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.util.Pair;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -14,8 +15,23 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MeasurementActivity extends BaseActivity
 {
+    public class Triple<A, B, C> {
+        public final A first;
+        public final B second;
+        public final C third;
+
+        public Triple(A first, B second, C third) {
+            this.first = first;
+            this.second = second;
+            this.third = third;
+        }
+    }
+
     TextView charCtrMin;
     TextView charCtrMax;
     TextView hdrChrCnt;
@@ -80,6 +96,16 @@ public class MeasurementActivity extends BaseActivity
         final CheckBox checkBoxAngleKFPT21Pitch = findViewById(R.id.checkBoxAngleKFpt21Pitch);
         final CheckBox checkBoxAngleKFPT22Roll = findViewById(R.id.checkBoxAngleKFpt22Roll);
         final CheckBox checkBoxAngleKFPT22Pitch = findViewById(R.id.checkBoxAngleKFpt22Pitch);
+        final CheckBox checkBoxAngleCFRawRoll = findViewById(R.id.checkBoxAngleCFRawR);
+        final CheckBox checkBoxAngleCFRawPitch = findViewById(R.id.checkBoxAngleCFRawP);
+        final CheckBox checkBoxAngleCFPT10Roll = findViewById(R.id.checkBoxAngleCFPT10R);
+        final CheckBox checkBoxAngleCFPT10Pitch = findViewById(R.id.checkBoxAngleCFPT10P);
+        final CheckBox checkBoxAngleCFPT11Roll = findViewById(R.id.checkBoxAngleCFPT11R);
+        final CheckBox checkBoxAngleCFPT11Pitch = findViewById(R.id.checkBoxAngleCFPT11P);
+        final CheckBox checkBoxAngleCFwRawRoll = findViewById(R.id.checkBoxAngleCFwRawR);
+        final CheckBox checkBoxAngleCFwRawPitch = findViewById(R.id.checkBoxAngleCFwRawP);
+        final CheckBox checkBoxAngleCFwPT01Roll = findViewById(R.id.checkBoxAngleCFwPT01R);
+        final CheckBox checkBoxAngleCFwPT01Pitch = findViewById(R.id.checkBoxAngleCFwPT01P);
         //PID control
         final CheckBox checkBoxrefSigX = findViewById(R.id.checkBoxrefSigX);
         final CheckBox checkBoxrefSigY = findViewById(R.id.checkBoxrefSigY);
@@ -127,8 +153,34 @@ public class MeasurementActivity extends BaseActivity
         });
         buttonGlobelTimeSet.setOnClickListener(v ->
         {
-            final TextView textViewGlobalTime = findViewById(R.id.textViewGlobalTime);
-            BTSocket.getInstance().BTSetGlobalTime(1, textViewGlobalTime);
+//            BTSocket.getInstance().BTSetGlobalTime(1, findViewById(R.id.textViewGlobalTime), "HHmmss");
+//            BTSocket.getInstance().BTSetGlobalTime(2, findViewById(R.id.textViewGlobalDate), "yyMMdd");
+
+            List<Triple<TextView, Integer, String>> setList = new ArrayList<>();
+
+            setList.add(new Triple<>(findViewById(R.id.textViewGlobalTime), 1, "HHmmss"));
+            setList.add(new Triple<>(findViewById(R.id.textViewGlobalDate), 2, "yyMMdd"));
+
+            Thread tSetAll = new Thread() {
+                @Override
+                public void run() {
+                    for (Triple<TextView, Integer, String> set : setList) {
+                        TextView text = set.first;
+                        int id = set.second;
+                        String format =  set.third;
+
+                        BTSocket.getInstance().BTSetGlobalTime(id, text, format);
+                        while (!BTSocket.getInstance().getIsSetCmdFinished()) {
+                            try {
+                                Thread.sleep(50);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+                }
+            };
+            tSetAll.start();
         });
         buttonGlobelTimeGet.setOnClickListener(v ->
         {
@@ -385,6 +437,76 @@ public class MeasurementActivity extends BaseActivity
         {
             boolean isChecked = checkBoxAngleKFPT22Pitch.isChecked();
             BTSocket.getInstance().BTSetMeasurement(136, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFRawRoll.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFRawRoll.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(158, isChecked);
+            setHdrCharCnt(isChecked, 7);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFRawPitch.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFRawPitch.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(159, isChecked);
+            setHdrCharCnt(isChecked, 7);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFPT10Roll.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFPT10Roll.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(160, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFPT10Pitch.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFPT10Pitch.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(161, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFPT11Roll.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFPT11Roll.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(162, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFPT11Pitch.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFPT11Pitch.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(163, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFwRawRoll.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFwRawRoll.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(164, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFwRawPitch.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFwRawPitch.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(165, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFwPT01Roll.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFwPT01Roll.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(166, isChecked);
+            setHdrCharCnt(isChecked, 8);
+            setCharRange(isChecked, 5, 7);
+        });
+        checkBoxAngleCFwPT01Pitch.setOnClickListener(v ->
+        {
+            boolean isChecked = checkBoxAngleCFwPT01Pitch.isChecked();
+            BTSocket.getInstance().BTSetMeasurement(167, isChecked);
             setHdrCharCnt(isChecked, 8);
             setCharRange(isChecked, 5, 7);
         });

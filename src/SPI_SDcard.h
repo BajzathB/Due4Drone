@@ -138,7 +138,7 @@ typedef struct SpiSDcard_st
 	float measTimePrev{ 0 };
     bool writeMeasData{ false };
 
-	date globalTime{};
+	date globalDateAndTime{};
 	float sysTimeAtGlobalTime{ 0 };
 
 }SpiSDcard_st;
@@ -186,6 +186,16 @@ typedef struct Meas2Card
     bool measureAngleKFPT21Pitch{ false };
     bool measureAngleKFPT22Roll{ false };
     bool measureAngleKFPT22Pitch{ false };
+    bool measureAngleCFRawRoll{ false };
+    bool measureAngleCFRawPitch{ false };
+	bool measureAngleCFPT10Roll{ false };
+	bool measureAngleCFPT10Pitch{ false };
+	bool measureAngleCFPT11Roll{ false };
+	bool measureAngleCFPT11Pitch{ false };
+	bool measureAngleCFWeightedRawRoll{ false };
+	bool measureAngleCFWeightedRawPitch{ false };
+	bool measureAngleCFWeightedPT01Roll{ false };
+	bool measureAngleCFWeightedPT01Pitch{ false };
     //PID control
     bool measurePIDRefsigX{ false };
     bool measurePIDRefsigY{ false };
@@ -337,3 +347,4 @@ E_SDMainStates ReinitSDCard(void);
 // Method to set global time value
 // data is copied due to temp value and only done a few times per power cycle
 void setGlobalTime(const date newTime, const float currentSysTime);
+void setGlobalDate(const date newTime);

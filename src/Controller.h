@@ -105,6 +105,18 @@ typedef struct accData_st
     float rollAnglePT2Acc;
     float pitchAnglePT2Acc;
 
+    float alpha{0.995};
+    float rollAngleCF;
+    float pitchAngleCF;
+    float rollAngleCF10;
+    float pitchAngleCF10;
+    float rollAngleCF11;
+    float pitchAngleCF11;
+    float rollAngleCFw;
+    float pitchAngleCFw;
+    float rollAngleCFw01;
+    float pitchAngleCFw01;
+
     double q_angle{ 0.0001 };   // Process noise variance for angle
     double q_bias{ 0.003 };    // Process noise variance for gyro bias
     double r_measure{ 20.0 }; // Measurement noise variance
@@ -114,6 +126,7 @@ typedef struct accData_st
     kalmanFilterAngle3d_st angleKFPT11;
     kalmanFilterAngle3d_st angleKFPT21;
     kalmanFilterAngle3d_st angleKFPT22;
+
 };
 
 
@@ -136,7 +149,7 @@ float ParabolicScale(const uint16_t channel);
 float LinearInterpol(const uint16_t xn, const uint16_t x0, const uint16_t x1, const float y0, const float y1);
 
 // Method to calculate low-pass filtered value of a signal
-void PT1Filter(float* yOut, float xIn, float paramC );
+void PT1Filter(float* yOut, const float xIn, const float paramC );
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
 void CalcPID_wo_Dkick(pid_st* pidSt, axis* u);
@@ -161,5 +174,11 @@ void KalmanFilter(kalmanfilter_st* kf, float xIn);
 
 //Method to calculate kalman filter of acc signal
 void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime);
+
+//Method to calculate complementary filter of acc angle
+void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha);
+
+//Method to calculate weighted complementary filter of acc angle
+void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc);
 
 #endif // !CONTROLLER_HEADER

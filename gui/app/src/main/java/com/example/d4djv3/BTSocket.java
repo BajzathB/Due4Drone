@@ -513,7 +513,7 @@ public class BTSocket {
         }
     }
 
-    void BTSetGlobalTime(int cmd, TextView textIn) {
+    void BTSetGlobalTime(int cmd, TextView textIn, String format) {
         if (BTConnected && cmd != 0 && textIn != null) {
             byte[] buffer = new byte[20];
             byte ctr = 0;
@@ -528,7 +528,7 @@ public class BTSocket {
             buffer[ctr++] = (byte) ((cmd & 0xff00) >> 8);
 
             //set value as char
-            SimpleDateFormat sdf = new SimpleDateFormat("yyMMddHHmmss", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.getDefault());
             String currentDateandTime = sdf.format(new Date());
             Charset charset = StandardCharsets.US_ASCII;
             byte[] textBytes = currentDateandTime.getBytes(charset);
@@ -595,22 +595,22 @@ public class BTSocket {
                                 {
                                     cmdResultTextId.setText("SET failed");
                                     cmdLamp.setBackgroundColor(Color.RED);
+                                    textIn.setText("??:??:??");
+                                    isSetCmdFinished = true;
                                 });
                             } else {
                                 float valueToReceive = Float.parseFloat(currentDateandTime);
-                                float valueFromTextBox = Float.parseFloat(textIn.getText().toString());
+                                String str = String.format("%06d", (int)valueToReceive);
+                                String textOut = str.substring(0,2) + ":" +
+                                            str.substring(2, 4) + ":" +
+                                            str.substring(4, 6);
 
                                 Handler setHandler = new Handler(Looper.getMainLooper());
                                 setHandler.post(() ->
                                 {
-                                    if ((valueToReceive - valueFromTextBox) < 0.01f) {
-                                        cmdResultTextId.setText("SET OK");
-                                        cmdLamp.setBackgroundColor(Color.GREEN);
-                                    } else {
-                                        cmdResultTextId.setText("SET failed");
-                                        cmdLamp.setBackgroundColor(Color.RED);
-                                    }
-
+                                    cmdResultTextId.setText("SET OK");
+                                    cmdLamp.setBackgroundColor(Color.GREEN);
+                                    textIn.setText(textOut);
                                     isSetCmdFinished = true;
                                 });
                             }

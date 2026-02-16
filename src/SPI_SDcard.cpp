@@ -91,12 +91,12 @@ Meas2Card meas2Card;
 void InitSDCard()
 {
 	//default global time value
-	SDcard.globalTime.year = 21;
-	SDcard.globalTime.month = 5;
-	SDcard.globalTime.day = 15;
-	SDcard.globalTime.hour = 12;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.sec = 0;
+	SDcard.globalDateAndTime.year = 21;
+	SDcard.globalDateAndTime.month = 5;
+	SDcard.globalDateAndTime.day = 15;
+	SDcard.globalDateAndTime.hour = 12;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.sec = 0;
 }
 
 void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
@@ -1216,18 +1216,18 @@ void setFileTime(volatile uint32_t* block, float sysTime)
 	date currentGlobalTime{};
 	uint8_t intermidiateVal{ 0 };
 
-	intermidiateVal = SDcard.globalTime.sec + (elapsedTimeSinceSync % 60);
+	intermidiateVal = SDcard.globalDateAndTime.sec + (elapsedTimeSinceSync % 60);
 	currentGlobalTime.sec = (intermidiateVal % 60) / 2;	// 1/2 due to standard
 	intermidiateVal /= 60;
-	intermidiateVal += SDcard.globalTime.min + ((elapsedTimeSinceSync / 60) % 60);
+	intermidiateVal += SDcard.globalDateAndTime.min + ((elapsedTimeSinceSync / 60) % 60);
 	currentGlobalTime.min = intermidiateVal % 60;
 	intermidiateVal /= 60;
-	intermidiateVal += SDcard.globalTime.hour + ((elapsedTimeSinceSync / 3600) % 60);
+	intermidiateVal += SDcard.globalDateAndTime.hour + ((elapsedTimeSinceSync / 3600) % 60);
 	currentGlobalTime.hour = intermidiateVal % 60;
 	//just copy the rest, not expected to go over
-	currentGlobalTime.day = SDcard.globalTime.day;
-	currentGlobalTime.month = SDcard.globalTime.month;
-	currentGlobalTime.year = SDcard.globalTime.year + 20;	// +20 due to standard
+	currentGlobalTime.day = SDcard.globalDateAndTime.day;
+	currentGlobalTime.month = SDcard.globalDateAndTime.month;
+	currentGlobalTime.year = SDcard.globalDateAndTime.year + 20;	// +20 due to standard
 
 	//second
 	block[SDcard.rootDirEmptySlotNumber * 32 + 14] = currentGlobalTime.sec & 0x1F;
@@ -1598,6 +1598,16 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
     measureData(meas2Card.measureAngleKFPT21Pitch, true, accData->angleKFPT21.pitch.angle, 3, false, "angleKFPT21Pitch: ");
     measureData(meas2Card.measureAngleKFPT22Roll, true, accData->angleKFPT22.roll.angle, 3, false, "angleKFPT22Roll: ");
     measureData(meas2Card.measureAngleKFPT22Pitch, true, accData->angleKFPT22.pitch.angle, 3, false, "angleKFPT22Pitch: ");
+	measureData(meas2Card.measureAngleCFRawRoll, true, accData->rollAngleCF, 3, false, "angleCFRoll: ");
+	measureData(meas2Card.measureAngleCFRawPitch, true, accData->pitchAngleCF, 3, false, "angleCFPitch: ");
+	measureData(meas2Card.measureAngleCFPT10Roll, true, accData->rollAngleCF10, 3, false, "angleCFPT10Roll: ");
+	measureData(meas2Card.measureAngleCFPT10Pitch, true, accData->pitchAngleCF10, 3, false, "angleCFPT10Pitch: ");
+	measureData(meas2Card.measureAngleCFPT11Roll, true, accData->rollAngleCF11, 3, false, "angleCFPT11Roll: ");
+	measureData(meas2Card.measureAngleCFPT11Pitch, true, accData->pitchAngleCF11, 3, false, "angleCFPT11Pitch: ");
+	measureData(meas2Card.measureAngleCFWeightedRawRoll, true, accData->rollAngleCFw, 3, false, "angleCFWeightedRoll: ");
+	measureData(meas2Card.measureAngleCFWeightedRawPitch, true, accData->pitchAngleCFw, 3, false, "angleCFWeightedPitch: ");
+	measureData(meas2Card.measureAngleCFWeightedPT01Roll, true, accData->rollAngleCFw01, 3, false, "angleCFWeightedPT01Roll: ");
+	measureData(meas2Card.measureAngleCFWeightedPT01Pitch, true, accData->pitchAngleCFw01, 3, false, "angleCFWeightedPT01 Pitch: ");
     //PID control
     measureData(meas2Card.measurePIDRefsigX, true, pidData->refSignal.x, 3, false, "PIDRefSigX: ");
     measureData(meas2Card.measurePIDRefsigY, true, pidData->refSignal.y, 3, false, "PIDRefSigY: ");
@@ -1947,6 +1957,16 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureAngleKFPT21Pitch, true, "aKFPT21P", 8);
         addMeasNameHeader(meas2Card.measureAngleKFPT22Roll, true, "aKFPT22R", 8);
         addMeasNameHeader(meas2Card.measureAngleKFPT22Pitch, true, "aKFPT22P", 8);
+        addMeasNameHeader(meas2Card.measureAngleCFRawRoll, true, "aCFRawR", 7);
+        addMeasNameHeader(meas2Card.measureAngleCFRawPitch, true, "aCFRawP", 7);
+		addMeasNameHeader(meas2Card.measureAngleCFPT10Roll, true, "aCFPT10R", 8);
+		addMeasNameHeader(meas2Card.measureAngleCFPT10Pitch, true, "aCFPT10P", 8);
+		addMeasNameHeader(meas2Card.measureAngleCFPT11Roll, true, "aCFPT11R", 8);
+		addMeasNameHeader(meas2Card.measureAngleCFPT11Pitch, true, "aCFPT11P", 8);
+		addMeasNameHeader(meas2Card.measureAngleCFWeightedRawRoll, true, "aCFwRawR", 8);
+		addMeasNameHeader(meas2Card.measureAngleCFWeightedRawPitch, true, "aCFwRawP", 8);
+		addMeasNameHeader(meas2Card.measureAngleCFWeightedPT01Roll, true, "aCFwPT01R", 9);
+		addMeasNameHeader(meas2Card.measureAngleCFWeightedPT01Pitch, true, "aCFwPT01P", 9);
         //PID control
         addMeasNameHeader(meas2Card.measurePIDRefsigX, true, "PIDRefX", 7);
         addMeasNameHeader(meas2Card.measurePIDRefsigY, true, "PIDRefY", 7);
@@ -2176,19 +2196,16 @@ E_SDMainStates ReinitSDCard(void)
 
 void setGlobalTime(const date newTime, const float currentSysTime)
 {
-	SDcard.globalTime.year = newTime.year;
-	SDcard.globalTime.month = newTime.month;
-	SDcard.globalTime.day = newTime.day;
-	SDcard.globalTime.hour = newTime.hour;
-	SDcard.globalTime.min = newTime.min;
-	SDcard.globalTime.sec = newTime.sec;
+	SDcard.globalDateAndTime.hour = newTime.hour;
+	SDcard.globalDateAndTime.min = newTime.min;
+	SDcard.globalDateAndTime.sec = newTime.sec;
 
 	SDcard.sysTimeAtGlobalTime = currentSysTime;
+}
 
-  // SerialUSB.print("GlobalTime: ");SerialUSB.print(SDcard.globalTime.year);SerialUSB.print(".");
-  // SerialUSB.print(SDcard.globalTime.month);SerialUSB.print(".");
-  // SerialUSB.print(SDcard.globalTime.day);SerialUSB.print("-");
-  // SerialUSB.print(SDcard.globalTime.hour);SerialUSB.print(":");
-  // SerialUSB.print(SDcard.globalTime.min);SerialUSB.print(":");
-  // SerialUSB.println(SDcard.globalTime.sec);
+void setGlobalDate(const date newTime)
+{
+	SDcard.globalDateAndTime.year = newTime.year;
+	SDcard.globalDateAndTime.month = newTime.month;
+	SDcard.globalDateAndTime.day = newTime.day;
 }

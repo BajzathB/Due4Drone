@@ -32,7 +32,8 @@ TEST(test_BT, BT_Call)
 	ConvertStrToDouble(&testBuffer);
 	ConvertStrToGlobalTime(&testBuffer);
 	date testGlobaltime{};
-	ConvertDateToFloat(&testGlobaltime);
+	ConvertGlobalDate(&testGlobaltime);
+	ConvertGlobalTime(&testGlobaltime);
 	SetSteamFlag(0);
 	SetSteamFlag2(0);
 	SetStreamData(0,0);
@@ -315,30 +316,44 @@ TEST(test_BT, ConvertStrToGlobalTime_Test)
 	EXPECT_EQ(testDate.sec, 24);
 }
 
-TEST(test_BT, ConvertDateToFloat_Test)
+TEST(test_BT, ConvertGlobalDate_Test)
 {
 	date testGlobaltime{};
 
 	//0
-	EXPECT_EQ(ConvertDateToFloat(&testGlobaltime), 0);
+	EXPECT_EQ(ConvertGlobalDate(&testGlobaltime), 0);
+
+	//
+	testGlobaltime.day = 44;
+	testGlobaltime.month = 55;
+	testGlobaltime.year = 66;
+	EXPECT_EQ(ConvertGlobalDate(&testGlobaltime), 665544);
+
+	//
+	testGlobaltime.day = 04;
+	testGlobaltime.month = 02;
+	testGlobaltime.year = 26;
+	EXPECT_EQ(ConvertGlobalDate(&testGlobaltime), 260204);
+}
+
+TEST(test_BT, ConvertGlobalTime_Test)
+{
+	date testGlobaltime{};
+
+	//0
+	EXPECT_EQ(ConvertGlobalTime(&testGlobaltime), 0);
 
 	//
 	testGlobaltime.sec = 11;
 	testGlobaltime.min = 22;
 	testGlobaltime.hour = 33;
-	testGlobaltime.day = 44;
-	testGlobaltime.month = 55;
-	testGlobaltime.year = 66;
-	EXPECT_EQ(ConvertDateToFloat(&testGlobaltime), 665544332211);
+	EXPECT_EQ(ConvertGlobalTime(&testGlobaltime), 332211);
 
 	//
 	testGlobaltime.sec = 11;
 	testGlobaltime.min = 50;
 	testGlobaltime.hour = 17;
-	testGlobaltime.day = 04;
-	testGlobaltime.month = 02;
-	testGlobaltime.year = 26;
-	EXPECT_EQ(ConvertDateToFloat(&testGlobaltime), 260204175011);
+	EXPECT_EQ(ConvertGlobalTime(&testGlobaltime), 175011);
 }
 
 TEST(test_BT, SetSteamFlag_Test)

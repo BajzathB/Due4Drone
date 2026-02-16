@@ -334,7 +334,7 @@
             android:id="@+id/textView44"
             android:layout_width="35dp"
             android:layout_height="35dp"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="16dp"
             android:gravity="center"
             android:rotation="-90"
             android:text="°Raw"
@@ -345,12 +345,12 @@
             android:id="@+id/textView45"
             android:layout_width="40dp"
             android:layout_height="35dp"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="16dp"
             android:gravity="center"
             android:rotation="-90"
             android:text="refSig"
             app:layout_constraintStart_toEndOf="@+id/textView43"
-            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleRawPitch" />
+            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleCFRawP" />
 
         <CheckBox
             android:id="@+id/checkBoxAngleRawRoll"
@@ -746,7 +746,7 @@
             android:id="@+id/textViewBTcmdResult"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="78dp"
+            android:layout_marginStart="80dp"
             android:layout_marginTop="16dp"
             android:text="Waiting for cmd"
             app:layout_constraintStart_toStartOf="@+id/buttonGlobalTimeSet"
@@ -852,10 +852,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="2dp"
-            android:layout_marginTop="14dp"
-            android:text="25.05.15-12:00:00"
-            app:layout_constraintStart_toEndOf="@+id/buttonGlobalTimeSet"
-            app:layout_constraintTop_toTopOf="@+id/buttonGlobalTimeSet" />
+            android:text="12:00:00"
+            app:layout_constraintStart_toEndOf="@+id/textView68"
+            app:layout_constraintTop_toTopOf="@+id/textViewGlobalDate" />
 
         <Button
             android:id="@+id/buttonGlobalTimeGet"
@@ -865,6 +864,169 @@
             android:text="Get time"
             app:layout_constraintStart_toEndOf="@+id/textViewGlobalTime"
             app:layout_constraintTop_toTopOf="@+id/buttonGlobalTimeSet" />
+
+        <TextView
+            android:id="@+id/textView60"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="roll:"
+            app:layout_constraintEnd_toEndOf="@+id/textView43"
+            app:layout_constraintTop_toBottomOf="@+id/textView63" />
+
+        <TextView
+            android:id="@+id/textView61"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="pitch:"
+            app:layout_constraintEnd_toEndOf="@+id/textView60"
+            app:layout_constraintTop_toBottomOf="@+id/textView60" />
+
+        <TextView
+            android:id="@+id/textView62"
+            android:layout_width="60dp"
+            android:layout_height="55dp"
+            android:layout_marginStart="-25dp"
+            android:gravity="center"
+            android:rotation="-90"
+            android:text="°CFPT10"
+            app:layout_constraintBottom_toBottomOf="@+id/textView63"
+            app:layout_constraintStart_toEndOf="@+id/textView63" />
+
+        <TextView
+            android:id="@+id/textView63"
+            android:layout_width="55dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="-8dp"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:rotation="-90"
+            android:text="°CFRaw"
+            app:layout_constraintStart_toEndOf="@+id/textView43"
+            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleRawPitch" />
+
+        <TextView
+            android:id="@+id/textView64"
+            android:layout_width="60dp"
+            android:layout_height="55dp"
+            android:layout_marginStart="-25dp"
+            android:gravity="center"
+            android:rotation="-90"
+            android:text="°CFPT11"
+            app:layout_constraintBottom_toBottomOf="@+id/textView62"
+            app:layout_constraintStart_toEndOf="@+id/textView62" />
+
+        <TextView
+            android:id="@+id/textView65"
+            android:layout_width="65dp"
+            android:layout_height="55dp"
+            android:layout_marginStart="-27dp"
+            android:gravity="center"
+            android:rotation="-90"
+            android:text="°CFwRaw"
+            app:layout_constraintBottom_toBottomOf="@+id/textView64"
+            app:layout_constraintStart_toEndOf="@+id/textView64" />
+
+        <TextView
+            android:id="@+id/textView66"
+            android:layout_width="68dp"
+            android:layout_height="65dp"
+            android:layout_marginStart="-32dp"
+            android:gravity="center"
+            android:rotation="-90"
+            android:text="°CFwPT01"
+            app:layout_constraintBottom_toBottomOf="@+id/textView65"
+            app:layout_constraintStart_toEndOf="@+id/textView65" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFRawR"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/textView60"
+            app:layout_constraintTop_toBottomOf="@+id/textView63" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFRawP"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/textView60"
+            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFPT10R"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFRawR"
+            app:layout_constraintTop_toTopOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFPT10P"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFRawP"
+            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFPT11R"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFPT10R"
+            app:layout_constraintTop_toTopOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFPT11P"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFPT10P"
+            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFwRawR"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFPT11R"
+            app:layout_constraintTop_toTopOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFwRawP"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFPT11P"
+            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFwPT01R"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFwRawR"
+            app:layout_constraintTop_toTopOf="@+id/checkBoxAngleCFRawR" />
+
+        <CheckBox
+            android:id="@+id/checkBoxAngleCFwPT01P"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            app:layout_constraintStart_toEndOf="@+id/checkBoxAngleCFwRawP"
+            app:layout_constraintTop_toBottomOf="@+id/checkBoxAngleCFRawR" />
+
+        <TextView
+            android:id="@+id/textViewGlobalDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:layout_marginTop="12dp"
+            android:text="26.01.01"
+            app:layout_constraintStart_toEndOf="@+id/buttonGlobalTimeSet"
+            app:layout_constraintTop_toTopOf="@+id/buttonGlobalTimeSet" />
+
+        <TextView
+            android:id="@+id/textView68"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:text="-"
+            app:layout_constraintStart_toEndOf="@+id/textViewGlobalDate"
+            app:layout_constraintTop_toTopOf="@+id/textViewGlobalDate" />
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

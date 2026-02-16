@@ -484,7 +484,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onSwipeRight() {
         Log.d("BT", "MainActivty - onTouchEvent - swiped right");
-        Intent intent = new Intent(MainActivity.this, StreamActivity.class);
+        Intent intent = new Intent(MainActivity.this, StreamAccActivity.class);
         startActivity(intent);
     }
 

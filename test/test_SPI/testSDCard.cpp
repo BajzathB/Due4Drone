@@ -168,6 +168,7 @@ TEST(test_BT_SDcard, SDcard_Call)
 	SDWriteWaitResponse();
 	date testDate{};
 	setGlobalTime(testDate, testTime);
+	setGlobalDate(testDate);
 }
 
 TEST(test_BT_SDcard, CMD0_Test)
@@ -1715,24 +1716,24 @@ TEST(test_BT_SDcard, setFileTime_Test)
 
 	// time delay is between 0-60 sec
 	testTime = 30;
-	SDcard.globalTime.sec = 0;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.day = 0;
-	SDcard.globalTime.month = 0;
-	SDcard.globalTime.year = 0;
+	SDcard.globalDateAndTime.sec = 0;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.day = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.year = 0;
 	SDcard.rootDirEmptySlotNumber = 0;
 	setFileTime(testBuffer, testTime);
 	EXPECT_EQ(testBuffer[14], 0b1111);
 
 	// time delay is between 0-59 min
 	testTime = 15 + 60*7;
-	SDcard.globalTime.sec = 0;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.day = 0;
-	SDcard.globalTime.month = 0;
-	SDcard.globalTime.year = 0;
+	SDcard.globalDateAndTime.sec = 0;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.day = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.year = 0;
 	SDcard.rootDirEmptySlotNumber = 0;
 	setFileTime(testBuffer, testTime);
 	EXPECT_EQ(testBuffer[14], 0b11100111);
@@ -1740,12 +1741,12 @@ TEST(test_BT_SDcard, setFileTime_Test)
 
 	// time delay is between 1-24 hour
 	testTime = 45 + 60 * 9 + 3600 * 3;
-	SDcard.globalTime.sec = 0;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.day = 0;
-	SDcard.globalTime.month = 0;
-	SDcard.globalTime.year = 0;
+	SDcard.globalDateAndTime.sec = 0;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.day = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.year = 0;
 	SDcard.rootDirEmptySlotNumber = 0;
 	setFileTime(testBuffer, testTime);
 	EXPECT_EQ(testBuffer[14], 0b00110110);
@@ -1753,12 +1754,12 @@ TEST(test_BT_SDcard, setFileTime_Test)
 
 	// time delay is between 1-24 hour
 	testTime = 45 + 60 * 9 + 3600 * 3;
-	SDcard.globalTime.sec = 0;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.day = 0;
-	SDcard.globalTime.month = 0;
-	SDcard.globalTime.year = 0;
+	SDcard.globalDateAndTime.sec = 0;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.day = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.year = 0;
 	SDcard.rootDirEmptySlotNumber = 0;
 	SDcard.sysTimeAtGlobalTime = 40;
 	setFileTime(testBuffer, testTime);
@@ -1767,12 +1768,12 @@ TEST(test_BT_SDcard, setFileTime_Test)
 
 	// time with year
 	testTime = 21 + 60 * 49 + 3600 * 15;
-	SDcard.globalTime.sec = 0;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.day = 11;
-	SDcard.globalTime.month = 5;
-	SDcard.globalTime.year = 25;
+	SDcard.globalDateAndTime.sec = 0;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.day = 11;
+	SDcard.globalDateAndTime.month = 5;
+	SDcard.globalDateAndTime.year = 25;
 	SDcard.rootDirEmptySlotNumber = 0;
 	SDcard.sysTimeAtGlobalTime = 0;
 	setFileTime(testBuffer, testTime);
@@ -1783,12 +1784,12 @@ TEST(test_BT_SDcard, setFileTime_Test)
 
 	//overflow sec
 	testTime = 15;
-	SDcard.globalTime.sec = 51;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.day = 0;
-	SDcard.globalTime.month = 0;
-	SDcard.globalTime.year = 0;
+	SDcard.globalDateAndTime.sec = 51;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.day = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.year = 0;
 	SDcard.rootDirEmptySlotNumber = 0;
 	setFileTime(testBuffer, testTime);
 	EXPECT_EQ(testBuffer[14], 0b00100011);
@@ -1798,12 +1799,12 @@ TEST(test_BT_SDcard, setFileTime_Test)
 
 	//overflow min
 	testTime = 15 + 60 * 8;
-	SDcard.globalTime.sec = 51;
-	SDcard.globalTime.min = 54;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.day = 0;
-	SDcard.globalTime.month = 0;
-	SDcard.globalTime.year = 0;
+	SDcard.globalDateAndTime.sec = 51;
+	SDcard.globalDateAndTime.min = 54;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.day = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.year = 0;
 	SDcard.rootDirEmptySlotNumber = 0;
 	setFileTime(testBuffer, testTime);
 	EXPECT_EQ(testBuffer[14], 0b01100011);
@@ -1829,12 +1830,12 @@ TEST(test_BT_SDcard, addFileInfo2RootDir_Test)
 	testFile.clusters[0] = 6;
 	testFile.numberOfClusters = 1;
 	testFile.size = 10;
-	SDcard.globalTime.sec = 30;
-	SDcard.globalTime.min = 59;
-	SDcard.globalTime.hour = 11;
-	SDcard.globalTime.day = 15;
-	SDcard.globalTime.month = 5;
-	SDcard.globalTime.year = 21;
+	SDcard.globalDateAndTime.sec = 30;
+	SDcard.globalDateAndTime.min = 59;
+	SDcard.globalDateAndTime.hour = 11;
+	SDcard.globalDateAndTime.day = 15;
+	SDcard.globalDateAndTime.month = 5;
+	SDcard.globalDateAndTime.year = 21;
 	addFileInfo2RootDir(testBuffer, &testFile, testTime);
 	EXPECT_EQ(testBuffer[0], 'M'); 
 	EXPECT_EQ(testBuffer[1], 'E');
@@ -2830,42 +2831,56 @@ TEST(test_BT_SDcard, setGlobalTime_Test)
 	float testTime{ 0 };
 
 	//default
-	SDcard.globalTime.year = 0;
-	SDcard.globalTime.month = 0;
-	SDcard.globalTime.day = 0;
-	SDcard.globalTime.hour = 0;
-	SDcard.globalTime.min = 0;
-	SDcard.globalTime.sec = 0;
-	testDate.year = 0;
-	testDate.month = 0;
-	testDate.day = 0;
+	SDcard.globalDateAndTime.hour = 0;
+	SDcard.globalDateAndTime.min = 0;
+	SDcard.globalDateAndTime.sec = 0;
 	testDate.hour = 0;
 	testDate.min = 0;
 	testDate.sec = 0;
 	testTime = 0;
 	setGlobalTime(testDate, testTime);
-	EXPECT_EQ(SDcard.globalTime.year, 0);
-	EXPECT_EQ(SDcard.globalTime.month, 0);
-	EXPECT_EQ(SDcard.globalTime.day, 0);
-	EXPECT_EQ(SDcard.globalTime.hour, 0);
-	EXPECT_EQ(SDcard.globalTime.min, 0);
-	EXPECT_EQ(SDcard.globalTime.sec, 0);
+	EXPECT_EQ(SDcard.globalDateAndTime.hour, 0);
+	EXPECT_EQ(SDcard.globalDateAndTime.min, 0);
+	EXPECT_EQ(SDcard.globalDateAndTime.sec, 0);
 	EXPECT_EQ(SDcard.sysTimeAtGlobalTime, 0);
 
 	//
-	testDate.year = 25;
-	testDate.month = 5;
-	testDate.day = 15;
 	testDate.hour = 12;
 	testDate.min = 34;
 	testDate.sec = 26;
 	testTime = 1235;
 	setGlobalTime(testDate, testTime);
-	EXPECT_EQ(SDcard.globalTime.year, 25);
-	EXPECT_EQ(SDcard.globalTime.month, 5);
-	EXPECT_EQ(SDcard.globalTime.day, 15);
-	EXPECT_EQ(SDcard.globalTime.hour, 12);
-	EXPECT_EQ(SDcard.globalTime.min, 34);
-	EXPECT_EQ(SDcard.globalTime.sec, 26);
+	EXPECT_EQ(SDcard.globalDateAndTime.hour, 12);
+	EXPECT_EQ(SDcard.globalDateAndTime.min, 34);
+	EXPECT_EQ(SDcard.globalDateAndTime.sec, 26);
 	EXPECT_EQ(SDcard.sysTimeAtGlobalTime, 1235);
+}
+
+TEST(test_BT_SDcard, setGlobalDate_Test)
+{
+	date testDate{};
+
+	//default
+	SDcard.globalDateAndTime.year = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.day = 0;
+	testDate.year = 0;
+	testDate.month = 0;
+	testDate.day = 0;
+	setGlobalDate(testDate);
+	EXPECT_EQ(SDcard.globalDateAndTime.year, 0);
+	EXPECT_EQ(SDcard.globalDateAndTime.month, 0);
+	EXPECT_EQ(SDcard.globalDateAndTime.day, 0);
+
+	//
+	SDcard.globalDateAndTime.year = 0;
+	SDcard.globalDateAndTime.month = 0;
+	SDcard.globalDateAndTime.day = 0;
+	testDate.year = 26;
+	testDate.month = 2;
+	testDate.day = 15;
+	setGlobalDate(testDate);
+	EXPECT_EQ(SDcard.globalDateAndTime.year, 26);
+	EXPECT_EQ(SDcard.globalDateAndTime.month, 2);
+	EXPECT_EQ(SDcard.globalDateAndTime.day, 15);
 }

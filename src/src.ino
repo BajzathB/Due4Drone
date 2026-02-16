@@ -90,11 +90,13 @@ void loop()
   //testing
   // if(spiInput.sysTime > 6)
   // {
-	// spiInput.rcSignals.measurementSwitch = 2000;
+	//   spiInput.rcSignals.measurementSwitch = 2000;
+  //   spiInput.rcSignals.armStateSwitch = 2000;
   // }  
   // if(spiInput.sysTime > 12)
   // {
-	// spiInput.rcSignals.measurementSwitch = 1000;
+	//   spiInput.rcSignals.measurementSwitch = 1000;
+  //   spiInput.rcSignals.armStateSwitch = 1000;
   // }
 
   RunSPI(&spiInput, &spiOutput);	//for sd card

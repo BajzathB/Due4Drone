@@ -99,7 +99,7 @@ public class StreamAccActivity extends BaseActivity
         //get the spinner from the xml.
         accFilterParams = findViewById(R.id.spinner_accFilterParams);
         //create a list of items for the spinner.
-        String[] items = new String[]{"PT_c", "KF_q_ang", "KF_q_bias", "KF_r", "offsetX", "offsetY", "offsetZ"};
+        String[] items = new String[]{"PT_c", "Alpha", "KF_q_ang", "KF_q_bias", "KF_r", "offsetX", "offsetY", "offsetZ"};
         //create an adapter to describe how the items are displayed, adapters are used in several places in android.
         //There are multiple variations of this, but this is the basic variant.
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items);
@@ -597,6 +597,11 @@ public class StreamAccActivity extends BaseActivity
                 returnVal = 2015;
                 break;
             }
+            case "Alpha":
+            {
+                returnVal = 2042;
+                break;
+            }
             case "KF_q_ang":
             {
                 returnVal = 2016;
@@ -661,6 +666,11 @@ public class StreamAccActivity extends BaseActivity
                 returnVal = 0.01f;
                 break;
             }
+            case "Alpha":
+            {
+                returnVal = 0.001f;
+                break;
+            }
         }
 
         return returnVal;
@@ -678,7 +688,7 @@ public class StreamAccActivity extends BaseActivity
     protected void onSwipeRight()
     {
         Log.d("BT", "StreamAccActivity - onTouchEvent - swiped right");
-        Intent intent = new Intent(StreamAccActivity.this, MotorsActivity.class);
+        Intent intent = new Intent(StreamAccActivity.this, StreamActivity.class);
         startActivity(intent);
     }
 }

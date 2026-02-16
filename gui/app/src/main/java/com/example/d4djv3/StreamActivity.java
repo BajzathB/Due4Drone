@@ -548,8 +548,8 @@ public class StreamActivity extends BaseActivity
     @Override
     protected void onSwipeRight()
     {
-        Log.d("BT", "StreamActivty - onTouchEvent - swiped right");
-        Intent intent = new Intent(StreamActivity.this, StreamAccActivity.class);
-        startActivity(intent);
+//        Log.d("BT", "StreamActivty - onTouchEvent - swiped right");
+//        Intent intent = new Intent(StreamActivity.this, StreamAccActivity.class);
+//        startActivity(intent);
     }
 }

@@ -2,6 +2,7 @@
 
 //special commands
 #define ID_update_global_time 1
+#define ID_update_global_date 2
 
 
 //bool
@@ -63,6 +64,16 @@
 #define ID_meas_2_card_PID_U_X 155
 #define ID_meas_2_card_PID_U_Y 156
 #define ID_meas_2_card_PID_U_Z 157
+#define ID_meas_2_card_angle_CF_raw_roll 158
+#define ID_meas_2_card_angle_CF_raw_pitch 159
+#define ID_meas_2_card_angle_CF_PT10_roll 160
+#define ID_meas_2_card_angle_CF_PT10_pitch 161
+#define ID_meas_2_card_angle_CF_PT11_roll 162
+#define ID_meas_2_card_angle_CF_PT11_pitch 163
+#define ID_meas_2_card_angle_CF_weighted_raw_roll 164
+#define ID_meas_2_card_angle_CF_weighted_raw_pitch 165
+#define ID_meas_2_card_angle_CF_weighted_PT01_roll 166
+#define ID_meas_2_card_angle_CF_weighted_PT01_pitch 167
 
 
 
@@ -122,6 +133,7 @@
 #define ID_control_PID_cascade_FF_Y 2039
 #define ID_control_PID_cascade_FF_DX 2040
 #define ID_control_PID_cascade_FF_DY 2041
+#define ID_complementary_filter_alpha 2042
 
 
 

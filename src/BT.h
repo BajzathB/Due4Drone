@@ -75,15 +75,17 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut);
 // Method to process received frame
 void ProcessRxFrame(const controllerIn_st* ctrlIn);
 
-// Function to convert input string to value from SET cmd
+// Functions to convert input string to value from SET cmd
 bool ConvertStrToBool(volatile buffer_* input);
 uint8_t ConvertStrToUint8(volatile buffer_* input);
 uint16_t ConvertStrToUint16(volatile buffer_* input);
 float ConvertStrToDouble(volatile buffer_* input);
 date ConvertStrToGlobalTime(const volatile buffer_* input);
+date ConvertStrToGlobalDate(const volatile buffer_* input);
 
 // Functions to convert input value to a number for GET cmd
-float ConvertDateToFloat(const date* globalTime);
+double ConvertGlobalDate(const date* globalTime);
+double ConvertGlobalTime(const date* globalTime);
 
 // Method to check if frame ending is received
 bool isFrameEndReceived(void);

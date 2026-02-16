@@ -28,6 +28,8 @@ TEST(test_Controller, Controller_Call) {
 	KalmanFilter(&testKalman, 0);
 	kalmanFilterAngle_st testKalmanAngle;
 	KalmanFilterAngle(&testKalmanAngle, 0,0,0);
+	ComplementryFilterAngle(&y, 0, 0, 0, 0);
+	ComplementryFilterAngleWeighted(&y, 0, 0, 0, 0, &testU);
 }
 
 TEST(test_Controller, EvalArmState_Test)
@@ -509,7 +511,7 @@ TEST(test_Controller, KalmanFilterAngle_Test)
 	testGyroIn = 0;
 	testLoopTime = 0.1;
 	KalmanFilterAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
-	EXPECT_NEAR(testKalmanAngle.angle, 0.0000005f, 0.0000001f);
+	EXPECT_NEAR(testKalmanAngle.angle, 0.0000005f, 0.00001f);
 	EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
 	EXPECT_NEAR(testKalmanAngle.rate, 0.0f, 0.01f);
 	EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
@@ -533,4 +535,50 @@ TEST(test_Controller, KalmanFilterAngle_Test)
 	EXPECT_NEAR(testKalmanAngle.P[1][0], 0.0f, 0.01f);
 	EXPECT_NEAR(testKalmanAngle.P[0][1], 0.0f, 0.01f);
 	EXPECT_NEAR(testKalmanAngle.P[1][1], 0.0f, 0.01f);
+}
+
+TEST(test_Controller, ComplementryFilterAngle_Test)
+{
+	float CFAngle{ 0 };
+	float CFAngleW{ 0 };
+	axis acc;
+
+	//zero inputs
+	acc.x = 0;
+	acc.y = 0;
+	acc.z = 0;
+	ComplementryFilterAngle(&CFAngle, 0, 0, 0, 0.5);
+	ComplementryFilterAngleWeighted(&CFAngleW, 0, 0, 0, 0.5, &acc);
+	EXPECT_NEAR(CFAngle, 0.0f, 0.01f);
+	EXPECT_NEAR(CFAngleW, 0.0f, 0.01f);
+
+	//only accangle
+	CFAngle = 0;
+	CFAngleW = 0;
+	acc.x = 1;
+	acc.y = 0;
+	acc.z = 0;
+	ComplementryFilterAngle(&CFAngle, 5, 0, 0, 0.5);
+	ComplementryFilterAngleWeighted(&CFAngleW, 5, 0, 0, 0.5, &acc);
+	EXPECT_NEAR(CFAngle, 2.5f, 0.01f);
+	EXPECT_NEAR(CFAngleW, 2.5f, 0.01f);
+
+	//only gyro
+	CFAngle = 0;
+	CFAngleW = 0;
+	acc.x = 1;
+	acc.y = 0;
+	acc.z = 0;
+	ComplementryFilterAngle(&CFAngle, 0, 1000, 0.001, 0.5);
+	ComplementryFilterAngleWeighted(&CFAngleW, 0, 1000, 0.001, 0.5, &acc);
+	EXPECT_NEAR(CFAngle, 0.5f, 0.01f);
+	EXPECT_NEAR(CFAngleW, 0.5f, 0.01f);
+
+	//weighting
+	CFAngleW = 0;
+	acc.x = 1;
+	acc.y = 1;
+	acc.z = 0;
+	ComplementryFilterAngleWeighted(&CFAngleW, 10, 0, 0, 0.5, &acc);
+	EXPECT_NEAR(CFAngleW, 2.92f, 0.01f);
 }

@@ -196,17 +196,36 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         KalmanFilterAngle(&accData.angleKFPT10.roll, accData.rollAnglePT1Acc, ctrlIn->gyro.signal.x, ctrlIn->loopTime);
         KalmanFilterAngle(&accData.angleKFPT10.pitch, accData.pitchAnglePT1Acc, ctrlIn->gyro.signal.y, ctrlIn->loopTime);
 
-        KalmanFilterAngle(&accData.angleKFPT20.roll, accData.rollAnglePT2Acc, ctrlIn->gyro.signal.x, ctrlIn->loopTime);
-        KalmanFilterAngle(&accData.angleKFPT20.pitch, accData.pitchAnglePT2Acc, ctrlIn->gyro.signal.y, ctrlIn->loopTime);
+        //KalmanFilterAngle(&accData.angleKFPT20.roll, accData.rollAnglePT2Acc, ctrlIn->gyro.signal.x, ctrlIn->loopTime);
+        //KalmanFilterAngle(&accData.angleKFPT20.pitch, accData.pitchAnglePT2Acc, ctrlIn->gyro.signal.y, ctrlIn->loopTime);
     
         KalmanFilterAngle(&accData.angleKFPT11.roll, accData.rollAnglePT1Acc, gyroData.PT1.signal.x, ctrlIn->loopTime);
         KalmanFilterAngle(&accData.angleKFPT11.pitch, accData.pitchAnglePT1Acc, gyroData.PT1.signal.y, ctrlIn->loopTime);
 
-        KalmanFilterAngle(&accData.angleKFPT21.roll, accData.rollAnglePT2Acc, gyroData.PT1.signal.x, ctrlIn->loopTime);
-        KalmanFilterAngle(&accData.angleKFPT21.pitch, accData.pitchAnglePT2Acc, gyroData.PT1.signal.y, ctrlIn->loopTime);
+        //KalmanFilterAngle(&accData.angleKFPT21.roll, accData.rollAnglePT2Acc, gyroData.PT1.signal.x, ctrlIn->loopTime);
+        //KalmanFilterAngle(&accData.angleKFPT21.pitch, accData.pitchAnglePT2Acc, gyroData.PT1.signal.y, ctrlIn->loopTime);
 
-        KalmanFilterAngle(&accData.angleKFPT22.roll, accData.rollAnglePT2Acc, gyroData.PT2.signal.x, ctrlIn->loopTime);
-        KalmanFilterAngle(&accData.angleKFPT22.pitch, accData.pitchAnglePT2Acc, gyroData.PT2.signal.y, ctrlIn->loopTime);
+        //KalmanFilterAngle(&accData.angleKFPT22.roll, accData.rollAnglePT2Acc, gyroData.PT2.signal.x, ctrlIn->loopTime);
+        //KalmanFilterAngle(&accData.angleKFPT22.pitch, accData.pitchAnglePT2Acc, gyroData.PT2.signal.y, ctrlIn->loopTime);
+    }
+    //complementary filter angle
+    {
+        ComplementryFilterAngle(&accData.rollAngleCF, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->loopTime, accData.alpha);
+        ComplementryFilterAngle(&accData.pitchAngleCF, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->loopTime, accData.alpha);
+
+        ComplementryFilterAngle(&accData.rollAngleCF10, accData.rollAnglePT1Acc, ctrlIn->gyro.signal.x, ctrlIn->loopTime, accData.alpha);
+        ComplementryFilterAngle(&accData.pitchAngleCF10, accData.pitchAnglePT1Acc, ctrlIn->gyro.signal.y, ctrlIn->loopTime, accData.alpha);
+
+        ComplementryFilterAngle(&accData.rollAngleCF11, accData.rollAnglePT1Acc, gyroData.PT1.signal.x, ctrlIn->loopTime, accData.alpha);
+        ComplementryFilterAngle(&accData.pitchAngleCF11, accData.pitchAnglePT1Acc, gyroData.PT1.signal.y, ctrlIn->loopTime, accData.alpha);
+
+        ComplementryFilterAngleWeighted(&accData.rollAngleCFw, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        ComplementryFilterAngleWeighted(&accData.pitchAngleCFw, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+
+        ComplementryFilterAngleWeighted(&accData.rollAngleCFw01, accData.rollAngle, gyroData.PT1.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        ComplementryFilterAngleWeighted(&accData.pitchAngleCFw01, accData.pitchAngle, gyroData.PT1.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+
+        //SerialUSB.println(accData.alpha, 3);
     }
 
     //control when armed and on high throttle
@@ -423,7 +442,7 @@ float LinearInterpol(const uint16_t xn, const uint16_t x0, const uint16_t x1, co
 }
 
 // param C = dataRate/cutoffFreq
-void PT1Filter(float* yOut, float xIn, float paramC)
+void PT1Filter(float* yOut, const float xIn, const float paramC)
 {
 	*yOut = (xIn + paramC * (*yOut)) / (paramC + 1);
 }
@@ -733,4 +752,19 @@ void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const flo
     kf->P[0][1] -= K[0] * P01_temp;
     kf->P[1][0] -= K[1] * P00_temp;
     kf->P[1][1] -= K[1] * P01_temp;
+}
+
+void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha)
+{
+    *yOut = alpha * (*yOut + gyroIn * looptime) + (1 - alpha) * accAngle;
+}
+
+void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc)
+{
+    float accMag = sqrt(acc->x * acc->x + acc->y * acc->y + acc->z * acc->z);
+    float w = 1 - abs(accMag - 1);
+    if (w > 1) w = 1;
+    if (w < 0) w = 0;
+
+    *yOut = alpha * (*yOut + gyroIn * looptime) + (1.0 - alpha) * w * accAngle + (1.0 - w) * (*yOut);
 }
