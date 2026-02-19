@@ -179,6 +179,6 @@ void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const flo
 void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha);
 
 //Method to calculate weighted complementary filter of acc angle
-void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc);
+//void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc);
 
 #endif // !CONTROLLER_HEADER

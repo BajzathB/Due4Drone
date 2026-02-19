@@ -10,10 +10,10 @@ extern Tc* TC0;
 TEST(test_sysTime, SetupSysTimer_Call)
 {
     SetupSysTimer();
-	UpdateSysTime();
-	getSysTime();
-	getSysLoopTime();
-    
+    UpdateSysTime();
+    getSysTime();
+    getSysLoopTime();
+
     EXPECT_TRUE(true);
 }
 
@@ -22,10 +22,10 @@ TEST(test_sysTime, UpdateSysTime_Time0)
 {
     UpdateSysTime();
 
-    EXPECT_EQ(sysTimer.raw,0);
+    EXPECT_EQ(sysTimer.raw, 0);
     EXPECT_EQ(sysTimer.loopTime, 0);
     EXPECT_EQ(sysTimer.sysTime, 0);
-    EXPECT_NEAR(sysTimer.const_raw2real, 1/10500000.0,1/1000000.0);
+    EXPECT_NEAR(sysTimer.const_raw2real, 1 / 10500000.0, 1 / 1000000.0);
 }
 
 // testing time values with presetting

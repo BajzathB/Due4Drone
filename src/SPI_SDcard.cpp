@@ -1796,7 +1796,8 @@ void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numb
 
         loadData2Buffer(tempBuffer, numberOfCharacters);
 #ifdef LOG_SAVED_DATA
-        SerialUSB.print("Measured name: "); SerialUSB.println(name);
+        SerialUSB.print("Measured name: "); SerialUSB.print(name);
+				SerialUSB.print(", loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
 #endif
     }
 }
@@ -1844,11 +1845,15 @@ void addMeasHeader(void)
 		addMeasNameHeader(true, true, "CsatPID", 7);
 		addMeasNameHeader(true, true, "CFFdrx", 6);
 		addMeasNameHeader(true, true, "CFFdry", 6);
+		addMeasNameHeader(true, true, "CFalpha", 7);
 		SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
+#ifdef LOG_SAVED_DATA
+		SerialUSB.print("End of 2nd line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
+#endif
 	}
 	//3rd line
 	{
-		uint32_t tempBuffer[100];
+		uint32_t tempBuffer[300];
 		uint8_t numberOfCharacters{ 0 };
 		pid_st* pidRate{ getPIDrates() };
 		pid_st* pidCascade{ getPIDcascade() };
@@ -1910,9 +1915,14 @@ void addMeasHeader(void)
 		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
 		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.y, 0, false);
+        tempBuffer[numberOfCharacters++] = ',';
+        convert2String(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
 		tempBuffer[numberOfCharacters++] = '\n';
 
 		loadData2Buffer(tempBuffer, numberOfCharacters);
+#ifdef LOG_SAVED_DATA
+		SerialUSB.print("End of 3rd line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
+#endif
 	}
 	//4th line: measured values
 	{
@@ -1992,6 +2002,9 @@ void addMeasHeader(void)
 
 
         appendNewLine();
+#ifdef LOG_SAVED_DATA
+				SerialUSB.print("End of 4th line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
+#endif
 	}
 }
 

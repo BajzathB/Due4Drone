@@ -67,11 +67,11 @@ TEST(test_RC, USART2_Handler_Test)
     RC.IBUS_received[30] = 0xE3; //crc
     RC.IBUS_received[31] = 0xFC;
     USART2_Handler();
-    EXPECT_EQ(RC.IBUS_channel[0],1500);
-    EXPECT_EQ(RC.IBUS_channel[1],1500);
-    EXPECT_EQ(RC.IBUS_channel[2],1000);
-    EXPECT_EQ(RC.IBUS_channel[3],1800);
-    EXPECT_EQ(RC.isCrcValid,true);
+    EXPECT_EQ(RC.IBUS_channel[0], 1500);
+    EXPECT_EQ(RC.IBUS_channel[1], 1500);
+    EXPECT_EQ(RC.IBUS_channel[2], 1000);
+    EXPECT_EQ(RC.IBUS_channel[3], 1800);
+    EXPECT_EQ(RC.isCrcValid, true);
 
     //2nd: bad crc
     RC.IBUS_received[30] = 0x00; //crc

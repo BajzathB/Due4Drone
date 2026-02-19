@@ -219,13 +219,14 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         ComplementryFilterAngle(&accData.rollAngleCF11, accData.rollAnglePT1Acc, gyroData.PT1.signal.x, ctrlIn->loopTime, accData.alpha);
         ComplementryFilterAngle(&accData.pitchAngleCF11, accData.pitchAnglePT1Acc, gyroData.PT1.signal.y, ctrlIn->loopTime, accData.alpha);
 
-        ComplementryFilterAngleWeighted(&accData.rollAngleCFw, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
-        ComplementryFilterAngleWeighted(&accData.pitchAngleCFw, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        //ComplementryFilterAngleWeighted(&accData.rollAngleCFw, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        //ComplementryFilterAngleWeighted(&accData.pitchAngleCFw, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
 
-        ComplementryFilterAngleWeighted(&accData.rollAngleCFw01, accData.rollAngle, gyroData.PT1.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
-        ComplementryFilterAngleWeighted(&accData.pitchAngleCFw01, accData.pitchAngle, gyroData.PT1.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        //ComplementryFilterAngleWeighted(&accData.rollAngleCFw01, accData.rollAngle, gyroData.PT1.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        //ComplementryFilterAngleWeighted(&accData.pitchAngleCFw01, accData.pitchAngle, gyroData.PT1.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
 
-        //SerialUSB.println(accData.alpha, 3);
+        //SerialUSB.print(accData.rollAngleCFw, 3); SerialUSB.print('\t');
+        //SerialUSB.println(accData.rollAngleCFw01, 3);
     }
 
     //control when armed and on high throttle
@@ -756,15 +757,21 @@ void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const flo
 
 void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha)
 {
-    *yOut = alpha * (*yOut + gyroIn * looptime) + (1 - alpha) * accAngle;
+   *yOut = alpha * (*yOut + gyroIn * looptime) + (1 - alpha) * accAngle;
 }
 
-void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc)
-{
-    float accMag = sqrt(acc->x * acc->x + acc->y * acc->y + acc->z * acc->z);
-    float w = 1 - abs(accMag - 1);
-    if (w > 1) w = 1;
-    if (w < 0) w = 0;
-
-    *yOut = alpha * (*yOut + gyroIn * looptime) + (1.0 - alpha) * w * accAngle + (1.0 - w) * (*yOut);
-}
+//void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc)
+//{
+//    float accMag = sqrt(acc->x * acc->x + acc->y * acc->y + acc->z * acc->z);
+//    float w = 1.0f - (abs(accMag - 9.81f) / 9.81f);
+//    if (w > 1) w = 1;
+//    if (w < 0) w = 0;
+//
+//    *yOut = alpha * (*yOut + gyroIn * looptime) + (1.0 - alpha) * w * accAngle + (1.0 - w) * (*yOut);
+//
+//
+//    SerialUSB.print(accMag, 3); SerialUSB.print('\t');
+//    SerialUSB.print(w, 3); SerialUSB.print('\t');
+//    SerialUSB.print((1.0 - alpha) * w * accAngle, 3); SerialUSB.print('\t');
+//    SerialUSB.println((1.0 - w) * (*yOut), 3);
+//}
