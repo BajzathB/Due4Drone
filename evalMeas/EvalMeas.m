@@ -1,8 +1,7 @@
 clear all, clc
 
-directory = "2026_01_04";
-directory = "2026_02_19";
-fileNumber = 20; %1 is ., 2 is ..
+directory = "2026_02_22";
+fileNumber = 13; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -61,21 +60,21 @@ meas = readtable(file, opts);
 % title('Angle')
 
 %% plot plot angle with parameters
-figure(4);
-clf(4);
-plot(meas.sysTime, [meas.GPT1X meas.aPT1R ]);
-legend( 'GPT1X', 'aPT1R');
-usedParams = file + newline ...
-    + sprintf("GparamC: %.f", header.GparamC) ...
-    + sprintf(", AparamC: %.f\n", header.AparamC) ...
-    + sprintf("KFQangle: %.6f", header.KFQAng) ...
-    + sprintf(", KFQbias: %.6f", header.KFQbias) ...
-    + sprintf(", KFRmeas: %.f\n", header.KFRmeas) ...
-    + sprintf("CPx: %.f", header.CPx) ...
-    + sprintf(", CIx: %.f", header.CIx) ...
-    + sprintf(", CPy: %.f", header.CPy) ...
-    + sprintf(", CIy: %.f", header.CIy);
-title(usedParams, 'Interpreter', 'none');
+% figure(4);
+% clf(4);
+% plot(meas.sysTime, [ meas.aPT1R meas.aKFRawR]);
+% legend( 'aPT1R', 'aKFRawR', 'aKFPT10R');
+% usedParams = file + newline ...
+%     + sprintf("GparamC: %.f", header.GparamC) ...
+%     + sprintf(", AparamC: %.f\n", header.AparamC) ...
+%     + sprintf("KFQangle: %.6f", header.KFQAng) ...
+%     + sprintf(", KFQbias: %.6f", header.KFQbias) ...
+%     + sprintf(", KFRmeas: %.f\n", header.KFRmeas) ...
+%     + sprintf("CPx: %.f", header.CPx) ...
+%     + sprintf(", CIx: %.f", header.CIx) ...
+%     + sprintf(", CPy: %.f", header.CPy) ...
+%     + sprintf(", CIy: %.f", header.CIy);
+% title(usedParams, 'Interpreter', 'none');
 
 %% FFT
 % In1 = transpose(meas.aPT2R);
@@ -110,37 +109,37 @@ title(usedParams, 'Interpreter', 'none');
 
 %% recalc KF
 
-Q = [0.0001  0.003];
-R = 100;
-P_aKFRawR = eye(2);
-P_aKFPT10R = eye(2);
-P_aKFPT11R = eye(2);
-aKFRawR(1) = 1;
-aKFPT10R(1) = 1;
-aKFPT11R(1) = 1;
-angle_est_aKFRawR = meas.aRawR(1);
-angle_est_aKFPT10R = meas.aRawR(1);
-angle_est_aKFPT11R = meas.aRawR(1);
-bias_est_aKFRawR = 0;
-bias_est_aKFPT10R = 0;
-bias_est_aKFPT11R = 0;
-
-for i = 2:length(meas.sysTime)
-    dt =meas.sysTime(i) - meas.sysTime(i-1);
-    
-%     [aKFRawR(i), P_aKFRawR, angle_est_aKFRawR, bias_est_aKFRawR] = kalmanAngle(meas.aRawR(i), meas.GRawX(i), dt, angle_est_aKFRawR, bias_est_aKFRawR, P_aKFRawR, Q, R);
-%     [aKFPT10R(i), P_aKFPT10R, angle_est_aKFPT10R, bias_est_aKFPT10R] = kalmanAngle(meas.aPT1R(i), meas.GRawX(i), dt, angle_est_aKFPT10R, bias_est_aKFPT10R, P_aKFPT10R, Q, R);
-    [aKFPT11R(i), P_aKFPT11R, angle_est_aKFPT11R, bias_est_aKFPT11R] = kalmanAngle(-meas.aPT1R(i), meas.GPT1X(i), dt, angle_est_aKFPT11R, bias_est_aKFPT11R, P_aKFPT11R, Q, R);
-    
-end
-
-figure(6);
-clf(6);
-% plot(meas.sysTime, [meas.aKFRawR aKFRawR']);
-% legend('OG\_aKFRawR', 'RE\_aKFRawR');
-plot(meas.sysTime, [meas.GPT1X meas.aPT1R meas.aKFPT11R aKFPT11R']);
-legend('OG\_GPT1X', 'OG\_aPT1R', 'OG\_aKFPT11R', 'RE\_aKFPT11R');
-title('Recalc');
+% Q = [0.0001  0.003];
+% R = 100;
+% P_aKFRawR = eye(2);
+% P_aKFPT10R = eye(2);
+% P_aKFPT11R = eye(2);
+% aKFRawR(1) = 1;
+% aKFPT10R(1) = 1;
+% aKFPT11R(1) = 1;
+% angle_est_aKFRawR = meas.aRawR(1);
+% angle_est_aKFPT10R = meas.aRawR(1);
+% angle_est_aKFPT11R = meas.aRawR(1);
+% bias_est_aKFRawR = 0;
+% bias_est_aKFPT10R = 0;
+% bias_est_aKFPT11R = 0;
+% 
+% for i = 2:length(meas.sysTime)
+%     dt =meas.sysTime(i) - meas.sysTime(i-1);
+%     
+% %     [aKFRawR(i), P_aKFRawR, angle_est_aKFRawR, bias_est_aKFRawR] = kalmanAngle(meas.aRawR(i), meas.GRawX(i), dt, angle_est_aKFRawR, bias_est_aKFRawR, P_aKFRawR, Q, R);
+% %     [aKFPT10R(i), P_aKFPT10R, angle_est_aKFPT10R, bias_est_aKFPT10R] = kalmanAngle(meas.aPT1R(i), meas.GRawX(i), dt, angle_est_aKFPT10R, bias_est_aKFPT10R, P_aKFPT10R, Q, R);
+%     [aKFPT11R(i), P_aKFPT11R, angle_est_aKFPT11R, bias_est_aKFPT11R] = kalmanAngle(-meas.aPT1R(i), meas.GPT1X(i), dt, angle_est_aKFPT11R, bias_est_aKFPT11R, P_aKFPT11R, Q, R);
+%     
+% end
+% 
+% figure(6);
+% clf(6);
+% % plot(meas.sysTime, [meas.aKFRawR aKFRawR']);
+% % legend('OG\_aKFRawR', 'RE\_aKFRawR');
+% plot(meas.sysTime, [meas.GPT1X meas.aPT1R meas.aKFPT11R aKFPT11R']);
+% legend('OG\_GPT1X', 'OG\_aPT1R', 'OG\_aKFPT11R', 'RE\_aKFPT11R');
+% title('Recalc');
 
 %% complementary filter calc
 
@@ -180,4 +179,25 @@ title('Recalc');
 % legend('aKFRawR', 'aCFRawR', 'aCFPT10R');
 % title('Complementary compare');
 
+%% rate PID analysis
+
+figure(9);
+clf(9);
+plot(meas.sysTime, [meas.PIDRefX/10 meas.PIDSensX/10 -meas.PIDUX]);
+legend('PIDRefX', 'PIDSensX', 'PIDUX');
+usedParams = "Rate PID analysis" + newline ...
+    + sprintf("Px: %.f", header.Px) ...
+    + sprintf(", Ix: %.f", header.Ix) ...
+    + sprintf(", Dx: %.f", header.Dx) ...
+    + sprintf(", FFrx: %.f\n", header.FFrx) ...
+    + sprintf("satI: %.f", header.satI) ...
+    + sprintf(", satPID: %.f", header.satPID) ...
+    + sprintf(", DTermC: %.f", header.DTermC) ...
+    + sprintf(", GparamC: %.f", header.GparamC);
+title(usedParams, 'Interpreter', 'none');
+
+% figure(10);
+% clf(10);
+% plot(meas.sysTime, [meas.PIDPoutX meas.PIDIoutX meas.PIDDoutX meas.PIDUX]);
+% legend('PIDPoutX', 'PIDIoutX', 'PIDDoutX', 'PIDUX');
 

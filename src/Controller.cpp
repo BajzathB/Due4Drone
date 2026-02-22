@@ -76,20 +76,20 @@ void SetupController(void)
 	pidRate.errorDotFiltered.z = 0.0f;
 
     //CASCADE
-    pidCascade.P.x = 0.0f;	//55-60;
+    pidCascade.P.x = 30.0f;
     pidCascade.I.x = 0.0f;
-    pidCascade.D.x = 0.0f;	//110-114
-    pidCascade.P.y = 0.0f;	//60
+    pidCascade.D.x = 0.0f;
+    pidCascade.P.y = 30.0f;
     pidCascade.I.y = 0.0f;
-    pidCascade.D.y = 0.0f;   //132
+    pidCascade.D.y = 0.0f;
     pidCascade.P.z = 0.0f;
     pidCascade.I.z = 0.0f;
     pidCascade.D.z = 0.0f;
-    pidCascade.saturationI = 10.0f;
-    pidCascade.saturationPID = 75.0f;
-    pidCascade.DTermC = 1600 / 80;	//datarate/filterrate = 2000hz/500hz
+    pidCascade.saturationI = 75.0f;
+    pidCascade.saturationPID = 300.0f;
+    pidCascade.DTermC = 1600 / 25;	//datarate/filterrate = 2000hz/500hz
     pidCascade.PFactor = 10.0f;
-    pidCascade.IFactor = 1.0f;
+    pidCascade.IFactor = 10.0f;
     pidCascade.DFactor = 1.0f;
     pidCascade.FFrFactor = 1.0f;
     pidCascade.FFdrFactor = 1.0f;
@@ -238,38 +238,7 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 
         switch (flightMode)
         {
-        case PT2_WO_DERIVATIVE_KICK:
-        {
-            pidRate.refSignal.x =  rollScaled;
-            pidRate.refSignal.y = -pitchScaled;
-            pidRate.refSignal.z =  yawScaled;
-            pidRate.sensor.signal.x = -gyroData.PT2.signal.x;    //x-y swap/+-1 due to orientation of IMU
-            pidRate.sensor.signal.y =  gyroData.PT2.signal.y;
-            pidRate.sensor.signal.z = -gyroData.PT2.signal.z;
-            pidRate.sensor.newData = ctrlIn->gyro.newData;
-            pidRate.deltaT = ctrlIn->loopTime;
-
-            CalcPID_wo_Dkick(&pidRate, &controlSignal);
-
-            break;
-        }
-
-        case PT2_WO_DERIV_KICK_FF:
-        {
-            pidRate.refSignal.x =  rollScaled;
-            pidRate.refSignal.y = -pitchScaled;
-            pidRate.refSignal.z =  yawScaled;
-            pidRate.sensor.signal.x = -gyroData.PT2.signal.x;    //x-y swap/+-1 due to orientation of IMU
-            pidRate.sensor.signal.y =  gyroData.PT2.signal.y;
-            pidRate.sensor.signal.z = -gyroData.PT2.signal.z;
-            pidRate.sensor.newData = ctrlIn->gyro.newData;
-            pidRate.deltaT = ctrlIn->loopTime;
-
-            CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
-
-            break;
-        }
-        case PT1_WO_DERIVATIVE_KICK:
+        case RATE_CTRL_PT1:
         {
             pidRate.refSignal.x =  rollScaled;
             pidRate.refSignal.y = -pitchScaled;
@@ -280,12 +249,8 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
             pidRate.sensor.newData = ctrlIn->gyro.newData;
             pidRate.deltaT = ctrlIn->loopTime;
 
-            CalcPID_wo_Dkick(&pidRate, &controlSignal);
+            CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
 
-            break;
-        }
-        case KALMAN_FILTER:
-        {
             break;
         }
         case ANGLE_CASCADE_CTRL:
@@ -297,8 +262,17 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
              //outter cascade: angle
              pidCascade.refSignal.x = rollAngle;
              pidCascade.refSignal.y = pitchAngle;
-             pidCascade.sensor.signal.x = -accData.angleKFPT10.roll.angle;
-             pidCascade.sensor.signal.y = accData.angleKFPT10.pitch.angle;
+
+             if (ctrlIn->rcSignals.Switch2Way < 1500)
+             {
+                 pidCascade.sensor.signal.x = -accData.angleKFPT10.roll.angle;
+                 pidCascade.sensor.signal.y = accData.angleKFPT10.pitch.angle;
+             }
+             else
+             {
+                 pidCascade.sensor.signal.x = -accData.angleKFPT11.roll.angle;
+                 pidCascade.sensor.signal.y = accData.angleKFPT11.pitch.angle;
+             }
              pidCascade.sensor.newData = false;  //no D term
              pidCascade.deltaT = ctrlIn->loopTime;
 
@@ -316,6 +290,36 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 
              CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
              
+            break;
+        }
+        case ANGLE_CASCADE_CTRL_v2:
+        {
+            float rollAngle{ LinearInterpol(ctrlIn->rcSignals.roll, 1000u,2000u, -30.0f , 30.0f) };
+            float pitchAngle{ LinearInterpol(ctrlIn->rcSignals.pitch, 1000u,2000u, 30.0f , -30.0f) };
+            axis intermidiateSignal;
+
+            //outter cascade: angle
+            pidCascade.refSignal.x = rollAngle;
+            pidCascade.refSignal.y = pitchAngle;
+            pidCascade.sensor.signal.x = -accData.angleKF.roll.angle;
+            pidCascade.sensor.signal.y = accData.angleKF.pitch.angle;
+            pidCascade.sensor.newData = false;  //no D term
+            pidCascade.deltaT = ctrlIn->loopTime;
+
+            CalcPID_wo_Dkick_FF(&pidCascade, &intermidiateSignal);
+
+            //inner cascade: rate
+            pidRate.refSignal.x = intermidiateSignal.x;
+            pidRate.refSignal.y = intermidiateSignal.y;
+            pidRate.refSignal.z = yawScaled;
+            pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
+            pidRate.sensor.signal.y = gyroData.PT1.signal.y;
+            pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
+            pidRate.sensor.newData = ctrlIn->gyro.newData;
+            pidRate.deltaT = ctrlIn->loopTime;
+
+            CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
+
             break;
         }
         case GPS_CTRL:
@@ -403,15 +407,15 @@ E_flightMode EvalFlightMode(const uint16_t flightModeChannel)
 {
     if (1800u < flightModeChannel)
     {
-        return ANGLE_CASCADE_CTRL;
+        return ANGLE_CASCADE_CTRL_v2;
     }
     else if (1450u < flightModeChannel && flightModeChannel < 1550u)
     {
-        return PT1_WO_DERIVATIVE_KICK;
+        return ANGLE_CASCADE_CTRL;
     }
     else
     {
-        return PT2_WO_DERIVATIVE_KICK;
+        return RATE_CTRL_PT1;
     }
 }
 
@@ -666,6 +670,9 @@ void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u)
     u->x = pidSt->FFout.x + pidSt->Pout.x + pidSt->Iout.x - pidSt->Dout.x;
     u->y = pidSt->FFout.y + pidSt->Pout.y + pidSt->Iout.y - pidSt->Dout.y;
     u->z = pidSt->FFout.z + pidSt->Pout.z + pidSt->Iout.z - pidSt->Dout.z;
+    pidSt->u.x = u->x;
+    pidSt->u.y = u->y;
+    pidSt->u.z = u->z;
     //limit output(saturation)
     if (u->x > pidSt->saturationPID) u->x = pidSt->saturationPID;
     else if (u->x < -pidSt->saturationPID) u->x = -pidSt->saturationPID;

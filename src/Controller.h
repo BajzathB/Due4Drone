@@ -9,16 +9,11 @@
 
 typedef enum E_flightMode : uint8_t
 {
-    RATE_CTRL = 0,
-    ANGLE_CTRL = 1,
-    ANGLE_CASCADE_CTRL = 2,
+    RATE_CTRL_PT1 = 0,
+    ANGLE_CASCADE_CTRL = 1,
+    ANGLE_CASCADE_CTRL_v2 = 2,
     GPS_CTRL = 3,
 
-    PT1_WO_DERIVATIVE_KICK = 4,
-    PT2_FILTER = 5,
-    PT2_WO_DERIVATIVE_KICK = 6,
-    PT2_WO_DERIV_KICK_FF = 7,
-    KALMAN_FILTER = 8
 };
 
 typedef struct controllerIn_st 
@@ -95,7 +90,7 @@ typedef struct
 
 typedef struct accData_st
 {
-    float paramC{ 32 };     //1600/x sampleRate/cutoffRate
+    float paramC{ 64 };     //1600/x sampleRate/cutoffRate
     sigOut PT1;
     sigOut PT2;
     float rollAngle;
@@ -119,7 +114,7 @@ typedef struct accData_st
 
     double q_angle{ 0.0001 };   // Process noise variance for angle
     double q_bias{ 0.003 };    // Process noise variance for gyro bias
-    double r_measure{ 20.0 }; // Measurement noise variance
+    double r_measure{ 50.0 }; // Measurement noise variance
     kalmanFilterAngle3d_st angleKF;
     kalmanFilterAngle3d_st angleKFPT10;
     kalmanFilterAngle3d_st angleKFPT20;

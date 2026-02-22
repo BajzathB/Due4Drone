@@ -16,8 +16,16 @@ typedef struct rc_st {
 }rc_st;
 
 typedef struct rcSignals_st {
-    uint16_t roll{ 1500 }, pitch{ 1500 }, throttle{ 1000 }, yaw{ 1500 };
-    uint16_t armStateSwitch{ 1000 }, flightModeSwitch{ 1000 }, Poti1{ 1000 }, Poti2{ 1000 }, measurementSwitch{ 1000 }, Switch2Way{ 1000 };
+    uint16_t roll{ 1500 };
+    uint16_t pitch{ 1500 };
+    uint16_t throttle{ 1000 };
+    uint16_t yaw{ 1500 };
+    uint16_t armStateSwitch{ 1000 };
+    uint16_t measurementSwitch{ 1000 };
+    uint16_t Poti1{ 1000 };
+    uint16_t Poti2{ 1000 };
+    uint16_t flightModeSwitch{ 1000 };
+    uint16_t Switch2Way{ 1000 };
 }rcSignals_st;
 
 // Method to set up USART2 for RC IBus protocol receive

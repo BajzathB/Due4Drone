@@ -70,15 +70,15 @@ TEST(test_Controller, EvalFlightMode_Test)
     uint16_t testFlightMode{ 2000u };
 
     //1st: lower than 1950
-    EXPECT_EQ(EvalFlightMode(testFlightMode), ANGLE_CASCADE_CTRL);
+    EXPECT_EQ(EvalFlightMode(testFlightMode), ANGLE_CASCADE_CTRL_v2);
 
     //2nd: inbetween 1450-1550
     testFlightMode = 1500u;
-    EXPECT_EQ(EvalFlightMode(testFlightMode), PT1_WO_DERIVATIVE_KICK);
+    EXPECT_EQ(EvalFlightMode(testFlightMode), ANGLE_CASCADE_CTRL);
 
     //3rd: none of the above two tests
     testFlightMode = 1200u;
-    EXPECT_EQ(EvalFlightMode(testFlightMode), PT2_WO_DERIVATIVE_KICK);
+    EXPECT_EQ(EvalFlightMode(testFlightMode), RATE_CTRL_PT1);
 }
 
 TEST(test_Controller, ParabolicScale_Test)
