@@ -101,7 +101,7 @@ public class StreamActivity extends BaseActivity
         //get the spinner from the xml.
         gyroFilterParams = findViewById(R.id.spinner_accFilterParams);
         //create a list of items for the spinner.
-        String[] items = new String[]{"PT_c", "KF_q", "KF_r"};
+        String[] items = new String[]{"PT_c", "FF_DtermC", "I_relaxRef", "I_relaxErr", "DmaxRef", "DmaxErr", "DmaxX", "DmaxY"};
         //create an adapter to describe how the items are displayed, adapters are used in several places in android.
         //There are multiple variations of this, but this is the basic variant.
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items);
@@ -496,14 +496,39 @@ public class StreamActivity extends BaseActivity
                 returnVal = 2012;
                 break;
             }
-            case "KF_q":
+            case "FF_DtermC":
             {
-                returnVal = 2013;
+                returnVal = 2043;
                 break;
             }
-            case "KF_r":
+            case "I_relaxRef":
             {
-                returnVal = 2014;
+                returnVal = 2044;
+                break;
+            }
+            case "I_relaxErr":
+            {
+                returnVal = 2045;
+                break;
+            }
+            case "DmaxRef":
+            {
+                returnVal = 2046;
+                break;
+            }
+            case "DmaxErr":
+            {
+                returnVal = 2047;
+                break;
+            }
+            case "DmaxX":
+            {
+                returnVal = 2048;
+                break;
+            }
+            case "DmaxY":
+            {
+                returnVal = 2049;
                 break;
             }
         }
@@ -518,18 +543,18 @@ public class StreamActivity extends BaseActivity
         switch (selectedFilterValue)
         {
             case "PT_c":
-            {
+            case "FF_DtermC": {
                 returnVal = 0.5f;
                 break;
             }
-            case "KF_q":
+            case "I_relaxRef":
+            case "I_relaxErr":
+            case "DmaxRef":
+            case "DmaxErr":
+            case "DmaxX":
+            case "DmaxY":
             {
-                returnVal = 0.001f;
-                break;
-            }
-            case "KF_r":
-            {
-                returnVal = 0.5f;
+                returnVal = 10.0f;
                 break;
             }
         }

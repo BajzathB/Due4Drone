@@ -75,6 +75,8 @@ extern Dmac* DMAC;
 
 #define WRITE_BLOCK_TIMEOUT 0.3f
 
+#define DATA_SAVE_5_MS 0.005f
+
 //#define LOG_SD_INIT
 //#define LOG_SD_WRITE
 //#define LOG_SAVED_DATA
@@ -123,7 +125,7 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		case SD_MEASUREMENT_ONGOING:
 		{
 			//save data every 10ms
-			if (spiInput->sysTime - SDcard.measTimePrev >= 0.01f)
+			if (spiInput->sysTime - SDcard.measTimePrev >= DATA_SAVE_5_MS)
 			{
 				saveMeasData(spiInput, spiOutput);
 
@@ -1817,7 +1819,7 @@ void addMeasHeader(void)
 	SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
 	//2nd line
 	{
-        addMeasNameHeader(true, false, "Px", 2);
+        addMeasNameHeader(true, false,"Px", 2);
         addMeasNameHeader(true, true, "Ix", 2);
         addMeasNameHeader(true, true, "Dx", 2);
         addMeasNameHeader(true, true, "Py", 2);
@@ -1846,6 +1848,13 @@ void addMeasHeader(void)
 		addMeasNameHeader(true, true, "CFFdrx", 6);
 		addMeasNameHeader(true, true, "CFFdry", 6);
 		addMeasNameHeader(true, true, "CFalpha", 7);
+		addMeasNameHeader(true, true, "FFDTermC", 8);
+		addMeasNameHeader(true, true, "IRelaxR", 7);
+		addMeasNameHeader(true, true, "IRelaxE", 7);
+		addMeasNameHeader(true, true, "DmaxR", 5);
+		addMeasNameHeader(true, true, "DmaxE", 5);
+		addMeasNameHeader(true, true, "DMx", 3);
+		addMeasNameHeader(true, true, "DMy", 3);
 		SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
 #ifdef LOG_SAVED_DATA
 		SerialUSB.print("End of 2nd line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
@@ -1917,6 +1926,20 @@ void addMeasHeader(void)
 		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.y, 0, false);
         tempBuffer[numberOfCharacters++] = ',';
         convert2String(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFDTermC, 3, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxRefThreshhold, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxErrThreshhold, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxRefThreshhold, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxErrThreshhold, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.x, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.y, 0, false);
 		tempBuffer[numberOfCharacters++] = '\n';
 
 		loadData2Buffer(tempBuffer, numberOfCharacters);

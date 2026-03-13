@@ -20,7 +20,7 @@ TEST(test_Controller, Controller_Call) {
     PT1Filter(&y, x, paramC);
     pid_st testPID;
     axis testU;
-    CalcPID_wo_Dkick(&testPID, &testU);
+    //CalcPID_wo_Dkick(&testPID, &testU);
     CalcPID_wo_Dkick_FF(&testPID, &testU);
     getPIDrates();
     getGyroData();
@@ -30,6 +30,11 @@ TEST(test_Controller, Controller_Call) {
     KalmanFilterAngle(&testKalmanAngle, 0, 0, 0);
     ComplementryFilterAngle(&y, 0, 0, 0, 0);
     //ComplementryFilterAngleWeighted(&y, 0, 0, 0, 0, &testU);
+    maxVal(0,1);
+    minVal(0,1);
+    CalcPID_wo_Dkick_FF_IRelax_Dmax(&testPID, &testU, 1000);
+    calcIRelaxFactor(&testU, &testPID, 1000);
+    calcDmaxFactor(&testU, &testPID);
 }
 
 TEST(test_Controller, EvalArmState_Test)
@@ -70,11 +75,11 @@ TEST(test_Controller, EvalFlightMode_Test)
     uint16_t testFlightMode{ 2000u };
 
     //1st: lower than 1950
-    EXPECT_EQ(EvalFlightMode(testFlightMode), ANGLE_CASCADE_CTRL_v2);
+    EXPECT_EQ(EvalFlightMode(testFlightMode), ANGLE_CASCADE_CTRL);
 
     //2nd: inbetween 1450-1550
     testFlightMode = 1500u;
-    EXPECT_EQ(EvalFlightMode(testFlightMode), ANGLE_CASCADE_CTRL);
+    EXPECT_EQ(EvalFlightMode(testFlightMode), RATE_CTRL_PT1_IRelax_Dmax);
 
     //3rd: none of the above two tests
     testFlightMode = 1200u;
@@ -136,106 +141,106 @@ TEST(test_Controller, PT1Filter_Test)
     EXPECT_NEAR(y, 4.5 / 2.5, 0.1);
 }
 
-TEST(test_Controller, CalcPID_wo_Dkick_Test)
-{
-    pid_st testPID;
-    axis testU;
-
-    //1st
-    testPID.refSignal.x = 20.0f;
-    testPID.refSignal.y = 25.0f;
-    testPID.refSignal.z = -30.0f;
-    testPID.sensor.signal.x = 10.0f;
-    testPID.sensor.signal.y = 40.0f;
-    testPID.sensor.signal.z = -5.0f;
-    testPID.sensor.newData = true;
-    testPID.P.x = 10000.0f;
-    testPID.P.y = 50000.0f;
-    testPID.P.z = 100000.0f;
-    testPID.I.x = 2000.0f;
-    testPID.I.y = 6000.0f;
-    testPID.I.z = 12000.0f;
-    testPID.D.x = 30000000.0f;
-    testPID.D.y = 15000000.0f;
-    testPID.D.z = 200000000.0f;
-    testPID.error.x = 0.0f;
-    testPID.error.y = 0.0f;
-    testPID.error.z = 0.0f;
-    testPID.errorSum.x = 0.0f;
-    testPID.errorSum.y = 0.0f;
-    testPID.errorSum.z = 0.0f;
-    testPID.errorDot.x = 0.0f;
-    testPID.errorDot.y = 0.0f;
-    testPID.errorDot.z = 0.0f;
-    testPID.errorPrev.x = 0.0f;
-    testPID.errorPrev.y = 0.0f;
-    testPID.errorPrev.z = 0.0f;
-    testPID.errorDotFiltered.x = 0.0f;
-    testPID.errorDotFiltered.y = 0.0f;
-    testPID.errorDotFiltered.z = 0.0f;
-    testPID.deltaT = 0.1;
-    testPID.DTermC = 2.0f;
-    testPID.saturationI = 10.0f;
-    testPID.saturationPID = 200.0f;
-    testPID.PFactor = 10000.0f;
-    testPID.IFactor = 100.0f;
-    testPID.DFactor = 1000000.0f;
-    testPID.FFrFactor = 1000.0f;
-    testPID.FFdrFactor = 10000.0f;
-    CalcPID_wo_Dkick(&testPID, &testU);
-    EXPECT_NEAR(testPID.error.x, 10, 0.1);
-    EXPECT_NEAR(testPID.error.y, -15, 0.1);
-    EXPECT_NEAR(testPID.error.z, -25, 0.1);
-    EXPECT_NEAR(testPID.errorSum.x, 1, 0.1);
-    EXPECT_NEAR(testPID.errorSum.y, -1.5, 0.1);
-    EXPECT_NEAR(testPID.errorSum.z, -2.5, 0.1);
-    EXPECT_NEAR(testPID.errorDot.x, 100.0, 0.1);
-    EXPECT_NEAR(testPID.errorDot.y, 400.0, 0.1);
-    EXPECT_NEAR(testPID.errorDot.z, -50.0, 0.1);
-    EXPECT_NEAR(testPID.errorPrev.x, 0.0, 0.1);
-    EXPECT_NEAR(testPID.errorPrev.y, 0.0, 0.1);
-    EXPECT_NEAR(testPID.errorPrev.z, 0.0, 0.1);
-    EXPECT_NEAR(testPID.errorDotFiltered.x, 100.0 / 3.0, 0.1);
-    EXPECT_NEAR(testPID.errorDotFiltered.y, 400.0 / 3.0, 0.1);
-    EXPECT_NEAR(testPID.errorDotFiltered.z, -50.0 / 3.0, 0.1);
-    EXPECT_NEAR(testPID.Pout.x, 10, 0.1);
-    EXPECT_NEAR(testPID.Pout.y, -75, 0.1);
-    EXPECT_NEAR(testPID.Pout.z, -250, 0.1);
-    EXPECT_NEAR(testPID.Iout.x, 20, 0.1);
-    EXPECT_NEAR(testPID.Iout.y, -90, 0.1);
-    EXPECT_NEAR(testPID.Iout.z, -300, 0.1);
-    EXPECT_NEAR(testPID.Dout.x, 1000, 0.1);
-    EXPECT_NEAR(testPID.Dout.y, 2000, 0.1);
-    EXPECT_NEAR(testPID.Dout.z, -3333.3f, 0.1);
-    EXPECT_FALSE(testPID.sensor.newData);
-    EXPECT_NEAR(testU.x, -200, 0.1);
-    EXPECT_NEAR(testU.y, -200, 0.1);
-    EXPECT_NEAR(testU.z, 200, 0.1);
-
-    //2nd: sum increament, delta stays as no newdata
-    CalcPID_wo_Dkick(&testPID, &testU);
-    EXPECT_NEAR(testPID.errorSum.x, 2, 0.1);
-    EXPECT_NEAR(testPID.errorSum.y, -3, 0.1);
-    EXPECT_NEAR(testPID.errorSum.z, -5, 0.1);
-    EXPECT_NEAR(testPID.errorDotFiltered.x, 100.0 / 3.0, 0.1);
-    EXPECT_NEAR(testPID.errorDotFiltered.y, 400.0 / 3.0, 0.1);
-    EXPECT_NEAR(testPID.errorDotFiltered.z, -50.0 / 3.0, 0.1);
-
-    //3rd: I and overall saturation
-    testPID.sensor.signal.x = -5.0f;
-    testPID.sensor.signal.y = 80.0f;
-    testPID.sensor.signal.z = 20.0f;
-    testPID.sensor.newData = true;
-    testPID.saturationI = 3.0f;
-    testPID.saturationPID = 200.0f;
-    CalcPID_wo_Dkick(&testPID, &testU);
-    EXPECT_NEAR(testPID.errorSum.x, testPID.saturationI, 0.1);
-    EXPECT_NEAR(testPID.errorSum.y, -testPID.saturationI, 0.1);
-    EXPECT_NEAR(testPID.errorSum.z, -testPID.saturationI, 0.1);
-    EXPECT_NEAR(testU.x, testPID.saturationPID, 0.1);
-    EXPECT_NEAR(testU.y, -testPID.saturationPID, 0.1);
-    EXPECT_NEAR(testU.z, -testPID.saturationPID, 0.1);
-}
+//TEST(test_Controller, CalcPID_wo_Dkick_Test)
+//{
+//    pid_st testPID;
+//    axis testU;
+//
+//    //1st
+//    testPID.refSignal.x = 20.0f;
+//    testPID.refSignal.y = 25.0f;
+//    testPID.refSignal.z = -30.0f;
+//    testPID.sensor.signal.x = 10.0f;
+//    testPID.sensor.signal.y = 40.0f;
+//    testPID.sensor.signal.z = -5.0f;
+//    testPID.sensor.newData = true;
+//    testPID.P.x = 10000.0f;
+//    testPID.P.y = 50000.0f;
+//    testPID.P.z = 100000.0f;
+//    testPID.I.x = 2000.0f;
+//    testPID.I.y = 6000.0f;
+//    testPID.I.z = 12000.0f;
+//    testPID.D.x = 30000000.0f;
+//    testPID.D.y = 15000000.0f;
+//    testPID.D.z = 200000000.0f;
+//    testPID.error.x = 0.0f;
+//    testPID.error.y = 0.0f;
+//    testPID.error.z = 0.0f;
+//    testPID.errorSum.x = 0.0f;
+//    testPID.errorSum.y = 0.0f;
+//    testPID.errorSum.z = 0.0f;
+//    testPID.errorDot.x = 0.0f;
+//    testPID.errorDot.y = 0.0f;
+//    testPID.errorDot.z = 0.0f;
+//    testPID.errorPrev.x = 0.0f;
+//    testPID.errorPrev.y = 0.0f;
+//    testPID.errorPrev.z = 0.0f;
+//    testPID.errorDotFiltered.x = 0.0f;
+//    testPID.errorDotFiltered.y = 0.0f;
+//    testPID.errorDotFiltered.z = 0.0f;
+//    testPID.deltaT = 0.1;
+//    testPID.DTermC = 2.0f;
+//    testPID.saturationI = 10.0f;
+//    testPID.saturationPID = 200.0f;
+//    testPID.PFactor = 10000.0f;
+//    testPID.IFactor = 100.0f;
+//    testPID.DFactor = 1000000.0f;
+//    testPID.FFrFactor = 1000.0f;
+//    testPID.FFdrFactor = 10000.0f;
+//    CalcPID_wo_Dkick(&testPID, &testU);
+//    EXPECT_NEAR(testPID.error.x, 10, 0.1);
+//    EXPECT_NEAR(testPID.error.y, -15, 0.1);
+//    EXPECT_NEAR(testPID.error.z, -25, 0.1);
+//    EXPECT_NEAR(testPID.errorSum.x, 1, 0.1);
+//    EXPECT_NEAR(testPID.errorSum.y, -1.5, 0.1);
+//    EXPECT_NEAR(testPID.errorSum.z, -2.5, 0.1);
+//    EXPECT_NEAR(testPID.errorDot.x, 100.0, 0.1);
+//    EXPECT_NEAR(testPID.errorDot.y, 400.0, 0.1);
+//    EXPECT_NEAR(testPID.errorDot.z, -50.0, 0.1);
+//    EXPECT_NEAR(testPID.errorPrev.x, 0.0, 0.1);
+//    EXPECT_NEAR(testPID.errorPrev.y, 0.0, 0.1);
+//    EXPECT_NEAR(testPID.errorPrev.z, 0.0, 0.1);
+//    EXPECT_NEAR(testPID.errorDotFiltered.x, 100.0 / 3.0, 0.1);
+//    EXPECT_NEAR(testPID.errorDotFiltered.y, 400.0 / 3.0, 0.1);
+//    EXPECT_NEAR(testPID.errorDotFiltered.z, -50.0 / 3.0, 0.1);
+//    EXPECT_NEAR(testPID.Pout.x, 10, 0.1);
+//    EXPECT_NEAR(testPID.Pout.y, -75, 0.1);
+//    EXPECT_NEAR(testPID.Pout.z, -250, 0.1);
+//    EXPECT_NEAR(testPID.Iout.x, 20, 0.1);
+//    EXPECT_NEAR(testPID.Iout.y, -90, 0.1);
+//    EXPECT_NEAR(testPID.Iout.z, -300, 0.1);
+//    EXPECT_NEAR(testPID.Dout.x, 1000, 0.1);
+//    EXPECT_NEAR(testPID.Dout.y, 2000, 0.1);
+//    EXPECT_NEAR(testPID.Dout.z, -3333.3f, 0.1);
+//    EXPECT_FALSE(testPID.sensor.newData);
+//    EXPECT_NEAR(testU.x, -200, 0.1);
+//    EXPECT_NEAR(testU.y, -200, 0.1);
+//    EXPECT_NEAR(testU.z, 200, 0.1);
+//
+//    //2nd: sum increament, delta stays as no newdata
+//    CalcPID_wo_Dkick(&testPID, &testU);
+//    EXPECT_NEAR(testPID.errorSum.x, 2, 0.1);
+//    EXPECT_NEAR(testPID.errorSum.y, -3, 0.1);
+//    EXPECT_NEAR(testPID.errorSum.z, -5, 0.1);
+//    EXPECT_NEAR(testPID.errorDotFiltered.x, 100.0 / 3.0, 0.1);
+//    EXPECT_NEAR(testPID.errorDotFiltered.y, 400.0 / 3.0, 0.1);
+//    EXPECT_NEAR(testPID.errorDotFiltered.z, -50.0 / 3.0, 0.1);
+//
+//    //3rd: I and overall saturation
+//    testPID.sensor.signal.x = -5.0f;
+//    testPID.sensor.signal.y = 80.0f;
+//    testPID.sensor.signal.z = 20.0f;
+//    testPID.sensor.newData = true;
+//    testPID.saturationI = 3.0f;
+//    testPID.saturationPID = 200.0f;
+//    CalcPID_wo_Dkick(&testPID, &testU);
+//    EXPECT_NEAR(testPID.errorSum.x, testPID.saturationI, 0.1);
+//    EXPECT_NEAR(testPID.errorSum.y, -testPID.saturationI, 0.1);
+//    EXPECT_NEAR(testPID.errorSum.z, -testPID.saturationI, 0.1);
+//    EXPECT_NEAR(testU.x, testPID.saturationPID, 0.1);
+//    EXPECT_NEAR(testU.y, -testPID.saturationPID, 0.1);
+//    EXPECT_NEAR(testU.z, -testPID.saturationPID, 0.1);
+//}
 
 TEST(test_Controller, CalcPID_wo_Dkick_FF_Test)
 {
@@ -285,6 +290,7 @@ TEST(test_Controller, CalcPID_wo_Dkick_FF_Test)
     testPIDff.errorDotFiltered.z = 0.0f;
     testPIDff.deltaT = 0.1;
     testPIDff.DTermC = 2.0f;
+    testPIDff.FFDTermC = 10.0f;
     testPIDff.saturationI = 10.0f;
     testPIDff.saturationPID = 200.0f;
     testPIDff.PFactor = 10000.0f;
@@ -332,7 +338,7 @@ TEST(test_Controller, CalcPID_wo_Dkick_FF_Test)
     EXPECT_NEAR(testUff.z, -200, 0.1);
 
     //2nd: sum increament, delta stays as no newdata
-    CalcPID_wo_Dkick(&testPIDff, &testUff);
+    CalcPID_wo_Dkick_FF(&testPIDff, &testUff);
     EXPECT_NEAR(testPIDff.errorSum.x, 2, 0.1);
     EXPECT_NEAR(testPIDff.errorSum.y, -3, 0.1);
     EXPECT_NEAR(testPIDff.errorSum.z, -5, 0.1);
@@ -347,7 +353,7 @@ TEST(test_Controller, CalcPID_wo_Dkick_FF_Test)
     testPIDff.sensor.newData = true;
     testPIDff.saturationI = 3.0f;
     testPIDff.saturationPID = 200.0f;
-    CalcPID_wo_Dkick(&testPIDff, &testUff);
+    CalcPID_wo_Dkick_FF(&testPIDff, &testUff);
     EXPECT_NEAR(testPIDff.errorSum.x, testPIDff.saturationI, 0.1);
     EXPECT_NEAR(testPIDff.errorSum.y, -testPIDff.saturationI, 0.1);
     EXPECT_NEAR(testPIDff.errorSum.z, -testPIDff.saturationI, 0.1);
@@ -362,6 +368,7 @@ TEST(test_Controller, RunController_Test)
     controllerOut_st testOut;
 
     //1st: disamred
+    testIn.loopTime = 0.1;
     testIn.rcSignals.armStateSwitch = 1000;
     testIn.rcSignals.flightModeSwitch = 1500;
     testIn.rcSignals.throttle = 1000;
@@ -581,4 +588,182 @@ TEST(test_Controller, ComplementryFilterAngle_Test)
     acc.z = 0;
     //ComplementryFilterAngleWeighted(&CFAngleW, 10, 0, 0, 0.5, &acc);
     //EXPECT_NEAR(CFAngleW, 2.92f, 0.01f);
+}
+
+TEST(test_Controller, minmax_Test)
+{
+    EXPECT_NEAR(maxVal(0.0, 1.0), 1.0, 0.01);
+    EXPECT_NEAR(minVal(0.0, 1.0), 0.0, 0.01);
+           
+    EXPECT_NEAR(maxVal(0.5, 0.4), 0.5, 0.01);
+    EXPECT_NEAR(minVal(0.5, 0.4), 0.4, 0.01);
+           
+    EXPECT_NEAR(maxVal(-0.1, 1.4), 1.4, 0.01);
+    EXPECT_NEAR(minVal(-0.1, 1.4), -0.1, 0.01);
+
+    EXPECT_NEAR(maxVal(0.1, -1.4), 0.1, 0.01);
+    EXPECT_NEAR(minVal(0.1, -1.4), -1.4, 0.01);
+           
+    EXPECT_NEAR(maxVal(0.7, 0.7), 0.7, 0.01);
+    EXPECT_NEAR(minVal(0.7, 0.7), 0.7, 0.01);
+}
+
+TEST(test_Controller, calcIRelaxFactor_Test)
+{
+    axis factor;
+    pid_st pid;
+
+    // on/off, within treshhold
+    factor.x = 1.0f;
+    factor.y = 1.0f;
+    factor.z = 1.0f;
+    pid.refSignalDotFiltered.x = 50;
+    pid.refSignalDotFiltered.y = 50;
+    pid.refSignalDotFiltered.z = 50;
+    pid.error.x = 50;
+    pid.error.y = 50;
+    pid.error.z = 50;
+    pid.iRelaxRefThreshhold = 500;
+    pid.iRelaxErrThreshhold = 250;
+    calcIRelaxFactor(&factor, &pid, 1000);
+    EXPECT_NEAR(factor.x, 1.0f, 0.01);
+    EXPECT_NEAR(factor.y, 1.0f, 0.01);
+    EXPECT_NEAR(factor.z, 1.0f, 0.01);
+
+    // on/off, refDot out of treshhold
+    factor.x = 1.0f;
+    factor.y = 1.0f;
+    factor.z = 1.0f;
+    pid.refSignalDotFiltered.x = 600;
+    pid.refSignalDotFiltered.y = 50;
+    pid.refSignalDotFiltered.z = 550;
+    pid.error.x = 50;
+    pid.error.y = 50;
+    pid.error.z = 50;
+    pid.iRelaxRefThreshhold = 500;
+    pid.iRelaxErrThreshhold = 250;
+    calcIRelaxFactor(&factor, &pid, 1000);
+    EXPECT_NEAR(factor.x, 0.0f, 0.01);
+    EXPECT_NEAR(factor.y, 1.0f, 0.01);
+    EXPECT_NEAR(factor.z, 0.0f, 0.01);
+
+    // on/off, error out of treshhold
+    factor.x = 1.0f;
+    factor.y = 1.0f;
+    factor.z = 1.0f;
+    pid.refSignalDotFiltered.x = 50;
+    pid.refSignalDotFiltered.y = 50;
+    pid.refSignalDotFiltered.z = 50;
+    pid.error.x = 260;
+    pid.error.y = 270;
+    pid.error.z = 50;
+    pid.iRelaxRefThreshhold = 500;
+    pid.iRelaxErrThreshhold = 250;
+    calcIRelaxFactor(&factor, &pid, 1000);
+    EXPECT_NEAR(factor.x, 0.0f, 0.01);
+    EXPECT_NEAR(factor.y, 0.0f, 0.01);
+    EXPECT_NEAR(factor.z, 1.0f, 0.01);
+
+    // norm, refDot out of treshhold
+    factor.x = 1.0f;
+    factor.y = 1.0f;
+    factor.z = 1.0f;
+    pid.refSignalDotFiltered.x = 500;
+    pid.refSignalDotFiltered.y = 100;
+    pid.refSignalDotFiltered.z = 200;
+    pid.error.x = 0;
+    pid.error.y = 0;
+    pid.error.z = 0;
+    pid.iRelaxRefThreshhold = 400;
+    pid.iRelaxErrThreshhold = 125;
+    calcIRelaxFactor(&factor, &pid, 2000);
+    EXPECT_NEAR(factor.x, 0.0f, 0.01);
+    EXPECT_NEAR(factor.y, 0.75f, 0.01);
+    EXPECT_NEAR(factor.z, 0.5f, 0.01);
+
+    // norm, error out of treshhold
+    factor.x = 1.0f;
+    factor.y = 1.0f;
+    factor.z = 1.0f;
+    pid.refSignalDotFiltered.x = 0;
+    pid.refSignalDotFiltered.y = 0;
+    pid.refSignalDotFiltered.z = 0;
+    pid.error.x = -75;
+    pid.error.y = 250;
+    pid.error.z = -10;
+    pid.iRelaxRefThreshhold = 400;
+    pid.iRelaxErrThreshhold = 125;
+    calcIRelaxFactor(&factor, &pid, 2000);
+    EXPECT_NEAR(factor.x, 0.4f, 0.01);
+    EXPECT_NEAR(factor.y, 0.0f, 0.01);
+    EXPECT_NEAR(factor.z, 0.92f, 0.01);
+
+    // norm, error out of treshholds
+    factor.x = 1.0f;
+    factor.y = 1.0f;
+    factor.z = 1.0f;
+    pid.refSignalDotFiltered.x = 200;
+    pid.refSignalDotFiltered.y = 300;
+    pid.refSignalDotFiltered.z = 80;
+    pid.error.x = 75;
+    pid.error.y = 250;
+    pid.error.z = 25;
+    pid.iRelaxRefThreshhold = 400;
+    pid.iRelaxErrThreshhold = 125;
+    calcIRelaxFactor(&factor, &pid, 2000);
+    EXPECT_NEAR(factor.x, 0.4f, 0.01);
+    EXPECT_NEAR(factor.y, 0.0f, 0.01);
+    EXPECT_NEAR(factor.z, 0.80f, 0.01);
+}
+
+TEST(test_Controller, calcDmaxFactor_Test)
+{
+    axis dDynamic;
+    pid_st pid;
+
+    // ref based
+    dDynamic.x = 1.0f;
+    dDynamic.y = 1.0f;
+    dDynamic.z = 1.0f;
+    pid.refSignalDotFiltered.x = 0;
+    pid.refSignalDotFiltered.y = 200;
+    pid.refSignalDotFiltered.z = -700;
+    pid.error.x = 0;
+    pid.error.y = 0;
+    pid.error.z = 0;
+    pid.dMaxRefThreshhold = 600;
+    pid.dMaxErrThreshhold = 300;
+    pid.D.x = 100;
+    pid.D.y = 100;
+    pid.D.z = 100;
+    pid.Dmax.x = 100;
+    pid.Dmax.y = 100;
+    pid.Dmax.z = 200;
+    calcDmaxFactor(&dDynamic, &pid);
+    EXPECT_NEAR(dDynamic.x, 100.0f, 0.1);
+    EXPECT_NEAR(dDynamic.y, 100.0f, 0.1);
+    EXPECT_NEAR(dDynamic.z, 200.0f, 0.1);
+
+    // error based
+    dDynamic.x = 1.0f;
+    dDynamic.y = 1.0f;
+    dDynamic.z = 1.0f;
+    pid.refSignalDotFiltered.x = 0;
+    pid.refSignalDotFiltered.y = 0;
+    pid.refSignalDotFiltered.z = 0;
+    pid.error.x = 10;
+    pid.error.y = -100;
+    pid.error.z = 350;
+    pid.dMaxRefThreshhold = 600;
+    pid.dMaxErrThreshhold = 300;
+    pid.D.x = 100;
+    pid.D.y = 100;
+    pid.D.z = 100;
+    pid.Dmax.x = 300;
+    pid.Dmax.y = 400;
+    pid.Dmax.z = 500;
+    calcDmaxFactor(&dDynamic, &pid);
+    EXPECT_NEAR(dDynamic.x, 106.6f, 0.1);
+    EXPECT_NEAR(dDynamic.y, 200.0f, 0.1);
+    EXPECT_NEAR(dDynamic.z, 500.0f, 0.1);
 }

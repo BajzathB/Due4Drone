@@ -10,8 +10,8 @@
 typedef enum E_flightMode : uint8_t
 {
     RATE_CTRL_PT1 = 0,
-    ANGLE_CASCADE_CTRL = 1,
-    ANGLE_CASCADE_CTRL_v2 = 2,
+    RATE_CTRL_PT1_IRelax_Dmax= 1,
+    ANGLE_CASCADE_CTRL = 2,
     GPS_CTRL = 3,
 
 };
@@ -33,12 +33,16 @@ typedef struct controllerOut_st
 
 typedef struct pid_st
 {
-    axis P, I, D, FFr, FFdr;
+    axis P, I, D, Dmax, FFr, FFdr;
     axis error, errorSum, errorDot, errorPrev, errorDotFiltered;
     axis Pout, Iout, Dout, FFout;
     axis refSignal, refSignalPrev, refSignalDot, refSignalDotFiltered;
     axis u;
-	float saturationI, saturationPID, DTermC;
+    float saturationI, saturationPID, DTermC, FFDTermC;
+    float iRelaxRefThreshhold;
+    float iRelaxErrThreshhold;
+    float dMaxRefThreshhold;
+    float dMaxErrThreshhold;
     sigOut sensor;
     sigOut sensorPrev;
 	float deltaT{0.1f};
@@ -147,10 +151,13 @@ float LinearInterpol(const uint16_t xn, const uint16_t x0, const uint16_t x1, co
 void PT1Filter(float* yOut, const float xIn, const float paramC );
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
-void CalcPID_wo_Dkick(pid_st* pidSt, axis* u);
+//void CalcPID_wo_Dkick(pid_st* pidSt, axis* u);
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
 void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u);
+
+// Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
+void CalcPID_wo_Dkick_FF_IRelax_Dmax(pid_st* pidSt, axis* u, uint16_t twoWayswitch);
 
 // Function to return PID rate values
 pid_st* getPIDrates();
@@ -175,5 +182,17 @@ void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyro
 
 //Method to calculate weighted complementary filter of acc angle
 //void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc);
+
+// Function to return lower value
+float minVal(float value1, float value2);
+
+// Function to return higher value
+float maxVal(float value1, float value2);
+
+// Method to calculate I relax factor value
+void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch);
+
+// Method to calculate Dmax factor
+void calcDmaxFactor(axis* dDynamic, pid_st* pidSt);
 
 #endif // !CONTROLLER_HEADER

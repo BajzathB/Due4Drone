@@ -81,17 +81,17 @@ void CalcMotorSpeeds(const MotorInput* motorInput, MotorCommander* motorCmd)
 	}
 	else
 	{
-        if (motorInput->twoWaySwitch2 > 1800)
-        {
-			    handleBeeps(motorInput, motorCmd);
-        }
-        else
-        {
-            motorCmd->FL = 125.0;
-            motorCmd->FR = 125.0;
-            motorCmd->RL = 125.0;
-            motorCmd->RR = 125.0;
-        }
+       // if (motorInput->twoWaySwitch2 > 1800)
+       // {
+			    //handleBeeps(motorInput, motorCmd);
+       // }
+       // else
+       // {
+       //     motorCmd->FL = 125.0;
+       //     motorCmd->FR = 125.0;
+       //     motorCmd->RL = 125.0;
+       //     motorCmd->RR = 125.0;
+       // }
 	}
 }
 

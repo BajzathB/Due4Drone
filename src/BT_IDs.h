@@ -134,6 +134,14 @@
 #define ID_control_PID_cascade_FF_DX 2040
 #define ID_control_PID_cascade_FF_DY 2041
 #define ID_complementary_filter_alpha 2042
+#define ID_control_PID_rate_FF_Dterm_C 2043
+#define ID_control_PID_rate_I_relax_ref_threshhold 2044
+#define ID_control_PID_rate_I_relax_error_threshhold 2045
+#define ID_control_PID_rate_D_max_ref_threshhold 2046
+#define ID_control_PID_rate_D_max_error_threshhold 2047
+#define ID_control_PID_rate_D_max_X 2048
+#define ID_control_PID_rate_D_max_Y 2049
+#define ID_control_PID_rate_D_max_Z 2050
 
 
 

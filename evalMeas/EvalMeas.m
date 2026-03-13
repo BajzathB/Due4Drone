@@ -1,7 +1,7 @@
 clear all, clc
 
 directory = "2026_02_22";
-fileNumber = 13; %1 is ., 2 is ..
+fileNumber = 12; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -77,9 +77,10 @@ meas = readtable(file, opts);
 % title(usedParams, 'Interpreter', 'none');
 
 %% FFT
-% In1 = transpose(meas.aPT2R);
-% In2 = meas.aKFRawR;
-% In3 = meas.aKFPT21R;
+% % In1 = transpose(meas.aPT2R);
+% In1 = meas.GRawX;
+% In2 = meas.GPT1X;
+% % In3 = meas.aKFPT21R;
 % L = length(meas.sysTime);  %length
 % Fs = 100;   %sampling frequency
 % f = Fs*(0:(L/2))/L;
@@ -94,14 +95,14 @@ meas = readtable(file, opts);
 % P1in2 = P2in2(1:L/2+1);
 % P1in2(2:end-1) = 2*P1in2(2:end-1);
 % %In3
-% Yin3 = fft(In3);
-% P2in3 = abs(Yin3/L);
-% P1in3 = P2in3(1:L/2+1);
-% P1in3(2:end-1) = 2*P1in3(2:end-1);
+% % Yin3 = fft(In3);
+% % P2in3 = abs(Yin3/L);
+% % P1in3 = P2in3(1:L/2+1);
+% % P1in3(2:end-1) = 2*P1in3(2:end-1);
 % 
 % figure(5)
 % clf(5);
-% plot(f,P1in1,f,P1in2,f,P1in3)
+% plot(f, [P1in1 P1in2])
 % legend('In1','In2','In3');
 % ylim([0 10]);
 % title('FFT');
@@ -181,10 +182,32 @@ meas = readtable(file, opts);
 
 %% rate PID analysis
 
+refXRate(1) = 0;
+refXRatePT1(1) = 0;
+
+paramC = 750/75;
+setPointThreshold = 300;
+errorThreshold = 100;
+
+for i = 2:length(meas.sysTime)
+    dt =meas.sysTime(i) - meas.sysTime(i-1);
+    
+    refXRate(i) = (meas.PIDRefX(i) - meas.PIDRefX(i-1))/dt;
+    
+    refXRatePT1(i) = (refXRate(i) + paramC * (refXRatePT1(i-1))) / (paramC + 1);
+    
+end
+
 figure(9);
 clf(9);
-plot(meas.sysTime, [meas.PIDRefX/10 meas.PIDSensX/10 -meas.PIDUX]);
-legend('PIDRefX', 'PIDSensX', 'PIDUX');
+subplot(2,1,1);
+hold on
+% plot(meas.sysTime, [meas.PIDRefX/10 meas.PIDSensX/10 -meas.PIDUX]);
+plot(meas.sysTime, [ refXRatePT1']);
+yline(setPointThreshold,'g-');
+yline(-setPointThreshold,'g-');
+ylim([-1500 1500]);
+legend('refXRatePT1');
 usedParams = "Rate PID analysis" + newline ...
     + sprintf("Px: %.f", header.Px) ...
     + sprintf(", Ix: %.f", header.Ix) ...
@@ -195,9 +218,13 @@ usedParams = "Rate PID analysis" + newline ...
     + sprintf(", DTermC: %.f", header.DTermC) ...
     + sprintf(", GparamC: %.f", header.GparamC);
 title(usedParams, 'Interpreter', 'none');
-
-% figure(10);
-% clf(10);
-% plot(meas.sysTime, [meas.PIDPoutX meas.PIDIoutX meas.PIDDoutX meas.PIDUX]);
-% legend('PIDPoutX', 'PIDIoutX', 'PIDDoutX', 'PIDUX');
+hold off
+subplot(2,1,2);
+hold on
+plot(meas.sysTime, [meas.PIDPoutX/(header.Px/10000) ]);
+yline(errorThreshold,'r:');
+yline(-errorThreshold,'r:');
+ylim([-400 400]);
+legend('error');
+hold off
 
