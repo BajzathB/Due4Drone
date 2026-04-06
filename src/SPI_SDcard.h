@@ -197,12 +197,12 @@ typedef struct Meas2Card
 	bool measureAngleCFWeightedPT01Roll{ false };
 	bool measureAngleCFWeightedPT01Pitch{ false };
     //PID control
-    bool measurePIDRefsigX{ false };
-    bool measurePIDRefsigY{ false };
-    bool measurePIDRefsigZ{ false };
-    bool measurePIDSensorX{ false };
-    bool measurePIDSensorY{ false };
-    bool measurePIDSensorZ{ false };
+    bool measurePIDRefsigX{ true };
+    bool measurePIDRefsigY{ true };
+    bool measurePIDRefsigZ{ true };
+    bool measurePIDSensorX{ true };
+    bool measurePIDSensorY{ true };
+    bool measurePIDSensorZ{ true };
     bool measurePIDPoutX{ false };
     bool measurePIDPoutY{ false };
     bool measurePIDPoutZ{ false };

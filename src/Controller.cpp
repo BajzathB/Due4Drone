@@ -42,14 +42,14 @@ void SetupController(void)
     parabolicConst4Rate[2] = 0.000000000007813f;    //5th order
 
     //RATE
-    pidRate.P.x = 175.0f;
-    pidRate.I.x = 25.0f;
-    pidRate.D.x = 1900.0f;
-    pidRate.P.y = 200.0f;
-    pidRate.I.y = 25.0f;
-    pidRate.D.y = 2100.0f;
-    pidRate.P.z = 500.0f;
-    pidRate.I.z = 150.0f;
+    pidRate.P.x = 33.0f;
+    pidRate.I.x = 0.0f;
+    pidRate.D.x = 25.0f;
+    pidRate.P.y = 43.0f;
+    pidRate.I.y = 0.0f;
+    pidRate.D.y = 25.0f;
+    pidRate.P.z = 50.0f;
+    pidRate.I.z = 15.0f;
     pidRate.D.z = 0.0f;
     pidRate.FFr.x = 0.0f;
     pidRate.FFr.y = 0.0f;
@@ -59,9 +59,9 @@ void SetupController(void)
   	pidRate.saturationPID = 75.0f;
   	pidRate.DTermC = 2000 / 200;	//datarate/filterrate = 2000hz/500hz
     pidRate.FFDTermC = 10;
-    pidRate.PFactor = 10000.0f;
-    pidRate.IFactor = 100.0f;
-    pidRate.DFactor = 1000000.0f;
+    pidRate.PFactor = 1000.0f;
+    pidRate.IFactor = 10.0f;
+    pidRate.DFactor = 10000.0f;
     pidRate.FFrFactor = 1000.0f;
     pidRate.FFdrFactor = 10000.0f;
     //iRelax

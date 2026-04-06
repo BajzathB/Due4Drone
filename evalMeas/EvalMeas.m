@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_02_22";
-fileNumber = 12; %1 is ., 2 is ..
+directory = "2026_04_03";
+fileNumber = 24; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -182,33 +182,138 @@ meas = readtable(file, opts);
 
 %% rate PID analysis
 
-refXRate(1) = 0;
-refXRatePT1(1) = 0;
+% refXRate(1) = 0;
+% refXRatePT1(1) = 0;
+% 
+% paramC = 750/75;
+% setPointThreshold = 300;
+% errorThreshold = 100;
+% 
+% for i = 2:length(meas.sysTime)
+%     dt =meas.sysTime(i) - meas.sysTime(i-1);
+%     
+%     refXRate(i) = (meas.PIDRefX(i) - meas.PIDRefX(i-1))/dt;
+%     
+%     refXRatePT1(i) = (refXRate(i) + paramC * (refXRatePT1(i-1))) / (paramC + 1);
+%     
+% end
+% 
+% figure(9);
+% clf(9);
+% subplot(2,1,1);
+% hold on
+% % plot(meas.sysTime, [meas.PIDRefX/10 meas.PIDSensX/10 -meas.PIDUX]);
+% plot(meas.sysTime, [ refXRatePT1']);
+% yline(setPointThreshold,'g-');
+% yline(-setPointThreshold,'g-');
+% ylim([-1500 1500]);
+% legend('refXRatePT1');
+% usedParams = "Rate PID analysis" + newline ...
+%     + sprintf("Px: %.f", header.Px) ...
+%     + sprintf(", Ix: %.f", header.Ix) ...
+%     + sprintf(", Dx: %.f", header.Dx) ...
+%     + sprintf(", FFrx: %.f\n", header.FFrx) ...
+%     + sprintf("satI: %.f", header.satI) ...
+%     + sprintf(", satPID: %.f", header.satPID) ...
+%     + sprintf(", DTermC: %.f", header.DTermC) ...
+%     + sprintf(", GparamC: %.f", header.GparamC);
+% title(usedParams, 'Interpreter', 'none');
+% hold off
+% subplot(2,1,2);
+% hold on
+% plot(meas.sysTime, [meas.PIDPoutX/(header.Px/10000) ]);
+% yline(errorThreshold,'r:');
+% yline(-errorThreshold,'r:');
+% ylim([-400 400]);
+% legend('error');
+% hold off
 
-paramC = 750/75;
-setPointThreshold = 300;
-errorThreshold = 100;
+%% pyPIDtoolbox snippet
+segment_length = 1024;
+wnd = 1024;                 % 500 ms step response window
+StepRespDuration_ms = 500;  % max duration in ms for plotting
+rateHighThreshold = 500;    % deg/s
+skipRate = 0.10;
 
-for i = 2:length(meas.sysTime)
-    dt =meas.sysTime(i) - meas.sysTime(i-1);
-    
-    refXRate(i) = (meas.PIDRefX(i) - meas.PIDRefX(i-1))/dt;
-    
-    refXRatePT1(i) = (refXRate(i) + paramC * (refXRatePT1(i-1))) / (paramC + 1);
-    
+%take subset of meas
+% t_start = 320;
+% t_end = 355;
+% idx = (meas.sysTime >= t_start) & (meas.sysTime <= t_end);
+% gyro_signal = meas.PIDSensX(idx);
+% setpoint_signal = meas.PIDRefX(idx);
+gyro_signal = meas.PIDSensX;
+setpoint_signal = meas.PIDRefX;
+
+step_response = zeros(500, segment_length);
+input_segments = zeros(500, segment_length);
+
+disp("Meas length: " + length(gyro_signal));
+
+seg_vector = [1:round(segment_length * skipRate):(length(gyro_signal) - segment_length)];
+
+j = 1;
+
+for i = seg_vector
+    Xseg = setpoint_signal(i : i + segment_length - 1);
+
+    if max(abs(Xseg)) < 20
+        continue;
+    end
+
+    Yseg = gyro_signal(i : i + segment_length - 1);
+
+    win = hamming(segment_length)';
+
+    x_fft = fft(win .* Xseg);
+    y_fft = fft(win .* Yseg);
+
+    % Keep only positive frequencies (equivalent to rfft)
+    x_fft = x_fft(1:floor(segment_length/2)+1);
+    y_fft = y_fft(1:floor(segment_length/2)+1);
+
+    H = x_fft / length(x_fft);
+    G = y_fft / length(y_fft);
+
+    Hcon = conj(H);
+
+    % Build full spectrum for inverse FFT (irfft equivalent)
+    num = (G .* Hcon) ./ (H .* Hcon + 1e-4);
+    full_spec = [num, conj(num(end-1:-1:2))];
+
+    imp = real(ifft(full_spec));
+
+    % Smooth (moving average of length 21)
+    imp_smooth = movmean(imp, 21);
+
+    resp = cumsum(imp_smooth);
+    resp = resp - resp(1);
+
+    if var(resp) > 0.2
+        continue;
+    end
+
+    step_response(j, :) = resp;
+    input_segments(j, :) = Xseg;
+
+    j = j + 1;
+
+    if j > 500
+        break;
+    end
 end
 
-figure(9);
-clf(9);
+valid_count = j - 1;
+disp("Valid steps: " + valid_count);
+
+figure(10);
+clf(10);
 subplot(2,1,1);
+% xline(t_start);
+% xline(t_end);
 hold on
-% plot(meas.sysTime, [meas.PIDRefX/10 meas.PIDSensX/10 -meas.PIDUX]);
-plot(meas.sysTime, [ refXRatePT1']);
-yline(setPointThreshold,'g-');
-yline(-setPointThreshold,'g-');
-ylim([-1500 1500]);
-legend('refXRatePT1');
-usedParams = "Rate PID analysis" + newline ...
+plot(meas.sysTime, [meas.PIDRefX meas.PIDSensX]);
+ylim([-400 400]);
+usedParams = "PIDtoolbox" + newline ...
     + sprintf("Px: %.f", header.Px) ...
     + sprintf(", Ix: %.f", header.Ix) ...
     + sprintf(", Dx: %.f", header.Dx) ...
@@ -218,13 +323,13 @@ usedParams = "Rate PID analysis" + newline ...
     + sprintf(", DTermC: %.f", header.DTermC) ...
     + sprintf(", GparamC: %.f", header.GparamC);
 title(usedParams, 'Interpreter', 'none');
+legend('PIDRefX', 'PIDSensX');
 hold off
 subplot(2,1,2);
 hold on
-plot(meas.sysTime, [meas.PIDPoutX/(header.Px/10000) ]);
-yline(errorThreshold,'r:');
-yline(-errorThreshold,'r:');
-ylim([-400 400]);
-legend('error');
+plot(mean(step_response(1:valid_count, :), 1));
+yline(1,'--');
+xlim([1 wnd]);
+ylim([0 1.3]);
 hold off
 

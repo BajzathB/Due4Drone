@@ -87,10 +87,10 @@ void CalcMotorSpeeds(const MotorInput* motorInput, MotorCommander* motorCmd)
        // }
        // else
        // {
-       //     motorCmd->FL = 125.0;
-       //     motorCmd->FR = 125.0;
-       //     motorCmd->RL = 125.0;
-       //     motorCmd->RR = 125.0;
+            motorCmd->FL = 125.0;
+            motorCmd->FR = 125.0;
+            motorCmd->RL = 125.0;
+            motorCmd->RR = 125.0;
        // }
 	}
 }
