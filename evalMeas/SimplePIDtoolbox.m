@@ -1,7 +1,7 @@
 clear all, clc
 
 %reading files from folder
-directory = "2026_04_06";
+directory = "2026_04_12";
 files = dir(directory);
 files = files(3:end);
 fileList = strings(1, length(files));

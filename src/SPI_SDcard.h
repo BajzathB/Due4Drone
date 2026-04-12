@@ -73,7 +73,7 @@ typedef enum E_SDFATWriteStates : uint8_t
 typedef struct fileInfo
 {
 	char name[11];			//Name of the file, expect number
-	uint16_t numberInName;	//number which is in the name
+	uint16_t numberInName{0};	//number which is in the name
 	uint32_t clusters[300];
 	uint16_t numberOfClusters;	//number of valid elements cluster array has
 	uint32_t size;
@@ -203,13 +203,13 @@ typedef struct Meas2Card
     bool measurePIDSensorX{ true };
     bool measurePIDSensorY{ true };
     bool measurePIDSensorZ{ true };
-    bool measurePIDPoutX{ false };
+    bool measurePIDPoutX{ true };
     bool measurePIDPoutY{ false };
     bool measurePIDPoutZ{ false };
-    bool measurePIDIoutX{ false };
+    bool measurePIDIoutX{ true };
     bool measurePIDIoutY{ false };
     bool measurePIDIoutZ{ false };
-    bool measurePIDDoutX{ false };
+    bool measurePIDDoutX{ true };
     bool measurePIDDoutY{ false };
     bool measurePIDDoutZ{ false };
     bool measurePIDFFoutX{ false };

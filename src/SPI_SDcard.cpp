@@ -1,3 +1,7 @@
+//SD Card setup in windows
+//Format with 16kb
+//manually create PARAM.txt and save dummy data into it
+//check boot info: block/cluster=64, root=0x2000, FAT=0x25A
 //
 //SD Card startup commands
 //    cmd  ( arg,4byte, crc ) = response
@@ -75,17 +79,13 @@ extern Dmac* DMAC;
 
 #define WRITE_BLOCK_TIMEOUT 0.3f
 
-#define DATA_SAVE_5_MS 0.005f
+#define DATA_SAVE_DELAY 0.005f	//delay in seconds, 5ms
 
-//#define LOG_SD_INIT
+#define LOG_SD_INIT
 //#define LOG_SD_WRITE
 //#define LOG_SAVED_DATA
 
 extern spi_st SPI;
-
-//fileInfo param = { 0 };
-//uint8_t rootWriteDelayCycle = 0;    //number of cycles to delay writing root
-//uint8_t FATWriteDelayCycle = 0;     //number of cycles to delay writing FAT 
 
 SpiSDcard_st SDcard;
 Meas2Card meas2Card;
@@ -124,8 +124,8 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		}
 		case SD_MEASUREMENT_ONGOING:
 		{
-			//save data every 10ms
-			if (spiInput->sysTime - SDcard.measTimePrev >= DATA_SAVE_5_MS)
+			//save data every x ms
+			if (spiInput->sysTime - SDcard.measTimePrev >= DATA_SAVE_DELAY)
 			{
 				saveMeasData(spiInput, spiOutput);
 
@@ -259,6 +259,10 @@ E_SDMainStates SetupSdCard(void)
 	case SDINIT_FAILURE:
 	{
 		LEDSDBlink();
+
+        //allow gyro and acc to run even if card setup failed
+        SDcard.sdCardInitFinished = true;
+
 		returnVal = SD_DO_NOTHING;
 		break;
 	}
@@ -585,20 +589,21 @@ E_SDInitStates readBoot(void)
 		SDcard.FAT1Addr = SDcard.bootSectorAddr + reservedSectors;
 		SDcard.rootDirAddr = SDcard.bootSectorAddr + reservedSectors + sectorsPerFAT * numberOfFATs;
 
-		//testing
-		//SerialUSB.println("Boot data:");
-		//SerialUSB.print("block/cluster  : "); SerialUSB.println(blockPerCluster); //64
-		//SerialUSB.print("reserved sector: "); SerialUSB.println(reservedSectors); //602
-		//SerialUSB.print("number of FATs : "); SerialUSB.println(numberOfFATs);    //2
-		//SerialUSB.print("sectors/FAT    : "); SerialUSB.println(sectorsPerFAT);   //3795
-		//SerialUSB.print("FAT1 address   : 0x"); SerialUSB.println(FAT1Addr, HEX);   //0x25A
-		//SerialUSB.print("RootDir address: 0x"); SerialUSB.println(rootDirAddr, HEX);//0x2000
+#ifdef LOG_SD_INIT 
+        SerialUSB.println("Boot data:");
+        SerialUSB.print("block/cluster  : "); SerialUSB.println(SDcard.blockPerCluster); //64
+        SerialUSB.print("reserved sector: "); SerialUSB.println(reservedSectors); //602
+        SerialUSB.print("number of FATs : "); SerialUSB.println(numberOfFATs);    //2
+        SerialUSB.print("sectors/FAT    : "); SerialUSB.println(sectorsPerFAT);   //3795
+        SerialUSB.print("FAT1 address   : 0x"); SerialUSB.println(SDcard.FAT1Addr, HEX);   //0x25A
+        SerialUSB.print("RootDir address: 0x"); SerialUSB.println(SDcard.rootDirAddr, HEX);//0x2000
+#endif
 
 		if (0x2000 != SDcard.rootDirAddr && 0x25A != SDcard.FAT1Addr)
 		{
 			returnValBootState = SDINIT_FAILURE;
 #ifdef LOG_SD_INIT 
-			SerialUSB.println("readBoot failed, wrong addresses");
+			SerialUSB.println("readBoot failed, wrong root and FAT addresses");
 #endif
 		}
 		else
@@ -771,8 +776,9 @@ E_SDInitStates readFAT(void)
 			}
 			else
 			{
-				//do nothing, shouldnt enter
-				//SerialUSB.println("Error: in a shouldnt enter else!");
+#ifdef LOG_SD_INIT 
+			SerialUSB.println("readFAT, did not find the last file");
+#endif
 			}
 
 			//set name
@@ -789,7 +795,7 @@ E_SDInitStates readFAT(void)
 			returnValFATState = SDINIT_SUCCESS;
 			SDcard.sdCardInitFinished = true;
 
-#ifdef LOG_SD_WRITE 
+#ifdef LOG_SD_INIT 
 			SerialUSB.println("readFAT done");
 			SerialUSB.print("FATBlockOffset: "); SerialUSB.println(SDcard.FATBlockOffset);
 			SerialUSB.print("lastfile: "); printFileInfo(&SDcard.lastFile);
@@ -800,6 +806,9 @@ E_SDInitStates readFAT(void)
 		{
 			//if last slot is not yet found read the next block
 			SDcard.SDReadState = SDREAD_START;
+#ifdef LOG_SD_INIT 
+			SerialUSB.println("readFAT slot not yet found, read next block");
+#endif
 		}
 	}
 	else if (SDREAD_FAILED == readStateFAT)
@@ -919,7 +928,7 @@ void SDWriteWaitResponse(void)
 	if (0x00 == SDcard.SdRx[7])
 	{
 		//512 data + 2byte CRC + status token + filler (-1 due to ctr=0 is not sent)
-  	SDcard.SdCtr = 516;
+  	    SDcard.SdCtr = 516;
 		triggerSDRxTx(SDcard.nextTxBuffer4Data, SDcard.SdRx, SDcard.SdCtr);
 		SDcard.SDWriteState = SDWRITE_WAIT_DATA;
 
@@ -970,6 +979,9 @@ E_SDWriteStates writeBlock(uint32_t blockOffset, volatile uint32_t* txBuf)
 	{
 		if (SDcard.FAT1Addr > blockOffset)
 		{
+#ifdef LOG_SD_WRITE 
+            SerialUSB.print("writeBlock fail: offset smaller than FAT1");
+#endif
 			return SDWRITE_FAILED;
 		}
 
@@ -993,6 +1005,7 @@ E_SDWriteStates writeBlock(uint32_t blockOffset, volatile uint32_t* txBuf)
 		appendCsSdCard(SDcard.nextTxBuffer4Data, 516);
 		//send write command
 		intSafeTriggerSDRxTx(SDcard.SdTx, SDcard.SdRx, SDcard.SdCtr);
+
 #ifdef LOG_SD_WRITE 
 			SerialUSB.print("writeBlock to offset: "); SerialUSB.println(blockOffset);
 #endif

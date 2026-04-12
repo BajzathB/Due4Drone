@@ -216,7 +216,6 @@
         android:id="@+id/checkBoxPy"
         android:layout_width="55dp"
         android:layout_height="35dp"
-        android:layout_marginTop="16dp"
         android:text="Py:"
         app:layout_constraintStart_toStartOf="@+id/checkBoxDx"
         app:layout_constraintTop_toBottomOf="@+id/checkBoxDx" />
@@ -241,7 +240,6 @@
         android:id="@+id/checkBoxPz"
         android:layout_width="55dp"
         android:layout_height="35dp"
-        android:layout_marginTop="16dp"
         android:text="Pz:"
         app:layout_constraintStart_toStartOf="@+id/checkBoxDy"
         app:layout_constraintTop_toBottomOf="@+id/checkBoxDy" />
@@ -578,5 +576,24 @@
         android:textSize="14sp"
         app:layout_constraintStart_toEndOf="@+id/checkBoxCFFdy"
         app:layout_constraintTop_toBottomOf="@+id/checkBoxCFFdx" />
+
+    <CheckBox
+        android:id="@+id/checkBoxDz"
+        android:layout_width="55dp"
+        android:layout_height="35dp"
+        android:text="Dz:"
+        app:layout_constraintStart_toStartOf="@+id/checkBoxIz"
+        app:layout_constraintTop_toBottomOf="@+id/checkBoxIz" />
+
+    <EditText
+        android:id="@+id/editTextDz"
+        android:layout_width="80dp"
+        android:layout_height="35dp"
+        android:ems="10"
+        android:gravity="center"
+        android:inputType="number"
+        android:textSize="14sp"
+        app:layout_constraintStart_toEndOf="@+id/checkBoxDz"
+        app:layout_constraintTop_toBottomOf="@+id/editTextIz" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

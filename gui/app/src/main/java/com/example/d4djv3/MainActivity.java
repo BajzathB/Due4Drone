@@ -64,6 +64,7 @@ public class MainActivity extends BaseActivity {
     CheckBox checkBoxDy;
     CheckBox checkBoxPz;
     CheckBox checkBoxIz;
+    CheckBox checkBoxDz;
     CheckBox checkBoxFFx;
     CheckBox checkBoxFFy;
     CheckBox checkBoxFFdx;
@@ -127,6 +128,7 @@ public class MainActivity extends BaseActivity {
         checkBoxDy = findViewById(R.id.checkBoxDy);
         checkBoxPz = findViewById(R.id.checkBoxPz);
         checkBoxIz = findViewById(R.id.checkBoxIz);
+        checkBoxDz = findViewById(R.id.checkBoxDz);
         checkBoxFFx = findViewById(R.id.checkBoxFFx);
         checkBoxFFy = findViewById(R.id.checkBoxFFy);
         checkBoxFFdx = findViewById(R.id.checkBoxFFdx);
@@ -145,7 +147,7 @@ public class MainActivity extends BaseActivity {
 
         checkBoxes = Arrays.asList(checkBoxPx, checkBoxIx, checkBoxDx,
                 checkBoxPy, checkBoxIy, checkBoxDy,
-                checkBoxPz, checkBoxIz, checkBoxFFx,
+                checkBoxPz, checkBoxIz, checkBoxDz, checkBoxFFx,
                 checkBoxFFy, checkBoxFFdx, checkBoxFFdy,
                 checkBoxSatI, checkBoxSatPID, checkBoxDTermC,
                 checkBoxCPx, checkBoxCIx, checkBoxCPy, checkBoxCIy,
@@ -249,6 +251,10 @@ public class MainActivity extends BaseActivity {
         checkBoxIz.setOnClickListener(v ->
         {
             uncheckExpect(checkBoxIz);
+        });
+        checkBoxDz.setOnClickListener(v ->
+        {
+            uncheckExpect(checkBoxDz);
         });
         checkBoxFFx.setOnClickListener(v ->
         {
@@ -707,6 +713,8 @@ public class MainActivity extends BaseActivity {
             val = 2006;
         } else if (checkBoxIz.isChecked()) {
             val = 2007;
+        } else if (checkBoxDz.isChecked()) {
+            val = 2008;
         } else if (checkBoxSatI.isChecked()) {
             val = 2009;
         } else if (checkBoxSatPID.isChecked()) {
@@ -760,6 +768,8 @@ public class MainActivity extends BaseActivity {
             textValue = findViewById(R.id.editTextPz);
         } else if (checkBoxIz.isChecked()) {
             textValue = findViewById(R.id.editTextIz);
+        } else if (checkBoxDz.isChecked()) {
+            textValue = findViewById(R.id.editTextDz);
         } else if (checkBoxFFx.isChecked()) {
             textValue = findViewById(R.id.editTextFFx);
         } else if (checkBoxFFy.isChecked()) {
