@@ -13,6 +13,8 @@ TEST(test_sysTime, SetupSysTimer_Call)
     UpdateSysTime();
     getSysTime();
     getSysLoopTime();
+    getTimeSinceReset();
+    calcDeltaTime(1.0f, 2.0f);
 
     EXPECT_TRUE(true);
 }
@@ -73,4 +75,27 @@ TEST(test_sysTime, getSysLoopTime)
     sysTimer.loopTime = 0.1;
 
     EXPECT_NEAR(getSysLoopTime(), 0.1, 0.00001);
+}
+
+TEST(test_sysTime, getTimeSinceReset)
+{
+    float time;
+
+    // 1st
+    TC0->TC_CHANNEL[2].TC_CV = 123456;
+    time = getTimeSinceReset();
+    EXPECT_NEAR(time, 123456 / 10.5, 0.01);
+
+    // 2nd
+    TC0->TC_CHANNEL[2].TC_CV = 9876543;
+    time = getTimeSinceReset();
+    EXPECT_NEAR(time, 9876543 / 10.5, 0.1);
+}
+
+TEST(test_sysTime, calcDeltaTime)
+{
+    // 1st
+    EXPECT_NEAR(calcDeltaTime(1.0f,2.0f), 1, 0.01);
+    // 2nd
+    EXPECT_NEAR(calcDeltaTime(100.5f, 135.0f), 34.5f, 0.01);
 }

@@ -108,7 +108,7 @@ void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput)
 		getSPISdCard()->sdCardInitFinished = false;
 	}
 
-	if (spiInput->sysTime > 5.0f)
+	if (spiInput->sysTime > 3.0f)
 	{
 		RunSdCard(spiInput, spiOutput);
 	}

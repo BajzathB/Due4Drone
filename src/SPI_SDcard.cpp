@@ -78,12 +78,17 @@ extern Dmac* DMAC;
 #define POSITION_FIRST_SECTOR      0x1C6
 
 #define WRITE_BLOCK_TIMEOUT 0.3f
-
 #define DATA_SAVE_DELAY 0.005f	//delay in seconds, 5ms
 
-#define LOG_SD_INIT
+//#define LOG_SD_INIT
 //#define LOG_SD_WRITE
 //#define LOG_SAVED_DATA
+
+
+// Precomputed powers of 10
+const uint32_t powOf10[] = {
+	1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 10000000000
+};
 
 extern spi_st SPI;
 
@@ -108,6 +113,7 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		case SD_INIT:
 		{
 			SDcard.MainState = SetupSdCard();
+
 			break;
 		}
 		case SD_WAIT_4_MEASUREMENT:
@@ -120,6 +126,7 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 
 				SDcard.MainState = SD_MEASUREMENT_ONGOING;
 			}
+
 			break;
 		}
 		case SD_MEASUREMENT_ONGOING:
@@ -148,7 +155,7 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		case SD_WRITE_FAT:
 		{
 			writeFAT();
-			
+
 			break;
 		}
 		case SD_DO_NOTHING:
@@ -162,7 +169,6 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		}
 
 	}
-
 }
 
 E_SDMainStates SetupSdCard(void)
@@ -1558,6 +1564,7 @@ void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFr
         if(isCommaed) appendComma();
         convert2String(tempBuffer, &numberOfCharacters, data, numberOfFrac, isExplicitPlus);
         loadData2Buffer(tempBuffer, numberOfCharacters);
+
 #ifdef LOG_SAVED_DATA
         SerialUSB.print(debugName);SerialUSB.println(data, numberOfFrac);
 #endif
@@ -1623,6 +1630,7 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
 	measureData(meas2Card.measureAngleCFWeightedRawPitch, true, accData->pitchAngleCFw, 3, false, "angleCFWeightedPitch: ");
 	measureData(meas2Card.measureAngleCFWeightedPT01Roll, true, accData->rollAngleCFw01, 3, false, "angleCFWeightedPT01Roll: ");
 	measureData(meas2Card.measureAngleCFWeightedPT01Pitch, true, accData->pitchAngleCFw01, 3, false, "angleCFWeightedPT01 Pitch: ");
+
     //PID control
     measureData(meas2Card.measurePIDRefsigX, true, pidData->refSignal.x, 3, false, "PIDRefSigX: ");
     measureData(meas2Card.measurePIDRefsigY, true, pidData->refSignal.y, 3, false, "PIDRefSigY: ");
@@ -1649,87 +1657,47 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
 	appendNewLine();
 }
 
-void convert2String(uint32_t* buffer, uint8_t* numberOfChar, float value2Convert, uint8_t numberOfFractions, bool explicitPlusSign)
+void convert2String(uint32_t* buffer, uint8_t* numberOfChar, float value, uint8_t numberOfFractions, bool explicitPlusSign)
 {
-	if (value2Convert < 0) //if its negative, append a - sign and make it positive so the rest of the algo is the same
+	if (value < 0)
 	{
 		buffer[(*numberOfChar)++] = '-';
-		value2Convert *= -1;
+		value = -value;
 	}
-	else if (true == explicitPlusSign) //if flag is true append a + sign explicitly
+	else if (explicitPlusSign)
 	{
 		buffer[(*numberOfChar)++] = '+';
 	}
 
-	//increment with a small value to solve the numerical accurecy problem, (without this a 0.005 would be 0.0049)
-	value2Convert += pow(10, -(numberOfFractions + 2));
+	uint32_t scale = powOf10[numberOfFractions];
+	uint32_t scaled = (uint32_t)(value * scale + 0.49f);	//0.49 increment is to solve the numerical accurecy problem
 
-	if (value2Convert >= 1.0)  //if the value is is not smaller then 1
+	uint32_t intPart = scaled / scale;
+
+	// --- Integer part ---
+	char temp[10];
+	int i = 0;
+
+	do {
+		temp[i++] = '0' + (intPart % 10);
+		intPart /= 10;
+	} while (intPart);
+
+	while (i--)
+		buffer[(*numberOfChar)++] = temp[i];
+
+	// --- Fractional part ---
+	if (numberOfFractions > 0)
 	{
-		uint8_t current_counter = 0;
+		uint32_t fracPart = scaled % scale;
 
-		while (value2Convert >= 10.0)
+		buffer[(*numberOfChar)++] = '.';
+
+		for (int j = numberOfFractions - 1; j >= 0; j--)
 		{
-			value2Convert /= 10;
-			current_counter++;
-		}
-
-		for (uint8_t i = 0; i <= current_counter; i++) //creating integer part
-		{
-			uint8_t current_integer;
-
-			//creat the integer part
-			current_integer = (uint8_t)value2Convert;
-
-			//set correct ASCII char for sending
-			buffer[(*numberOfChar)++] = '0' + current_integer;
-
-			//substitute it from the original
-			value2Convert -= (float)current_integer;
-
-			//multiplie by 10 for the next round
-			value2Convert *= 10;
-		}
-
-		if (numberOfFractions > 0) //if we need fractional part
-		{
-			buffer[(*numberOfChar)++] = '.'; //append dot
-
-			for (uint8_t f = 0; f < numberOfFractions; f++)  //creating fractional part
-			{
-				uint8_t current_fractional;
-
-				current_fractional = (uint8_t)value2Convert;  //creat the integer part
-				buffer[(*numberOfChar)++] = '0' + current_fractional; //set correct ASCII char for sending
-				value2Convert -= (float)current_fractional; //substitute it from the original
-				value2Convert *= 10;  //multiplie by 10 for the next round
-			}
-		}
-	}
-	else  //if the value is small then 1
-	{
-		buffer[(*numberOfChar)++] = '0'; //append zero
-
-		if (numberOfFractions > 0) //if we need fractional part
-		{
-			buffer[(*numberOfChar)++] = '.'; //append dot
-
-			for (uint8_t f = 0; f < numberOfFractions; f++)  //creating fractional part
-			{
-				uint8_t current_fractional;
-
-				//move decimal value up to integer part
-				value2Convert *= 10;
-
-				//creat the integer part
-				current_fractional = (uint8_t)value2Convert;
-
-				//write to returnString
-				buffer[(*numberOfChar)++] = '0' + current_fractional; //set correct ASCII char for sending
-
-				//substitute it from the original
-				value2Convert -= (float)current_fractional;
-			}
+			uint32_t div = powOf10[j];
+			buffer[(*numberOfChar)++] = '0' + (fracPart / div);
+			fracPart %= div;
 		}
 	}
 }
@@ -1778,9 +1746,9 @@ void swapDataBufferPointers(void)
 	SDcard.sendingDataPointer = l_tempDataPointer;
 	SDcard.loadingDataCounter = 1;	//0th is start token
 
-	//check if blockcount reached the limit of 64
+	//check if blockcount reached the limit of blockPerCluster(64)
 	//check is done before the increment as blockcount is used later for writing into SD!
-	if (SDcard.newFile.blockCount >= 64)
+	if (SDcard.newFile.blockCount >= SDcard.blockPerCluster)
 	{
 		SDcard.newFile.clusters[SDcard.newFile.numberOfClusters] = SDcard.newFile.clusters[SDcard.newFile.numberOfClusters - 1] + 1;
 		SDcard.newFile.blockCount = 0;

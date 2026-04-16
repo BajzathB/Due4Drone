@@ -1146,6 +1146,7 @@ TEST(test_BT_SDcard, swapDataBufferPointers_Test)
 {
     SDcard.newFile.size = 0;
     SDcard.newFile.blockCount = 0;
+    SDcard.blockPerCluster = 64;
     SDcard.loadingDataPointer = SDcard.dataBuffer1;
     SDcard.sendingDataPointer = SDcard.dataBuffer2;
     EXPECT_EQ(SDcard.loadingDataPointer[0] & 0xFF, 0xFE);

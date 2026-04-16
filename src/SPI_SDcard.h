@@ -297,7 +297,7 @@ void appendCsSdCard(volatile uint32_t* block, uint16_t blockSize);
 void swapDataBufferPointers(void);
 
 // Method to convert data into characters
-void convert2String(uint32_t* buffer, uint8_t* startPos, float value2Convert, uint8_t numberOfFractions, bool explicitPlusSign);
+void convert2String(uint32_t* buffer, uint8_t* startPos, float value, uint8_t numberOfFractions, bool explicitPlusSign);
 
 // Method to store 1 measured data into loading buffer
 void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFrac, bool isExplicitPlus, char* debugName);

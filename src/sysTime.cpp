@@ -40,7 +40,7 @@ void SetupSysTimer(void)
 
 void UpdateSysTime(void)
 {
-    //read raw counter value
+  //read raw counter value
 	sysTimer.raw = TC0->TC_CHANNEL[2].TC_CV;
 	//software trigger to restart counter
 	TC0->TC_CHANNEL[2].TC_CCR |= TC_CCR_SWTRG;
@@ -54,6 +54,16 @@ void UpdateSysTime(void)
 //	SerialUSB.print(sysTimer.sysTime,6);SerialUSB.print("\t");
 //  SerialUSB.println();
 
+}
+
+float getTimeSinceReset(void)
+{
+	return (float)TC0->TC_CHANNEL[2].TC_CV * 0.095238095;
+}
+
+float calcDeltaTime(float t1, float t2)
+{
+	return (t1 < t2) ? t2 - t1 : 0.0f;
 }
 
 float getSysTime(void)

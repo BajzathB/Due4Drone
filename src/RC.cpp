@@ -44,6 +44,8 @@ extern Wdt* WDT;
 
 #endif
 
+#define WATCHDOG_ENABLED
+
 rc_st RC;
 
 //uint16_t testCtrIntOutter = 0;
@@ -268,6 +270,7 @@ void getRcChannels(rcSignals_st* rcOut)
 
 
 // this function has to be present, otherwise watchdog won't work
+#ifdef WATCHDOG_ENABLED
 void watchdogSetup(void) 
 { 
     uint32_t wdt_mr = WDT_MR_WDV(128)  //32768hz, 4096=16sec, 128=0.5s?
@@ -280,6 +283,7 @@ void watchdogSetup(void)
     
     RestartWDCtr();
 }
+#endif
 
 inline void RestartWDCtr(void)
 {
