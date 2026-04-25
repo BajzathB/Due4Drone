@@ -113,6 +113,78 @@ uint8_t FAT1Base2[514] = { 0xF8,0xFF,0xFF,0x0F, 0xFF,0xFF,0xFF,0x7F,  0xFF,0xFF,
                           0x79,0x00,0x00,0x00, 0x7A,0x00,0x00,0x00,  0x7B,0x00,0x00,0x00, 0x7C,0x00,0x00,0x00, //30
                           0x7D,0x00,0x00,0x00, 0x7E,0x00,0x00,0x00,  0x7F,0x00,0x00,0x00, 0xFF,0xFF,0xFF,0x0F };
 
+void ResetMeasDataFlags(void)
+{
+    meas2Card.measureSysTime = true;
+    meas2Card.measureGyroRawX = false;
+    meas2Card.measureGyroRawY = false;
+    meas2Card.measureGyroRawZ = false;
+    meas2Card.measureGyroPT1X = false;
+    meas2Card.measureGyroPT1Y = false;
+    meas2Card.measureGyroPT1Z = false;
+    meas2Card.measureGyroPT2X = false;
+    meas2Card.measureGyroPT2Y = false;
+    meas2Card.measureGyroPT2Z = false;
+    meas2Card.measureAccRawX = false;
+    meas2Card.measureAccRawY = false;
+    meas2Card.measureAccRawZ = false;
+    meas2Card.measureAccPT1X = false;
+    meas2Card.measureAccPT1Y = false;
+    meas2Card.measureAccPT1Z = false;
+    meas2Card.measureAccPT2X = false;
+    meas2Card.measureAccPT2Y = false;
+    meas2Card.measureAccPT2Z = false;
+    meas2Card.measureAngleRawRoll = false;
+    meas2Card.measureAngleRawPitch = false;
+    meas2Card.measureAnglePT1Roll = false;
+    meas2Card.measureAnglePT1Pitch = false;
+    meas2Card.measureAnglePT2Roll = false;
+    meas2Card.measureAnglePT2Pitch = false;
+    meas2Card.measureAngleKFRawRoll = false;
+    meas2Card.measureAngleKFRawPitch = false;
+    meas2Card.measureAngleKFPT10Roll = false;
+    meas2Card.measureAngleKFPT10Pitch = false;
+    meas2Card.measureAngleKFPT20Roll = false;
+    meas2Card.measureAngleKFPT20Pitch = false;
+    meas2Card.measureAngleKFPT11Roll = false;
+    meas2Card.measureAngleKFPT11Pitch = false;
+    meas2Card.measureAngleKFPT21Roll = false;
+    meas2Card.measureAngleKFPT21Pitch = false;
+    meas2Card.measureAngleKFPT22Roll = false;
+    meas2Card.measureAngleKFPT22Pitch = false;
+    meas2Card.measureAngleCFRawRoll = false;
+    meas2Card.measureAngleCFRawPitch = false;
+    meas2Card.measureAngleCFPT10Roll = false;
+    meas2Card.measureAngleCFPT10Pitch = false;
+    meas2Card.measureAngleCFPT11Roll = false;
+    meas2Card.measureAngleCFPT11Pitch = false;
+    meas2Card.measureAngleCFWeightedRawRoll = false;
+    meas2Card.measureAngleCFWeightedRawPitch = false;
+    meas2Card.measureAngleCFWeightedPT01Roll = false;
+    meas2Card.measureAngleCFWeightedPT01Pitch = false;
+    meas2Card.measurePIDRefsigX = false;
+    meas2Card.measurePIDRefsigY = false;
+    meas2Card.measurePIDRefsigZ = false;
+    meas2Card.measurePIDSensorX = false;
+    meas2Card.measurePIDSensorY = false;
+    meas2Card.measurePIDSensorZ = false;
+    meas2Card.measurePIDPoutX = false;
+    meas2Card.measurePIDPoutY = false;
+    meas2Card.measurePIDPoutZ = false;
+    meas2Card.measurePIDIoutX = false;
+    meas2Card.measurePIDIoutY = false;
+    meas2Card.measurePIDIoutZ = false;
+    meas2Card.measurePIDDoutX = false;
+    meas2Card.measurePIDDoutY = false;
+    meas2Card.measurePIDDoutZ = false;
+    meas2Card.measurePIDFFoutX = false;
+    meas2Card.measurePIDFFoutY = false;
+    meas2Card.measurePIDFFoutZ = false;
+    meas2Card.measurePIDUX = false;
+    meas2Card.measurePIDUY = false;
+    meas2Card.measurePIDUZ = false;
+}
+
 TEST(test_BT_SDcard, SDcard_Call)
 {
     volatile uint32_t testtxbuff[600];
@@ -1543,6 +1615,8 @@ TEST(test_BT_SDcard, saveMeasData_Test)
 {
     SpiInput testIn;
     SPIOutput testOut;
+
+    ResetMeasDataFlags();
 
     // systime measured
     meas2Card.measureSysTime = true;

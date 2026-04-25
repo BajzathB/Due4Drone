@@ -54,18 +54,47 @@ void loop()
 
   getRcChannels(&controlIn.rcSignals);
   getGyroAndAcc(&controlIn.gyro, &controlIn.acc);
-  
-  //debug
-  // controlIn.rcSignals.throttle = 1000;
-  // controlIn.rcSignals.roll = 1000;
-  // controlIn.rcSignals.pitch = 1000;
-  // controlIn.rcSignals.yaw = 1000;
-  // controlIn.rcSignals.armStateSwitch = 1000;
-  // controlIn.rcSignals.flightModeSwitch = 1000;
-  // controlIn.rcSignals.Poti1 = 1000;
-  // controlIn.rcSignals.Poti2 = 2000;
-  // controlIn.rcSignals.Switch3Way2 = 1000;
-  // controlIn.rcSignals.Switch2Way = 2000;
+   
+  //testing
+  // if(spiInput.sysTime > 9)
+  // {
+  //   controlIn.rcSignals.throttle = 1100;
+  //   controlIn.rcSignals.roll = 1500;
+  //   controlIn.rcSignals.pitch = 1500;
+  //   controlIn.rcSignals.yaw = 1500;
+  //   controlIn.rcSignals.armStateSwitch = 2000;
+  //   controlIn.rcSignals.measurementSwitch = 1000;
+  //   controlIn.rcSignals.Poti1 = 1500;
+  //   controlIn.rcSignals.Poti2 = 1600;
+  //   controlIn.rcSignals.flightModeSwitch = 1000;
+  //   controlIn.rcSignals.Switch2Way = 1000;
+  // }
+  // if(spiInput.sysTime > 12)
+  // {
+  //   controlIn.rcSignals.throttle = 1100;
+  //   controlIn.rcSignals.roll = 1500;
+  //   controlIn.rcSignals.pitch = 1500;
+  //   controlIn.rcSignals.yaw = 1500;
+  //   controlIn.rcSignals.armStateSwitch = 2000;
+  //   controlIn.rcSignals.measurementSwitch = 1000;
+  //   controlIn.rcSignals.Poti1 = 1500;
+  //   controlIn.rcSignals.Poti2 = 1600;
+  //   controlIn.rcSignals.flightModeSwitch = 1500;
+  //   controlIn.rcSignals.Switch2Way = 1000;
+  // }
+  // if(spiInput.sysTime > 15)
+  // {
+  //   controlIn.rcSignals.throttle = 1000;
+  //   controlIn.rcSignals.roll = 1500;
+  //   controlIn.rcSignals.pitch = 1500;
+  //   controlIn.rcSignals.yaw = 1500;
+  //   controlIn.rcSignals.armStateSwitch = 1000;
+  //   controlIn.rcSignals.measurementSwitch = 1000;
+  //   controlIn.rcSignals.Poti1 = 1000;
+  //   controlIn.rcSignals.Poti2 = 1000;
+  //   controlIn.rcSignals.flightModeSwitch = 1000;
+  //   controlIn.rcSignals.Switch2Way = 1000;
+  // }
 
   RunController(&controlIn, &controlOut);
 
@@ -85,19 +114,16 @@ void loop()
 
   spiInput.gyro = controlIn.gyro;
   spiInput.acc = controlIn.acc;
-  spiInput.rcSignals = controlIn.rcSignals;
-
-  //testing
-  // if(spiInput.sysTime > 6)
-  // {
-	//   spiInput.rcSignals.measurementSwitch = 2000;
-  //   spiInput.rcSignals.armStateSwitch = 2000;
-  // }  
-  // if(spiInput.sysTime > 12)
-  // {
-	//   spiInput.rcSignals.measurementSwitch = 1000;
-  //   spiInput.rcSignals.armStateSwitch = 1000;
-  // }
+  spiInput.rcSignals.throttle = controlIn.rcSignals.throttle;
+  spiInput.rcSignals.roll = controlIn.rcSignals.roll;
+  spiInput.rcSignals.pitch = controlIn.rcSignals.pitch;
+  spiInput.rcSignals.yaw = controlIn.rcSignals.yaw;
+  spiInput.rcSignals.armStateSwitch = controlIn.rcSignals.armStateSwitch;
+  spiInput.rcSignals.measurementSwitch = controlIn.rcSignals.measurementSwitch;
+  spiInput.rcSignals.Poti1 = controlIn.rcSignals.Poti1;
+  spiInput.rcSignals.Poti2 = controlIn.rcSignals.Poti2;
+  spiInput.rcSignals.flightModeSwitch = controlIn.rcSignals.flightModeSwitch;
+  spiInput.rcSignals.Switch2Way = controlIn.rcSignals.Switch2Way;
 
   RunSPI(&spiInput, &spiOutput);	//for sd card
   

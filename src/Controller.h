@@ -195,4 +195,7 @@ void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch);
 // Method to calculate Dmax factor
 void calcDmaxFactor(axis* dDynamic, pid_st* pidSt);
 
+// Function to claculate the wobble amplitude value
+float wobble(uint16_t pot1, uint16_t poti2, float systime);
+
 #endif // !CONTROLLER_HEADER

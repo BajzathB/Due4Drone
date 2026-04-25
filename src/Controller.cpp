@@ -8,6 +8,7 @@
 
 #include "Controller.h"
 #include "RC.h"
+#include "sysTime.h"
 #include <cmath>
 
 #ifdef UNIT_TEST
@@ -26,6 +27,10 @@ extern DummySerial SerialUSB;
 //element: 1th order(x), 3rd order(x^3), 5th order(x^5) 
 float parabolicConst4Rate[3];
 float maxYawRate = 500.0f;
+
+const int8_t wobbleWave[] = {1,0,-1,0,-1,0,1,0};
+uint8_t wobbleIndex{ 0 };
+float lastStepTime{ 0.0 };
 
 E_armState armState{ DISARMED };
 
@@ -58,7 +63,7 @@ void SetupController(void)
   	pidRate.saturationI = 7.0f;
   	pidRate.saturationPID = 75.0f;
   	pidRate.DTermC = 2000 / 200;	//datarate/filterrate = 2000hz/500hz
-    pidRate.FFDTermC = 10;
+    pidRate.FFDTermC = 10.0f;
     pidRate.PFactor = 1000.0f;
     pidRate.IFactor = 100.0f;
     pidRate.DFactor = 10000.0f;
@@ -123,29 +128,6 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
     axis controlSignal;
 
     EvalArmState(&ctrlIn->rcSignals);
-
-//    //debug PID
-//    if (ctrlIn->rcSignals.Switch2Way > 1800)
-//    {
-//        if (ctrlIn->rcSignals.Switch3Way2 > 1800)
-//        {
-//            pidRate.D.x = LinearInterpol(ctrlIn->rcSignals.Poti1, 1000, 2000, 20, 200);
-//            pidRate.D.y = LinearInterpol(ctrlIn->rcSignals.Poti2, 1000, 2000, 20, 200);
-//        }
-//        else if (ctrlIn->rcSignals.Switch3Way2 > 1300)
-//        {
-//            pidRate.I.x = LinearInterpol(ctrlIn->rcSignals.Poti1, 1000, 2000, 10, 70);
-//            pidRate.I.y = LinearInterpol(ctrlIn->rcSignals.Poti2, 1000, 2000, 10, 70);
-//        }
-//        else
-//        {
-//            pidRate.P.x = LinearInterpol(ctrlIn->rcSignals.Poti1, 1000, 2000, 20, 100);
-//            pidRate.P.y = LinearInterpol(ctrlIn->rcSignals.Poti2, 1000, 2000, 20, 100);
-//        }
-//    }
-//    else
-//    {
-//    }
 
     //gyro filter
     if (true == ctrlIn->gyro.newData)
@@ -238,7 +220,7 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         //SerialUSB.print(accData.rollAngleCFw, 3); SerialUSB.print('\t');
         //SerialUSB.println(accData.rollAngleCFw01, 3);
     }
-
+    
     //control when armed and on high throttle
     if (ARMED == armState && ctrlIn->rcSignals.throttle > 1010)
     {
@@ -250,6 +232,15 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         {
         case RATE_CTRL_PT1:
         {
+            // wobble for testing
+            if (ctrlIn->rcSignals.Switch2Way > 1500)
+            {
+                float wobbleAmp = wobble(ctrlIn->rcSignals.Poti1, ctrlIn->rcSignals.Poti2, ctrlIn->sysTime);
+
+                rollScaled += wobbleAmp;
+                pitchScaled += wobbleAmp;
+            }
+            
             pidRate.refSignal.x =  rollScaled;
             pidRate.refSignal.y = -pitchScaled;
             pidRate.refSignal.z =  yawScaled;
@@ -363,7 +354,7 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
       pidCascade.sensorPrev.signal.z = 0.0f;
 
     }
-
+    
     ctrlOut->U.x = controlSignal.x;
     ctrlOut->U.y = controlSignal.y;
     ctrlOut->U.z = controlSignal.z;
@@ -949,4 +940,25 @@ void calcDmaxFactor(axis* dDynamic, pid_st* pidSt)
     dDynamic->x = pidSt->D.x + factor.x * (pidSt->Dmax.x - pidSt->D.x);
     dDynamic->y = pidSt->D.y + factor.y * (pidSt->Dmax.y - pidSt->D.y);
     dDynamic->z = pidSt->D.z + factor.z * (pidSt->Dmax.z - pidSt->D.z);
+}
+
+float wobble(uint16_t pot1, uint16_t poti2, float systime)
+{
+    float output{ 0 };
+    float wobblePeriod = (float)(2250 - pot1) / 1000.0; //1.25---0.25
+    uint16_t wobbleAplitude = (poti2 - 1000) / 2;   //0-500
+
+    if ((systime - lastStepTime) > wobblePeriod / 4)
+    {
+        lastStepTime = systime;
+
+        float amplitude = wobbleWave[wobbleIndex++] * wobbleAplitude;
+
+        if (wobbleIndex >= 8) wobbleIndex = 0;
+            
+        output += amplitude;
+
+    }
+
+    return output;
 }

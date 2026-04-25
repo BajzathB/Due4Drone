@@ -5,6 +5,8 @@
 extern pid_st pidRate;
 extern pid_st pidCascade;
 extern E_armState armState;
+extern float lastStepTime;
+extern uint8_t wobbleIndex;
 
 TEST(test_Controller, Controller_Call) {
     SetupController();
@@ -35,6 +37,7 @@ TEST(test_Controller, Controller_Call) {
     CalcPID_wo_Dkick_FF_IRelax_Dmax(&testPID, &testU, 1000);
     calcIRelaxFactor(&testU, &testPID, 1000);
     calcDmaxFactor(&testU, &testPID);
+    wobble(1000, 1000, 1.0);
 }
 
 TEST(test_Controller, EvalArmState_Test)
@@ -360,6 +363,67 @@ TEST(test_Controller, CalcPID_wo_Dkick_FF_Test)
     EXPECT_NEAR(testUff.x, testPIDff.saturationPID, 0.1);
     EXPECT_NEAR(testUff.y, -testPIDff.saturationPID, 0.1);
     EXPECT_NEAR(testUff.z, -testPIDff.saturationPID, 0.1);
+
+    //4th pid comparisant
+    pid_st testPIDff2;
+    axis testUff2;
+    testPIDff.refSignal.x = 20.0f;
+    testPIDff.refSignal.y = 20.0f;
+    testPIDff.refSignal.z = 20.0f;
+    testPIDff.refSignalPrev.x = 0.0f;
+    testPIDff.refSignalPrev.y = 0.0f;
+    testPIDff.refSignalPrev.z = 0.0f;
+    testPIDff.sensor.signal.x = 10.0f;
+    testPIDff.sensor.signal.y = 10.0f;
+    testPIDff.sensor.signal.z = 10.0f;
+    testPIDff.sensor.newData = true;
+    testPIDff.P.x = 33.0f;
+    testPIDff.P.y = 43.0f;
+    testPIDff.P.z = 350.0f;
+    testPIDff.I.x = 30.0f;
+    testPIDff.I.y = 30.0f;
+    testPIDff.I.z = 10.0f;
+    testPIDff.D.x = 25.0f;
+    testPIDff.D.y = 25.0f;
+    testPIDff.D.z = 150.0f;
+    testPIDff.FFr.x = 0;
+    testPIDff.FFr.y = 0;
+    testPIDff.FFr.z = 0;
+    testPIDff.FFdr.x = 0;
+    testPIDff.FFdr.y = 0;
+    testPIDff.FFdr.z = 0;
+    testPIDff.deltaT = 0.1;
+    testPIDff.DTermC = 10.0f;
+    testPIDff.FFDTermC = 10.0f;
+    testPIDff.saturationI = 7.0f;
+    testPIDff.saturationPID = 75.0f;
+    testPIDff.PFactor = 1000.0f;
+    testPIDff.IFactor = 100.0f;
+    testPIDff.DFactor = 10000.0f;
+    testPIDff.FFrFactor = 1000.0f;
+    testPIDff.FFdrFactor = 10000.0f;
+    testPIDff.iRelaxRefThreshhold = 300.0f;
+    testPIDff.iRelaxErrThreshhold = 100.0f;
+    testPIDff.Dmax.x = 25.0f;
+    testPIDff.Dmax.y = 25.0f;
+    testPIDff.Dmax.z = 150.0f;
+    testPIDff.dMaxRefThreshhold = 300.0f;
+    testPIDff.dMaxErrThreshhold = 100.0f;
+    testPIDff.errorSum.x = 0;
+    testPIDff.errorSum.y = 0;
+    testPIDff.errorSum.z = 0;
+    testPIDff.sensorPrev.signal.x = 0;
+    testPIDff.sensorPrev.signal.y = 0;
+    testPIDff.sensorPrev.signal.z = 0;
+    testPIDff.errorDotFiltered.x = 0;
+    testPIDff.errorDotFiltered.y = 0;
+    testPIDff.errorDotFiltered.z = 0;
+    testPIDff2 = testPIDff;
+    CalcPID_wo_Dkick_FF(&testPIDff, &testUff);
+    CalcPID_wo_Dkick_FF_IRelax_Dmax(&testPIDff2, &testUff2, 1000);
+    EXPECT_NEAR(testUff.x, testUff2.x, 0,00000001);
+    EXPECT_NEAR(testUff.y, testUff2.y, 0,00000001);
+    EXPECT_NEAR(testUff.z, testUff2.z, 0,00000001);
 }
 
 TEST(test_Controller, RunController_Test)
@@ -458,6 +522,20 @@ TEST(test_Controller, RunController_Test)
     EXPECT_NE(testOut.U.z, 0.0f);
     EXPECT_EQ(testOut.armState, ARMED);
 
+    //wobble
+    wobbleIndex = 0;
+    testIn.rcSignals.armStateSwitch = 2000;
+    testIn.rcSignals.flightModeSwitch = 1000;
+    testIn.rcSignals.throttle = 1100;
+    testIn.rcSignals.Switch2Way = 2000;
+    testIn.rcSignals.Poti1 = 1250;
+    testIn.rcSignals.Poti2 = 1600;
+    testIn.sysTime = 2.0;
+    RunController(&testIn, &testOut);
+    testIn.sysTime = 3.0;
+    RunController(&testIn, &testOut);
+    testIn.sysTime = 4.0;
+    RunController(&testIn, &testOut);
 }
 
 TEST(test_Controller, KalmanFilter_Test)
@@ -766,4 +844,42 @@ TEST(test_Controller, calcDmaxFactor_Test)
     EXPECT_NEAR(dDynamic.x, 106.6f, 0.1);
     EXPECT_NEAR(dDynamic.y, 200.0f, 0.1);
     EXPECT_NEAR(dDynamic.z, 500.0f, 0.1);
+}
+
+TEST(test_Controller, wobble_Test)
+{
+    //test: not enough time elapsed
+    lastStepTime = 0.0;
+    wobbleIndex = 0;
+    EXPECT_EQ(wobble(1000, 1000, 0.1), 0);
+
+    //test: 1.25 period, 100 amp
+    lastStepTime = 0.0;
+    wobbleIndex = 0;
+    EXPECT_EQ(wobble(1000, 1200, 0.313), 100);
+    EXPECT_EQ(wobble(1000, 1200, 0.626), 0);
+    EXPECT_EQ(wobble(1000, 1200, 0.939), -100);
+    EXPECT_EQ(wobble(1000, 1200, 1.252), 0);
+    EXPECT_EQ(wobble(1000, 1200, 1.565), -100);
+    EXPECT_EQ(wobble(1000, 1200, 1.878), 0);
+    EXPECT_EQ(wobble(1000, 1200, 2.191), 100);
+    EXPECT_EQ(wobble(1000, 1200, 2.504), 0);
+    EXPECT_EQ(wobbleIndex, 0);
+
+    //test: 1.0 period, 300 amp, half wave
+    lastStepTime = 0.700;
+    wobbleIndex = 0;
+    EXPECT_EQ(wobble(1250, 1600, 1.000), 300);
+    EXPECT_EQ(wobble(1250, 1600, 1.251), 0);
+    EXPECT_EQ(wobble(1250, 1600, 1.502), -300);
+    EXPECT_EQ(wobble(1250, 1600, 1.753), 0);
+    EXPECT_EQ(wobbleIndex, 4);
+
+    //test: 0.5 period, 500 amp
+    lastStepTime = 22.0;
+    wobbleIndex = 0;
+    EXPECT_EQ(wobble(2000, 2000, 22.500), 500);
+    EXPECT_EQ(wobble(2000, 2000, 22.751), 0);
+    EXPECT_EQ(wobble(2000, 2000, 23.002), -500);
+    EXPECT_EQ(wobble(2000, 2000, 23.253), 0);
 }
