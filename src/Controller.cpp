@@ -28,9 +28,16 @@ extern DummySerial SerialUSB;
 float parabolicConst4Rate[3];
 float maxYawRate = 500.0f;
 
-const int8_t wobbleWave[] = {1,0,-1,0,-1,0,1,0};
-uint8_t wobbleIndex{ 0 };
-float lastStepTime{ 0.0 };
+#define HALFPI 1.57079f
+#define PI 3.14159f
+#define TWOPI 6.28318f
+#define LUT_SIZE 21
+const float sinTime[LUT_SIZE] = { 0.0f, 0.4f, 0.75f, 1.05f, 1.3f, 1.55f, 1.8f, 2.05f, 2.35f, 2.7f,
+    3.141f, 3.541f, 3.891f, 4.191f, 4.441f, 4.691f, 4.941f, 5.191f, 5.491f, 5.841f, 6.28318f};
+const float sinWave[LUT_SIZE] = { 0.0f, 0.3894183f, 0.6816387f, 0.8674232f, 0.9635581f, 0.9997837f,
+    0.9738476f, 0.8873623f, 0.7114733f, 0.4273798f, 0.0005926f, -0.3888724f, -0.6812050f,
+    -0.8671281f, -0.9633994f, -0.9997712f, -0.9739821f, -0.8876354f, -0.7118896f, -0.4279156f, 0.0f};
+float wobbleTime{ 0.0f };
 
 E_armState armState{ DISARMED };
 
@@ -47,11 +54,11 @@ void SetupController(void)
     parabolicConst4Rate[2] = 0.000000000007813f;    //5th order
 
     //RATE
-    pidRate.P.x = 33.0f;
-    pidRate.I.x = 30.0f;
+    pidRate.P.x = 45.0f;
+    pidRate.I.x = 15.0f;
     pidRate.D.x = 25.0f;
-    pidRate.P.y = 43.0f;
-    pidRate.I.y = 30.0f;
+    pidRate.P.y = 45.0f;
+    pidRate.I.y = 5.0f;
     pidRate.D.y = 25.0f;
     pidRate.P.z = 350.0f;
     pidRate.I.z = 10.0f;
@@ -60,8 +67,8 @@ void SetupController(void)
     pidRate.FFr.y = 0.0f;
     pidRate.FFdr.x = 0.0f;
     pidRate.FFdr.y = 0.0f;
-  	pidRate.saturationI = 7.0f;
-  	pidRate.saturationPID = 75.0f;
+  	pidRate.saturationI = 35.0f;
+  	pidRate.saturationPID = 200.0f;
   	pidRate.DTermC = 2000 / 200;	//datarate/filterrate = 2000hz/500hz
     pidRate.FFDTermC = 10.0f;
     pidRate.PFactor = 1000.0f;
@@ -70,8 +77,8 @@ void SetupController(void)
     pidRate.FFrFactor = 1000.0f;
     pidRate.FFdrFactor = 10000.0f;
     //iRelax
-    pidRate.iRelaxRefThreshhold = 300.0f;
-    pidRate.iRelaxErrThreshhold = 100.0f;
+    pidRate.iRelaxRefThreshhold = 6000.0f;
+    pidRate.iRelaxErrThreshhold = 500.0f;
     //Dmax
     pidRate.Dmax.x = pidRate.D.x;
     pidRate.Dmax.y = pidRate.D.y;
@@ -235,10 +242,10 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
             // wobble for testing
             if (ctrlIn->rcSignals.Switch2Way > 1500)
             {
-                float wobbleAmp = wobble(ctrlIn->rcSignals.Poti1, ctrlIn->rcSignals.Poti2, ctrlIn->sysTime);
+                float wobbleAmp = wobble(ctrlIn->rcSignals.Poti1, ctrlIn->rcSignals.Poti2);
 
                 rollScaled += wobbleAmp;
-                pitchScaled += wobbleAmp;
+                //pitchScaled += wobbleAmp;
             }
             
             pidRate.refSignal.x =  rollScaled;
@@ -400,7 +407,9 @@ float ParabolicScale(const uint16_t channel)
 {
     float shiftedChannel = float(channel) - 1500.0f;
 
-    return float(shiftedChannel) * parabolicConst4Rate[0] + float(pow(shiftedChannel, 3)) * parabolicConst4Rate[1] + float(pow(shiftedChannel, 5)) * parabolicConst4Rate[2];
+    return shiftedChannel * parabolicConst4Rate[0]
+        + float(pow(shiftedChannel, 3)) * parabolicConst4Rate[1]
+        + float(pow(shiftedChannel, 5)) * parabolicConst4Rate[2];
 }
 
 float LinearInterpol(const uint16_t xn, const uint16_t x0, const uint16_t x1, const float y0, const float y1)
@@ -942,23 +951,29 @@ void calcDmaxFactor(axis* dDynamic, pid_st* pidSt)
     dDynamic->z = pidSt->D.z + factor.z * (pidSt->Dmax.z - pidSt->D.z);
 }
 
-float wobble(uint16_t pot1, uint16_t poti2, float systime)
+float wobble(uint16_t pot1, uint16_t poti2)
 {
-    float output{ 0 };
-    float wobblePeriod = (float)(2250 - pot1) / 1000.0; //1.25---0.25
-    uint16_t wobbleAplitude = (poti2 - 1000) / 2;   //0-500
+    float piIncrement = float(pot1 - 1000) / 50000.0f * HALFPI; //0--pi/100
+    uint16_t wobbleAplitude = (poti2 - 1000)/4;   //0-250
 
-    if ((systime - lastStepTime) > wobblePeriod / 4)
+    wobbleTime += piIncrement;
+    if (wobbleTime > TWOPI) wobbleTime -= TWOPI;
+
+    uint8_t itr{ 0 };
+    for (; itr < LUT_SIZE; itr++)
     {
-        lastStepTime = systime;
-
-        float amplitude = wobbleWave[wobbleIndex++] * wobbleAplitude;
-
-        if (wobbleIndex >= 8) wobbleIndex = 0;
-            
-        output += amplitude;
-
+        if (wobbleTime < sinTime[itr]) break;
     }
 
-    return output;
+    uint8_t i = (itr >  0) ? itr-1 : 0;
+    float frac = (wobbleTime - sinTime[i])/(sinTime[i+1] - sinTime[i]);
+    if (frac < 0) frac = 0;
+
+    float a = sinWave[i];
+    float b = sinWave[i + 1];
+
+    //linear interpolation
+    float interpolatedSin = a + (b - a) * frac;
+
+    return wobbleAplitude* interpolatedSin;
 }

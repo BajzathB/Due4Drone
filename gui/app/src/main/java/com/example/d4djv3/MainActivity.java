@@ -72,6 +72,10 @@ public class MainActivity extends BaseActivity {
     CheckBox checkBoxSatI;
     CheckBox checkBoxSatPID;
     CheckBox checkBoxDTermC;
+    CheckBox checkBoxMMx;
+    CheckBox checkBoxMMy;
+    CheckBox checkBoxPDratioX;
+    CheckBox checkBoxPDratioY;
     CheckBox checkBoxCPx;
     CheckBox checkBoxCIx;
     CheckBox checkBoxCPy;
@@ -83,10 +87,12 @@ public class MainActivity extends BaseActivity {
 
     List<CheckBox> checkBoxes;
 
-    boolean newParamReceived = false;
-    String paramData = "";
-
-    float x1, y1, x2, y2;
+    float baseValuePx;
+    float baseValueIx;
+    float baseValueDx;
+    float baseValuePy;
+    float baseValueIy;
+    float baseValueDy;
 
     //creat a map for data to send BT Rx thread
     private static Map<String, Object> dataFromMain = new HashMap<>();
@@ -119,6 +125,9 @@ public class MainActivity extends BaseActivity {
         Button buttonDec = findViewById(R.id.buttonDec);
         Button buttonGetAll = findViewById(R.id.buttonGetAll);
         Button buttonSetAll = findViewById(R.id.buttonSetAll);
+        Button buttonMultiPlus = findViewById(R.id.buttonMultiPlus);
+        Button buttonMultiMinus = findViewById(R.id.buttonMultiMinus);
+        Button buttonSaveBase = findViewById(R.id.buttonSaveBase);
         //
         checkBoxPx = findViewById(R.id.checkBoxPx);
         checkBoxIx = findViewById(R.id.checkBoxIx);
@@ -136,22 +145,26 @@ public class MainActivity extends BaseActivity {
         checkBoxSatI = findViewById(R.id.checkBoxSatI);
         checkBoxSatPID = findViewById(R.id.checkBoxSatPID);
         checkBoxDTermC = findViewById(R.id.checkBoxDTermC);
-        checkBoxCPx = findViewById(R.id.checkBoxCPx);
-        checkBoxCIx = findViewById(R.id.checkBoxCIx);
-        checkBoxCPy = findViewById(R.id.checkBoxCPy);
-        checkBoxCIy = findViewById(R.id.checkBoxCIy);
-        checkBoxCFFdx = findViewById(R.id.checkBoxCFFdx);
-        checkBoxCFFdy = findViewById(R.id.checkBoxCFFdy);
-        checkBoxCSatI = findViewById(R.id.checkBoxCSatI);
-        checkBoxCSatPID = findViewById(R.id.checkBoxCSatPID);
+        checkBoxMMx = findViewById(R.id.checkBoxMMx);
+        checkBoxMMy = findViewById(R.id.checkBoxMMy);
+        checkBoxPDratioX = findViewById(R.id.checkBoxPDratiox);
+        checkBoxPDratioY = findViewById(R.id.checkBoxPDratioy);
+//        checkBoxCPx = findViewById(R.id.checkBoxCPx);
+//        checkBoxCIx = findViewById(R.id.checkBoxCIx);
+//        checkBoxCPy = findViewById(R.id.checkBoxCPy);
+//        checkBoxCIy = findViewById(R.id.checkBoxCIy);
+//        checkBoxCFFdx = findViewById(R.id.checkBoxCFFdx);
+//        checkBoxCFFdy = findViewById(R.id.checkBoxCFFdy);
+//        checkBoxCSatI = findViewById(R.id.checkBoxCSatI);
+//        checkBoxCSatPID = findViewById(R.id.checkBoxCSatPID);
 
         checkBoxes = Arrays.asList(checkBoxPx, checkBoxIx, checkBoxDx,
                 checkBoxPy, checkBoxIy, checkBoxDy,
                 checkBoxPz, checkBoxIz, checkBoxDz, checkBoxFFx,
                 checkBoxFFy, checkBoxFFdx, checkBoxFFdy,
-                checkBoxSatI, checkBoxSatPID, checkBoxDTermC,
-                checkBoxCPx, checkBoxCIx, checkBoxCPy, checkBoxCIy,
-                checkBoxCFFdx, checkBoxCFFdy, checkBoxCSatI, checkBoxCSatPID);
+                checkBoxSatI, checkBoxSatPID, checkBoxDTermC);
+//                checkBoxCPx, checkBoxCIx, checkBoxCPy, checkBoxCIy,
+//                checkBoxCFFdx, checkBoxCFFdy, checkBoxCSatI, checkBoxCSatPID);
 
         //check BT hardware availability
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)) {
@@ -284,37 +297,61 @@ public class MainActivity extends BaseActivity {
         {
             uncheckExpect(checkBoxDTermC);
         });
-        checkBoxCPx.setOnClickListener(v ->
+//        checkBoxCPx.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCPx);
+//        });
+//        checkBoxCIx.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCIx);
+//        });
+//        checkBoxCPy.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCPy);
+//        });
+//        checkBoxCIy.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCIy);
+//        });
+//        checkBoxCSatI.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCSatI);
+//        });
+//        checkBoxCSatPID.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCSatPID);
+//        });
+//        checkBoxCFFdx.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCFFdx);
+//        });
+//        checkBoxCFFdy.setOnClickListener(v ->
+//        {
+//            uncheckExpect(checkBoxCFFdy);
+//        });
+        checkBoxMMx.setOnClickListener(v ->
         {
-            uncheckExpect(checkBoxCPx);
+            checkBoxMMy.setChecked(false);
+            checkBoxPDratioX.setChecked(false);
+            checkBoxPDratioY.setChecked(false);
         });
-        checkBoxCIx.setOnClickListener(v ->
+        checkBoxMMy.setOnClickListener(v ->
         {
-            uncheckExpect(checkBoxCIx);
+            checkBoxMMx.setChecked(false);
+            checkBoxPDratioX.setChecked(false);
+            checkBoxPDratioY.setChecked(false);
         });
-        checkBoxCPy.setOnClickListener(v ->
+        checkBoxPDratioX.setOnClickListener(v ->
         {
-            uncheckExpect(checkBoxCPy);
+            checkBoxMMx.setChecked(false);
+            checkBoxMMy.setChecked(false);
+            checkBoxPDratioY.setChecked(false);
         });
-        checkBoxCIy.setOnClickListener(v ->
+        checkBoxPDratioY.setOnClickListener(v ->
         {
-            uncheckExpect(checkBoxCIy);
-        });
-        checkBoxCSatI.setOnClickListener(v ->
-        {
-            uncheckExpect(checkBoxCSatI);
-        });
-        checkBoxCSatPID.setOnClickListener(v ->
-        {
-            uncheckExpect(checkBoxCSatPID);
-        });
-        checkBoxCFFdx.setOnClickListener(v ->
-        {
-            uncheckExpect(checkBoxCFFdx);
-        });
-        checkBoxCFFdy.setOnClickListener(v ->
-        {
-            uncheckExpect(checkBoxCFFdy);
+            checkBoxMMx.setChecked(false);
+            checkBoxMMy.setChecked(false);
+            checkBoxPDratioX.setChecked(false);
         });
 
         buttonGet.setOnClickListener(v ->
@@ -335,15 +372,56 @@ public class MainActivity extends BaseActivity {
         {
             EditText text = getEditText();
             String add = textViewPlusMinusValue.getText().toString();
-            int addVal = Integer.parseInt(add.substring(1));
+            float addVal = Float.parseFloat(add.substring(1));
 
             BTSocket.getInstance().AddVal(text, addVal);
+
+            if(text == findViewById(R.id.editTextPDratio))
+            {
+                String textStr = text.getText().toString();
+                float pdRatio = Float.parseFloat(textStr);
+
+                if(checkBoxPDratioX.isChecked())
+                {
+                    EditText textDx = findViewById(R.id.editTextDx);
+                    textDx.setText(String.format(java.util.Locale.US, "%.3f", baseValueDx * pdRatio));
+                }
+                else if (checkBoxPDratioY.isChecked())
+                {
+                    EditText textDy = findViewById(R.id.editTextDy);
+                    textDy.setText(String.format(java.util.Locale.US, "%.3f", baseValueDy * pdRatio));
+                }
+            }
+            if(text == findViewById(R.id.editTextMM))
+            {
+                String textStr = text.getText().toString();
+                float masterMulti = Float.parseFloat(textStr);
+
+                if(checkBoxMMx.isChecked())
+                {
+                    EditText textPx = findViewById(R.id.editTextPx);
+                    textPx.setText(String.format(java.util.Locale.US, "%.3f", baseValuePx * masterMulti));
+//                    EditText textIx = findViewById(R.id.editTextIx);
+//                    textIx.setText(String.format(java.util.Locale.US, "%.3f", baseValueIx * masterMulti));
+                    EditText textDx = findViewById(R.id.editTextDx);
+                    textDx.setText(String.format(java.util.Locale.US, "%.3f", baseValueDx * masterMulti));
+                }
+                else if(checkBoxMMy.isChecked())
+                {
+                    EditText textPy = findViewById(R.id.editTextPy);
+                    textPy.setText(String.format(java.util.Locale.US, "%.3f", baseValuePy * masterMulti));
+//                    EditText textIy = findViewById(R.id.editTextIy);
+//                    textIy.setText(String.format(java.util.Locale.US, "%.3f", baseValueIy * masterMulti));
+                    EditText textDy = findViewById(R.id.editTextDy);
+                    textDy.setText(String.format(java.util.Locale.US, "%.3f", baseValueDy * masterMulti));
+                }
+            }
         });
         buttonDec.setOnClickListener(v ->
         {
             EditText text = getEditText();
             String add = textViewPlusMinusValue.getText().toString();
-            int addVal = Integer.parseInt(add.substring(1));
+            float addVal = Float.parseFloat(add.substring(1));
 
             BTSocket.getInstance().AddVal(text, -addVal);
         });
@@ -359,6 +437,7 @@ public class MainActivity extends BaseActivity {
             getList.add(new Pair<>(findViewById(R.id.editTextDy), 2005));
             getList.add(new Pair<>(findViewById(R.id.editTextPz), 2006));
             getList.add(new Pair<>(findViewById(R.id.editTextIz), 2007));
+            getList.add(new Pair<>(findViewById(R.id.editTextDz), 2008));
             getList.add(new Pair<>(findViewById(R.id.editTextFFx), 2034));
             getList.add(new Pair<>(findViewById(R.id.editTextFFy), 2035));
             getList.add(new Pair<>(findViewById(R.id.editTextFFdx), 2036));
@@ -407,6 +486,7 @@ public class MainActivity extends BaseActivity {
             setList.add(new Pair<>(findViewById(R.id.editTextDy), 2005));
             setList.add(new Pair<>(findViewById(R.id.editTextPz), 2006));
             setList.add(new Pair<>(findViewById(R.id.editTextIz), 2007));
+            setList.add(new Pair<>(findViewById(R.id.editTextDz), 2008));
             setList.add(new Pair<>(findViewById(R.id.editTextFFx), 2034));
             setList.add(new Pair<>(findViewById(R.id.editTextFFy), 2035));
             setList.add(new Pair<>(findViewById(R.id.editTextFFdx), 2036));
@@ -445,6 +525,121 @@ public class MainActivity extends BaseActivity {
                 }
             };
             tSetAll.start();
+        });
+        buttonSaveBase.setOnClickListener(v ->
+        {
+            EditText textPx = findViewById(R.id.editTextPx);
+            String strPx = textPx.getText().toString();
+            if (!strPx.isEmpty() && !strPx.equals("?")) baseValuePx = Float.parseFloat(strPx);
+            EditText textIx = findViewById(R.id.editTextIx);
+            String strIx = textIx.getText().toString();
+            if (!strIx.isEmpty() && !strIx.equals("?")) baseValueIx = Float.parseFloat(strIx);
+            EditText textDx = findViewById(R.id.editTextDx);
+            String strDx = textDx.getText().toString();
+            if (!strDx.isEmpty() && !strDx.equals("?")) baseValueDx = Float.parseFloat(strDx);
+            EditText textPy = findViewById(R.id.editTextPy);
+            String strPy = textPy.getText().toString();
+            if (!strPy.isEmpty() && !strPy.equals("?")) baseValuePy = Float.parseFloat(strPy);
+            EditText textIy = findViewById(R.id.editTextIy);
+            String strIy = textIy.getText().toString();
+            if (!strIy.isEmpty() && !strIy.equals("?")) baseValueIy = Float.parseFloat(strIy);
+            EditText textDy = findViewById(R.id.editTextDy);
+            String strDy = textDy.getText().toString();
+            if (!strDy.isEmpty() && !strDy.equals("?")) baseValueDy = Float.parseFloat(strDy);
+        });
+        buttonMultiPlus.setOnClickListener(v ->
+        {
+            EditText text;
+
+            if(checkBoxMMx.isChecked() || checkBoxMMy.isChecked())
+            {
+                text = findViewById(R.id.editTextMM);
+            }
+            else
+            {
+                text = findViewById(R.id.editTextPDratio);
+            }
+
+            BTSocket.getInstance().AddVal(text, 0.05f);
+            String textStr = text.getText().toString();
+            float multiplier = Float.parseFloat(textStr);
+
+            if(checkBoxPDratioX.isChecked())
+            {
+                EditText textDx = findViewById(R.id.editTextDx);
+                textDx.setText(String.format(java.util.Locale.US, "%.3f", baseValueDx * multiplier));
+
+            }
+            else if (checkBoxPDratioY.isChecked())
+            {
+                EditText textDy = findViewById(R.id.editTextDy);
+                textDy.setText(String.format(java.util.Locale.US, "%.3f", baseValueDy * multiplier));
+            }
+            else if(checkBoxMMx.isChecked())
+            {
+                EditText textPx = findViewById(R.id.editTextPx);
+                textPx.setText(String.format(java.util.Locale.US, "%.3f", baseValuePx * multiplier));
+//                    EditText textIx = findViewById(R.id.editTextIx);
+//                    textIx.setText(String.format(java.util.Locale.US, "%.3f", baseValueIx * multiplier));
+                EditText textDx = findViewById(R.id.editTextDx);
+                textDx.setText(String.format(java.util.Locale.US, "%.3f", baseValueDx * multiplier));
+            }
+            else if(checkBoxMMy.isChecked())
+            {
+                EditText textPy = findViewById(R.id.editTextPy);
+                textPy.setText(String.format(java.util.Locale.US, "%.3f", baseValuePy * multiplier));
+//                    EditText textIy = findViewById(R.id.editTextIy);
+//                    textIy.setText(String.format(java.util.Locale.US, "%.3f", baseValueIy * multiplier));
+                EditText textDy = findViewById(R.id.editTextDy);
+                textDy.setText(String.format(java.util.Locale.US, "%.3f", baseValueDy * multiplier));
+            }
+        });
+        buttonMultiMinus.setOnClickListener(v ->
+        {
+            EditText text;
+
+            if(checkBoxMMx.isChecked() || checkBoxMMy.isChecked())
+            {
+                text = findViewById(R.id.editTextMM);
+            }
+            else
+            {
+                text = findViewById(R.id.editTextPDratio);
+            }
+
+            BTSocket.getInstance().AddVal(text, -0.05f);
+            String textStr = text.getText().toString();
+            float multiplier = Float.parseFloat(textStr);
+
+            if(checkBoxPDratioX.isChecked())
+            {
+                EditText textDx = findViewById(R.id.editTextDx);
+                textDx.setText(String.format(java.util.Locale.US, "%.3f", baseValueDx * multiplier));
+
+            }
+            else if (checkBoxPDratioY.isChecked())
+            {
+                EditText textDy = findViewById(R.id.editTextDy);
+                textDy.setText(String.format(java.util.Locale.US, "%.3f", baseValueDy * multiplier));
+            }
+            else if(checkBoxMMx.isChecked())
+            {
+                EditText textPx = findViewById(R.id.editTextPx);
+                textPx.setText(String.format(java.util.Locale.US, "%.3f", baseValuePx * multiplier));
+//                    EditText textIx = findViewById(R.id.editTextIx);
+//                    textIx.setText(String.format(java.util.Locale.US, "%.3f", baseValueIx * multiplier));
+                EditText textDx = findViewById(R.id.editTextDx);
+                textDx.setText(String.format(java.util.Locale.US, "%.3f", baseValueDx * multiplier));
+            }
+            else if(checkBoxMMy.isChecked())
+            {
+                EditText textPy = findViewById(R.id.editTextPy);
+                textPy.setText(String.format(java.util.Locale.US, "%.3f", baseValuePy * multiplier));
+//                    EditText textIy = findViewById(R.id.editTextIy);
+//                    textIy.setText(String.format(java.util.Locale.US, "%.3f", baseValueIy * multiplier));
+                EditText textDy = findViewById(R.id.editTextDy);
+                textDy.setText(String.format(java.util.Locale.US, "%.3f", baseValueDy * multiplier));
+            }
         });
 
         textViewPlusMinusValue.setOnClickListener(v ->
@@ -729,23 +924,24 @@ public class MainActivity extends BaseActivity {
             val = 2036;
         } else if (checkBoxFFdy.isChecked()) {
             val = 2037;
-        } else if (checkBoxCPx.isChecked()) {
-            val = 2022;
-        } else if (checkBoxCIx.isChecked()) {
-            val = 2023;
-        } else if (checkBoxCPy.isChecked()) {
-            val = 2025;
-        } else if (checkBoxCIy.isChecked()) {
-            val = 2026;
-        } else if (checkBoxCSatI.isChecked()) {
-            val = 2031;
-        } else if (checkBoxCSatPID.isChecked()) {
-            val = 2032;
-        } else if (checkBoxCFFdx.isChecked()) {
-            val = 2040;
-        } else if (checkBoxCFFdy.isChecked()) {
-            val = 2041;
         }
+//        else if (checkBoxCPx.isChecked()) {
+//            val = 2022;
+//        } else if (checkBoxCIx.isChecked()) {
+//            val = 2023;
+//        } else if (checkBoxCPy.isChecked()) {
+//            val = 2025;
+//        } else if (checkBoxCIy.isChecked()) {
+//            val = 2026;
+//        } else if (checkBoxCSatI.isChecked()) {
+//            val = 2031;
+//        } else if (checkBoxCSatPID.isChecked()) {
+//            val = 2032;
+//        } else if (checkBoxCFFdx.isChecked()) {
+//            val = 2040;
+//        } else if (checkBoxCFFdy.isChecked()) {
+//            val = 2041;
+//        }
 
         return val;
     }
@@ -784,23 +980,24 @@ public class MainActivity extends BaseActivity {
             textValue = findViewById(R.id.editTextSatPID);
         } else if (checkBoxDTermC.isChecked()) {
             textValue = findViewById(R.id.editTextDTermC);
-        } else if (checkBoxCPx.isChecked()) {
-            textValue = findViewById(R.id.editTextCPx);
-        } else if (checkBoxCIx.isChecked()) {
-            textValue = findViewById(R.id.editTextCIx);
-        } else if (checkBoxCPy.isChecked()) {
-            textValue = findViewById(R.id.editTextCPy);
-        } else if (checkBoxCIy.isChecked()) {
-            textValue = findViewById(R.id.editTextCIy);
-        } else if (checkBoxCSatI.isChecked()) {
-            textValue = findViewById(R.id.editTextCSatI);
-        } else if (checkBoxCSatPID.isChecked()) {
-            textValue = findViewById(R.id.editTextCSatPID);
-        } else if (checkBoxCFFdx.isChecked()) {
-            textValue = findViewById(R.id.editTextCFFdx);
-        } else if (checkBoxCFFdy.isChecked()) {
-            textValue = findViewById(R.id.editTextCFFdy);
         }
+//        else if (checkBoxCPx.isChecked()) {
+//            textValue = findViewById(R.id.editTextCPx);
+//        } else if (checkBoxCIx.isChecked()) {
+//            textValue = findViewById(R.id.editTextCIx);
+//        } else if (checkBoxCPy.isChecked()) {
+//            textValue = findViewById(R.id.editTextCPy);
+//        } else if (checkBoxCIy.isChecked()) {
+//            textValue = findViewById(R.id.editTextCIy);
+//        } else if (checkBoxCSatI.isChecked()) {
+//            textValue = findViewById(R.id.editTextCSatI);
+//        } else if (checkBoxCSatPID.isChecked()) {
+//            textValue = findViewById(R.id.editTextCSatPID);
+//        } else if (checkBoxCFFdx.isChecked()) {
+//            textValue = findViewById(R.id.editTextCFFdx);
+//        } else if (checkBoxCFFdy.isChecked()) {
+//            textValue = findViewById(R.id.editTextCFFdy);
+//        }
 
         return textValue;
     }

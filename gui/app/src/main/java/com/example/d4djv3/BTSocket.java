@@ -677,7 +677,8 @@ public class BTSocket {
                     // it's a whole number
                     valStr = String.valueOf((int) value);
                 } else {
-                    valStr = String.valueOf(value); // keep decimals
+                    // keep maximum of 3 decimals
+                    valStr = String.format(java.util.Locale.US, "%.3f", value);
                 }
                 text.setText(valStr);
             }

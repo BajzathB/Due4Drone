@@ -1,7 +1,7 @@
-function step_response = calcStepResponse(setpoint_signal,gyro_signal)
+function step_response = calcStepResponse(setpoint_signal,gyro_signal, wnd)
 %CALCSTEPRESPONSE Calculates PID step response based on setpoint and signal
 %   code is based on pyPIDToolbox code from github
-segment_length = 1024;
+segment_length = wnd;
 skipRate = 0.10;
 
 step_responses = zeros(500, segment_length);

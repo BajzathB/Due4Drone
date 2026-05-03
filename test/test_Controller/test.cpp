@@ -5,8 +5,7 @@
 extern pid_st pidRate;
 extern pid_st pidCascade;
 extern E_armState armState;
-extern float lastStepTime;
-extern uint8_t wobbleIndex;
+extern float wobbleTime;
 
 TEST(test_Controller, Controller_Call) {
     SetupController();
@@ -37,7 +36,7 @@ TEST(test_Controller, Controller_Call) {
     CalcPID_wo_Dkick_FF_IRelax_Dmax(&testPID, &testU, 1000);
     calcIRelaxFactor(&testU, &testPID, 1000);
     calcDmaxFactor(&testU, &testPID);
-    wobble(1000, 1000, 1.0);
+    wobble(1000, 1000);
 }
 
 TEST(test_Controller, EvalArmState_Test)
@@ -111,6 +110,14 @@ TEST(test_Controller, ParabolicScale_Test)
     //5th: 300 to left
     testChannel = 1200;
     EXPECT_NEAR(ParabolicScale(testChannel), -200, 0.1);
+
+    //6th: 500 to right
+    testChannel = 2000;
+    EXPECT_NEAR(ParabolicScale(testChannel), 950, 0.1);
+
+    //7th: 500 to left
+    testChannel = 1000;
+    EXPECT_NEAR(ParabolicScale(testChannel), -950, 0.1);
 }
 
 TEST(test_Controller, LinearInterpol_Test)
@@ -523,7 +530,6 @@ TEST(test_Controller, RunController_Test)
     EXPECT_EQ(testOut.armState, ARMED);
 
     //wobble
-    wobbleIndex = 0;
     testIn.rcSignals.armStateSwitch = 2000;
     testIn.rcSignals.flightModeSwitch = 1000;
     testIn.rcSignals.throttle = 1100;
@@ -536,6 +542,7 @@ TEST(test_Controller, RunController_Test)
     RunController(&testIn, &testOut);
     testIn.sysTime = 4.0;
     RunController(&testIn, &testOut);
+    EXPECT_EQ(true, false);
 }
 
 TEST(test_Controller, KalmanFilter_Test)
@@ -848,38 +855,43 @@ TEST(test_Controller, calcDmaxFactor_Test)
 
 TEST(test_Controller, wobble_Test)
 {
-    //test: not enough time elapsed
-    lastStepTime = 0.0;
-    wobbleIndex = 0;
-    EXPECT_EQ(wobble(1000, 1000, 0.1), 0);
+    float pi{ 3.14 };
+    float amplitde{100};
+    //test: 0 increment
+    wobbleTime = 0.0f;
+    EXPECT_EQ(wobble(1000, 1000), 0);
 
-    //test: 1.25 period, 100 amp
-    lastStepTime = 0.0;
-    wobbleIndex = 0;
-    EXPECT_EQ(wobble(1000, 1200, 0.313), 100);
-    EXPECT_EQ(wobble(1000, 1200, 0.626), 0);
-    EXPECT_EQ(wobble(1000, 1200, 0.939), -100);
-    EXPECT_EQ(wobble(1000, 1200, 1.252), 0);
-    EXPECT_EQ(wobble(1000, 1200, 1.565), -100);
-    EXPECT_EQ(wobble(1000, 1200, 1.878), 0);
-    EXPECT_EQ(wobble(1000, 1200, 2.191), 100);
-    EXPECT_EQ(wobble(1000, 1200, 2.504), 0);
-    EXPECT_EQ(wobbleIndex, 0);
+    //test: pi/10 step, 800 amp
+    wobbleTime = 0.0f;
+    amplitde = 800;
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 1 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 2 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 3 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 4 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 5 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 6 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 7 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 8 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 9 / 10), 10);
+    EXPECT_NEAR(wobble(1200, 1200), amplitde * sin(pi * 10 / 10), 10);
+    EXPECT_NEAR(wobbleTime, pi, 0.01);
 
-    //test: 1.0 period, 300 amp, half wave
-    lastStepTime = 0.700;
-    wobbleIndex = 0;
-    EXPECT_EQ(wobble(1250, 1600, 1.000), 300);
-    EXPECT_EQ(wobble(1250, 1600, 1.251), 0);
-    EXPECT_EQ(wobble(1250, 1600, 1.502), -300);
-    EXPECT_EQ(wobble(1250, 1600, 1.753), 0);
-    EXPECT_EQ(wobbleIndex, 4);
+    //test: pi/4 step, 2400 amp
+    wobbleTime = 0.0f;
+    amplitde = 2400;
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 1 / 4), 10);
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 2 / 4), 10);
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 3 / 4), 10);
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 4 / 4), 10);
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 5 / 4), 10);
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 6 / 4), 10);
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 7 / 4), 10);
+    EXPECT_NEAR(wobble(1500, 1600), amplitde * sin(pi * 8 / 4), 10);
+    EXPECT_NEAR(wobbleTime, 2*pi, 0.01);
 
-    //test: 0.5 period, 500 amp
-    lastStepTime = 22.0;
-    wobbleIndex = 0;
-    EXPECT_EQ(wobble(2000, 2000, 22.500), 500);
-    EXPECT_EQ(wobble(2000, 2000, 22.751), 0);
-    EXPECT_EQ(wobble(2000, 2000, 23.002), -500);
-    EXPECT_EQ(wobble(2000, 2000, 23.253), 0);
+    //test: continue, pi/20 step, 4000 amp
+    amplitde = 4000;
+    EXPECT_NEAR(wobble(1100, 2000), amplitde * sin(pi * 1 / 20), 10);
+    EXPECT_NEAR(wobble(1100, 2000), amplitde * sin(pi * 2 / 20), 10);
+    EXPECT_NEAR(wobble(1100, 2000), amplitde * sin(pi * 3 / 20), 10);
 }
