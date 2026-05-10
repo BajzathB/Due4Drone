@@ -1,7 +1,7 @@
 clear all, clc
 
 %reading files from folder
-directory = "2026_05_03";
+directory = "2026_05_10";
 files = dir(directory);
 files = files(3:end);
 % fileList = strings(1, length(files));
@@ -146,16 +146,31 @@ fileList = [
 % "MEAS167.txt"
 % "MEAS168.txt"
 
-% "MEAS169.txt"
-% "MEAS170.txt"
-% "MEAS171.txt"
-"MEAS172.txt"
-"MEAS173.txt"
-% "MEAS174.txt"
-% "MEAS175.txt"
-% "MEAS178.txt"
-"MEAS179.txt"
-"MEAS180.txt"
+% % "MEAS169.txt"
+% % "MEAS170.txt"
+% % "MEAS171.txt"
+% "MEAS172.txt"
+% "MEAS173.txt"
+% % "MEAS174.txt"
+% % "MEAS175.txt"
+% % "MEAS178.txt"
+% "MEAS179.txt"
+% "MEAS180.txt"
+
+% "MEAS187.txt"
+% "MEAS188.txt"
+% "MEAS189.txt"
+% "MEAS190.txt"
+% "MEAS191.txt"
+
+% "MEAS191.txt"
+% "MEAS192.txt"
+% "MEAS195.txt"
+% "MEAS196.txt"
+% "MEAS197.txt"
+% "MEAS198.txt"
+
+"MEAS199.txt"
 
 ];
 
