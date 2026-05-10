@@ -41,6 +41,7 @@
 #include "LED.h"
 #include "sysTime.h"
 #include "SPI_SDcard.h"
+#include "SPI_common.h"
 
 //to switch header on hardware and unit test compilation
 #ifdef UNIT_TEST
@@ -118,10 +119,10 @@ void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput)
   // SerialUSB.print(testCtrGyroFinish); SerialUSB.print("\t");
   // SerialUSB.print(testCtrGyroGoActive); SerialUSB.print("\t");
 
-  // SerialUSB.print(testCtrAccActive); SerialUSB.print("\t");
-  // SerialUSB.print(testCtrAccPending); SerialUSB.print("\t");
-  // SerialUSB.print(testCtrAccFinish); SerialUSB.print("\t");
-  // SerialUSB.println(testCtrAccGoActive);
+   //SerialUSB.print(SPI.gyro.signals.x); SerialUSB.print("\t");
+   SerialUSB.print(  (float)SPI.gyro.signals_int.x); SerialUSB.print("\t");
+   SerialUSB.print(  (float)SPI.gyro.signalsPT1_int_133.x); SerialUSB.print("\t");
+   SerialUSB.println((float)SPI.gyro.signalsPT1_int_200.x);
 
 }
 
@@ -259,7 +260,9 @@ void DMAC_Handler(void)
 		{
 			calcSignalGyro(&SPI.gyro, SPI.sensorRx);
 			calcOffsetGyro(&SPI.gyro);
-			compensateData(&SPI.gyro);
+			compensateData(&SPI.gyro); 
+            //signalPT1Filter(&SPI.gyro);
+            gyroSignalPT1(&SPI.gyro);
 		}
 		else if (isAccReadFinished)
 		{
@@ -329,10 +332,18 @@ void SetupGyro(void)
 {
 	// setting default gyro values
     SPI.gyro.const_raw2real = 2000.0f / 32767.0f;
+    SPI.gyro.paramC = 10;   // 2000/200
     // offset calculated after startup
     SPI.gyro.offset.x = 0;
     SPI.gyro.offset.y = 0;
     SPI.gyro.offset.z = 0;
+    //intiger values
+    SPI.gyro.offset_int.x = 0;
+    SPI.gyro.offset_int.y = 0;
+    SPI.gyro.offset_int.z = 0;
+    
+    SPI.gyro.raw2realMultiplier = 2000;
+    SPI.gyro.raw2realBitshift = 15;
 
 	// flag for bad configuration
 	uint8_t badRegContent = false;
@@ -566,6 +577,10 @@ void calcSignalGyro(volatile signal* gyroSig, volatile uint8_t* buffer)
 	gyroSig->signals.y = (float)y * gyroSig->const_raw2real;
 	gyroSig->signals.z = (float)z * gyroSig->const_raw2real;
 
+    gyroSig->signals_int.x = (int32_t)(x);
+    gyroSig->signals_int.y = (int32_t)(y);
+    gyroSig->signals_int.z = (int32_t)(z);
+
 }
 
 void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer)
@@ -582,28 +597,35 @@ void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer)
 
 void calcOffsetGyro(volatile signal* gyroSig)
 {
-	static const uint16_t startMeas = 1000;
-	static const uint16_t endMeas = 2000;
 	static uint16_t n = 0;
 
 	if (false == gyroSig->offsetCalcDone)
 	{
-		if (startMeas <= n && n < endMeas)
+		if (1000 <= n && n < 2024)
 		{
 			gyroSig->offset.x += gyroSig->signals.x;
 			gyroSig->offset.y += gyroSig->signals.y;
 			gyroSig->offset.z += gyroSig->signals.z;
+
+            gyroSig->offset_int.x += gyroSig->signals_int.x;
+            gyroSig->offset_int.y += gyroSig->signals_int.y;
+            gyroSig->offset_int.z += gyroSig->signals_int.z;
 		}
-		else if (endMeas < n)
+		else if (2024 < n)
 		{
 			// divide by the number of measurements
 			// multiply by -1, positive offset should be extracted
-			gyroSig->offset.x /= float(endMeas - startMeas);
+			gyroSig->offset.x /= 1024.f;
 			gyroSig->offset.x *= -1.0f;
-			gyroSig->offset.y /= float(endMeas - startMeas);
+			gyroSig->offset.y /= 1024.f;
 			gyroSig->offset.y *= -1.0f;
-			gyroSig->offset.z /= float(endMeas - startMeas);
+			gyroSig->offset.z /= 1024.f;
 			gyroSig->offset.z *= -1.0f;
+
+            gyroSig->offset_int.x /= -1024;
+            gyroSig->offset_int.y /= -1024;
+            gyroSig->offset_int.z /= -1024;
+
 			// set calc done flag
 			gyroSig->offsetCalcDone = true;
 			// reset n, if a 2nd calc retrigger needed
@@ -611,7 +633,7 @@ void calcOffsetGyro(volatile signal* gyroSig)
 		}
 		else
 		{
-			// do nothing when n < startMeas
+			// do nothing when n < 1000
 		}
 
 		n++;
@@ -629,6 +651,11 @@ void compensateData(volatile signal* Sig)
         Sig->signals.x += Sig->offset.x;
         Sig->signals.y += Sig->offset.y;
         Sig->signals.z += Sig->offset.z;
+
+        // Sig->signals_int.x += Sig->offset_int.x;
+        // Sig->signals_int.y += Sig->offset_int.y;
+        // Sig->signals_int.z += Sig->offset_int.z;
+
         Sig->newData = true;
     }
     else
@@ -639,6 +666,9 @@ void compensateData(volatile signal* Sig)
 
 void getGyroAndAcc(sigOut* sigGyro, sigOut* sigAcc)
 {
+    sigGyro->raw2realMulti = SPI.gyro.raw2realMultiplier;
+    sigGyro->raw2realShift = SPI.gyro.raw2realBitshift;
+
     //disable DMAC interrupt
 	NVIC_DisableIRQ(DMAC_IRQn);
 
@@ -646,7 +676,17 @@ void getGyroAndAcc(sigOut* sigGyro, sigOut* sigAcc)
     sigGyro->signal.x = SPI.gyro.signals.x;
     sigGyro->signal.y = SPI.gyro.signals.y;
     sigGyro->signal.z = SPI.gyro.signals.z;
+    sigGyro->signal_int.x = SPI.gyro.signals_int.x;
+    sigGyro->signal_int.y = SPI.gyro.signals_int.y;
+    sigGyro->signal_int.z = SPI.gyro.signals_int.z;
+    sigGyro->signalPT1_133.x = SPI.gyro.signalsPT1_int_133.x;
+    sigGyro->signalPT1_133.y = SPI.gyro.signalsPT1_int_133.y;
+    sigGyro->signalPT1_133.z = SPI.gyro.signalsPT1_int_133.z;
+    sigGyro->signalPT1_200.x = SPI.gyro.signalsPT1_int_200.x;
+    sigGyro->signalPT1_200.y = SPI.gyro.signalsPT1_int_200.y;
+    sigGyro->signalPT1_200.z = SPI.gyro.signalsPT1_int_200.z;
     sigGyro->newData = SPI.gyro.newData;
+
     sigAcc->signal.x  = SPI.acc.signals.x;
     sigAcc->signal.y  = SPI.acc.signals.y;
     sigAcc->signal.z  = SPI.acc.signals.z;

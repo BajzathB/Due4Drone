@@ -9,9 +9,21 @@ typedef struct axis
 	float z{ 0 };
 }axis;
 
+typedef struct axis_int32
+{
+    int32_t x{ 0 };
+    int32_t y{ 0 };
+    int32_t z{ 0 };
+}axis_int32;
+
 typedef struct sigOut
 {
 	axis signal;
+    axis_int32 signal_int;
+    axis_int32 signalPT1_200;
+    axis_int32 signalPT1_133;    
+    int32_t raw2realMulti;
+    int32_t raw2realShift;
 	bool newData{ false };
 }sigOut;
 
@@ -53,9 +65,20 @@ typedef struct SpiOutput
 
 typedef struct signal
 {
-	axis signals;
-	float const_raw2real{ 0 };
-	axis offset;
+    axis signals;
+    axis offset;
+    axis signalsPT1;
+    float paramC{1};
+
+    float const_raw2real{ 0 };
+
+    int32_t raw2realMultiplier{1};
+    int32_t raw2realBitshift{0};
+    axis_int32 offset_int;
+    axis_int32 signals_int;
+    axis_int32 signalsPT1_int_200;
+    axis_int32 signalsPT1_int_133;
+
 	bool offsetCalcDone{ false };
 	bool newData{ false };
 }signal;
@@ -79,3 +102,16 @@ typedef enum E_DMACChannels : uint8_t
 
 // Method to trigger TX-RX SPI communication
 void SpiDmaTxRx(volatile uint32_t* txBuff, volatile uint8_t* rxBufff, uint32_t ctr, E_DMACChannels neededDMAC);
+
+// Method to filter value with PT1
+void PT1Filter(volatile float* yOut, const volatile float xIn, const volatile float paramC);
+
+// Method to filter 3axis signal with PT1
+void signalPT1Filter(volatile signal* sig);
+
+// Method to filter integer gyro value with PT1
+inline int32_t gyroPT1_200(int32_t y, const int32_t x);
+inline int32_t gyroPT1_133(int32_t y, const int32_t x);
+
+// Method to filter 3axis integer gyro signal with PT1
+void gyroSignalPT1(volatile signal* sig);

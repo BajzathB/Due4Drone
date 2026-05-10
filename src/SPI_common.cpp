@@ -66,3 +66,38 @@ void SpiDmaTxRx(volatile uint32_t* txBuff, volatile uint8_t* rxBuff, uint32_t ct
 	//trigger AHB DMAC
 	DMAC->DMAC_CHER |= triggerCh;
 }
+
+// param C = dataRate/cutoffFreq
+void PT1Filter(volatile float* yOut, const volatile float xIn, const volatile float paramC)
+{
+    *yOut = (xIn + paramC * (*yOut)) / (paramC + 1);
+}
+
+void signalPT1Filter(volatile signal* sig)
+{
+    PT1Filter(&sig->signalsPT1.x, sig->offset.x, sig->paramC);
+    PT1Filter(&sig->signalsPT1.y, sig->offset.y, sig->paramC);
+    PT1Filter(&sig->signalsPT1.z, sig->offset.z, sig->paramC);
+}
+
+//y=alpha(x-y) where alpha=1/(1+dataRate/cutoffFreq)
+//>>15 is equal 1/32768, 2979/32768 = 1/(1+2000/200)
+inline int32_t gyroPT1_200(int32_t y, const int32_t x)
+{
+    return y + ((2979 * (x - y)) >> 15);    //equivalent to 200Hz cutoff
+}
+inline int32_t gyroPT1_133(int32_t y, const int32_t x)
+{
+    return y + ((x - y) >> 4);    //equivalent to 133Hz cutoff
+}
+
+void gyroSignalPT1(volatile signal* sig)
+{
+    sig->signalsPT1_int_200.x = gyroPT1_200(sig->signalsPT1_int_200.x, sig->signals_int.x);
+    sig->signalsPT1_int_200.y = gyroPT1_200(sig->signalsPT1_int_200.y, sig->signals_int.y);
+    sig->signalsPT1_int_200.z = gyroPT1_200(sig->signalsPT1_int_200.z, sig->signals_int.z);
+    
+    sig->signalsPT1_int_133.x = gyroPT1_133(sig->signalsPT1_int_133.x, sig->signals_int.x);
+    sig->signalsPT1_int_133.y = gyroPT1_133(sig->signalsPT1_int_133.y, sig->signals_int.y);
+    sig->signalsPT1_int_133.z = gyroPT1_133(sig->signalsPT1_int_133.z, sig->signals_int.z);
+}

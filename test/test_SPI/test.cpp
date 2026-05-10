@@ -54,6 +54,12 @@ TEST(test_SPI, SPI_Call)
     DMAC_Handler();
     sigOut testAxisGyro, testAxisAcc;
     getGyroAndAcc(&testAxisGyro, &testAxisAcc);
+    float y{1}, x{ 1 }, paramC{ 1 };
+    PT1Filter(&y,x,paramC);
+    signalPT1Filter(&testSig);
+    gyroPT1_200(1,1);
+    gyroPT1_133(1,1);
+    gyroSignalPT1(&testSig);
 }
 
 TEST(test_SPI, PIOC_Handler_Test)
@@ -142,6 +148,36 @@ TEST(test_SPI, PIOC_Handler_Test)
     EXPECT_EQ(SPI.spiActivityGyro, PENDING);
 }
 
+TEST(test_SPI, calcSignalGyro_Test)
+{
+    uint8_t testRx[10];
+    signal testSig;
+
+    // 0 bytes
+    testRx[1] = 0;
+    testRx[2] = 0;
+    testRx[3] = 0;
+    testRx[4] = 0;
+    testRx[5] = 0;
+    testRx[6] = 0;
+    calcSignalGyro(&testSig, testRx);
+    EXPECT_EQ(testSig.signals_int.x, 0);
+    EXPECT_EQ(testSig.signals_int.y, 0);
+    EXPECT_EQ(testSig.signals_int.z, 0);
+
+    // with values
+    testRx[1] = 200;
+    testRx[2] = 0;
+    testRx[3] = 100;
+    testRx[4] = 2;
+    testRx[5] = 50;
+    testRx[6] = 100;
+    calcSignalGyro(&testSig, testRx);
+    EXPECT_EQ(testSig.signals_int.x, 200);
+    EXPECT_EQ(testSig.signals_int.y, 612);
+    EXPECT_EQ(testSig.signals_int.z, 25650);
+}
+
 TEST(test_SPI, calcGyroOffset_Test)
 {
     signal testSig = { testSig.const_raw2real = 2000.0f / 32767.0f, };
@@ -152,11 +188,17 @@ TEST(test_SPI, calcGyroOffset_Test)
     EXPECT_EQ(testSig.offset.x, 0.0f);
     EXPECT_EQ(testSig.offset.y, 0.0f);
     EXPECT_EQ(testSig.offset.z, 0.0f);
+    EXPECT_EQ(testSig.offset_int.x, 0);
+    EXPECT_EQ(testSig.offset_int.y, 0);
+    EXPECT_EQ(testSig.offset_int.z, 0);
 
     //2nd: reaching measurement
     testSig.signals.x = 0.5f;
     testSig.signals.y = 1.0f;
     testSig.signals.z = 0.2f;
+    testSig.signals_int.x = 5;
+    testSig.signals_int.y = 10;
+    testSig.signals_int.z = 21;
     for (uint16_t i = 0; i < 999; i++)
     {
         calcOffsetGyro(&testSig);
@@ -165,9 +207,12 @@ TEST(test_SPI, calcGyroOffset_Test)
     EXPECT_NEAR(testSig.offset.x, 0.5, 0.1);
     EXPECT_NEAR(testSig.offset.y, 1.0, 0.1);
     EXPECT_NEAR(testSig.offset.z, 0.2, 0.1);
+    EXPECT_EQ(testSig.offset_int.x, 5);
+    EXPECT_EQ(testSig.offset_int.y, 10);
+    EXPECT_EQ(testSig.offset_int.z, 21);
 
     //3rd: finish measurement
-    for (uint16_t i = 0; i < 1001; i++)
+    for (uint16_t i = 0; i < 1025; i++)
     {
         calcOffsetGyro(&testSig);
     }
@@ -175,12 +220,18 @@ TEST(test_SPI, calcGyroOffset_Test)
     EXPECT_NEAR(testSig.offset.x, -0.5, 0.1);
     EXPECT_NEAR(testSig.offset.y, -1.0, 0.1);
     EXPECT_NEAR(testSig.offset.z, -0.2, 0.1);
+    EXPECT_EQ(testSig.offset_int.x, -5);
+    EXPECT_EQ(testSig.offset_int.y, -10);
+    EXPECT_EQ(testSig.offset_int.z, -21);
 
     //4th: retrigger measurement
     testSig.offsetCalcDone = false;
     testSig.offset.x = 0;
     testSig.offset.y = 0;
     testSig.offset.z = 0;
+    testSig.offset_int.x = 0;
+    testSig.offset_int.y = 0;
+    testSig.offset_int.z = 0;
     for (uint16_t i = 0; i < 1000; i++)
     {
         calcOffsetGyro(&testSig);
@@ -189,6 +240,9 @@ TEST(test_SPI, calcGyroOffset_Test)
     EXPECT_NEAR(testSig.offset.x, 0.5, 0.1);
     EXPECT_NEAR(testSig.offset.y, 1.0, 0.1);
     EXPECT_NEAR(testSig.offset.z, 0.2, 0.1);
+    EXPECT_EQ(testSig.offset_int.x, 5);
+    EXPECT_EQ(testSig.offset_int.y, 10);
+    EXPECT_EQ(testSig.offset_int.z, 21);
 
 }
 
@@ -204,10 +258,19 @@ TEST(test_SPI, compensateData_Test)
     testSig.offset.x = 5.0f;
     testSig.offset.y = -4.0f;
     testSig.offset.z = -3.0f;
+    testSig.signals_int.x = 5;
+    testSig.signals_int.y = 10;
+    testSig.signals_int.z = -8;
+    testSig.offset_int.x = 5;
+    testSig.offset_int.y = -4;
+    testSig.offset_int.z = -3;
     compensateData(&testSig);
     EXPECT_NEAR(testSig.signals.x, 5.0f, 0.1f);
     EXPECT_NEAR(testSig.signals.y, 10.0f, 0.1f);
     EXPECT_NEAR(testSig.signals.z, -8.0f, 0.1f);
+    EXPECT_EQ(testSig.signals_int.x, 5);
+    EXPECT_EQ(testSig.signals_int.y, 10);
+    EXPECT_EQ(testSig.signals_int.z, -8);
     EXPECT_FALSE(testSig.newData);
 
     //2nd: offset calc done
@@ -216,6 +279,9 @@ TEST(test_SPI, compensateData_Test)
     EXPECT_NEAR(testSig.signals.x, 10.0f, 0.1f);
     EXPECT_NEAR(testSig.signals.y, 6.0f, 0.1f);
     EXPECT_NEAR(testSig.signals.z, -11.0f, 0.1f);
+    EXPECT_EQ(testSig.signals_int.x, 10);
+    EXPECT_EQ(testSig.signals_int.y, 6);
+    EXPECT_EQ(testSig.signals_int.z, -11);
     EXPECT_TRUE(testSig.newData);
 
 }
@@ -599,4 +665,10 @@ TEST(test_SPI, RunSPI_Test)
     getSPISdCard()->sdCardInitFinished = true;
     RunSPI(&testIn, &testOut);
     EXPECT_EQ(getSPISdCard()->sdCardInitFinished, false);
+}
+
+TEST(test_SPI, gyroPT1_200_Test)
+{
+    EXPECT_EQ(gyroPT1_200(100,150), 104);
+    EXPECT_EQ(gyroPT1_200(100,-3000), -182);
 }

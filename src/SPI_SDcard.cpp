@@ -1591,6 +1591,9 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
     measureData(meas2Card.measureGyroPT2X, true, gyroData->PT2.signal.x, 3, false, "gyroPT2X: ");
     measureData(meas2Card.measureGyroPT2Y, true, gyroData->PT2.signal.y, 3, false, "gyroPT2Y: ");
     measureData(meas2Card.measureGyroPT2Z, true, gyroData->PT2.signal.z, 3, false, "gyroPT2Z: ");
+    measureData(meas2Card.measureGyroRawX_int,    true, (spiInput->gyro.raw2realMulti * spiInput->gyro.signal_int.x)    >> spiInput->gyro.raw2realShift, 0, false, "gyroRawX_int: ");
+    measureData(meas2Card.measureGyroPT1X133_int, true, (spiInput->gyro.raw2realMulti * spiInput->gyro.signalPT1_133.x) >> spiInput->gyro.raw2realShift, 0, false, "gyroRawX_int: ");
+    measureData(meas2Card.measureGyroPT1X200_int, true, (spiInput->gyro.raw2realMulti * spiInput->gyro.signalPT1_200.x) >> spiInput->gyro.raw2realShift, 0, false, "gyroRawX_int: ");
     //acc
     measureData(meas2Card.measureAccRawX, true, spiInput->acc.signal.x, 3, false, "accRawX: ");
     measureData(meas2Card.measureAccRawY, true, spiInput->acc.signal.y, 3, false, "accRawY: ");
@@ -1942,6 +1945,9 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureGyroPT2X, true, "GPT2X", 5);
         addMeasNameHeader(meas2Card.measureGyroPT2Y, true, "GPT2Y", 5);
         addMeasNameHeader(meas2Card.measureGyroPT2Z, true, "GPT2Z", 5);
+        addMeasNameHeader(meas2Card.measureGyroRawX_int, true, "GRawXi", 6);
+        addMeasNameHeader(meas2Card.measureGyroPT1X133_int, true, "GPT1Xi133", 9);
+        addMeasNameHeader(meas2Card.measureGyroPT1X200_int, true, "GPT1Xi200", 9);
         //acc
         addMeasNameHeader(meas2Card.measureAccRawX, true, "ARawX", 5);
         addMeasNameHeader(meas2Card.measureAccRawY, true, "ARawY", 5);

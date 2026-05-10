@@ -157,6 +157,15 @@ typedef struct Meas2Card
     bool measureGyroPT2X{ false };
     bool measureGyroPT2Y{ false };
     bool measureGyroPT2Z{ false };
+    bool measureGyroRawX_int{ true };
+    bool measureGyroRawY_int{ false };
+    bool measureGyroRawZ_int{ false };
+    bool measureGyroPT1X133_int{ true };
+    bool measureGyroPT1Y133_int{ false };
+    bool measureGyroPT1Z133_int{ false };
+    bool measureGyroPT1X200_int{ true };
+    bool measureGyroPT1Y200_int{ false };
+    bool measureGyroPT1Z200_int{ false };
     //acc
     bool measureAccRawX{ false };
     bool measureAccRawY{ false };
@@ -203,13 +212,13 @@ typedef struct Meas2Card
     bool measurePIDSensorX{ true };
     bool measurePIDSensorY{ true };
     bool measurePIDSensorZ{ true };
-    bool measurePIDPoutX{ true };
+    bool measurePIDPoutX{ false };
     bool measurePIDPoutY{ false };
     bool measurePIDPoutZ{ false };
-    bool measurePIDIoutX{ true };
+    bool measurePIDIoutX{ false };
     bool measurePIDIoutY{ false };
     bool measurePIDIoutZ{ false };
-    bool measurePIDDoutX{ true };
+    bool measurePIDDoutX{ false };
     bool measurePIDDoutY{ false };
     bool measurePIDDoutZ{ false };
     bool measurePIDFFoutX{ false };
