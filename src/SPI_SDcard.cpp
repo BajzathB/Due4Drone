@@ -1591,9 +1591,12 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
     measureData(meas2Card.measureGyroPT2X, true, gyroData->PT2.signal.x, 3, false, "gyroPT2X: ");
     measureData(meas2Card.measureGyroPT2Y, true, gyroData->PT2.signal.y, 3, false, "gyroPT2Y: ");
     measureData(meas2Card.measureGyroPT2Z, true, gyroData->PT2.signal.z, 3, false, "gyroPT2Z: ");
-    measureData(meas2Card.measureGyroRawX_int,    true, (spiInput->gyro.raw2realMulti * spiInput->gyro.signal_int.x)    >> spiInput->gyro.raw2realShift, 0, false, "gyroRawX_int: ");
-    measureData(meas2Card.measureGyroPT1X133_int, true, (spiInput->gyro.raw2realMulti * spiInput->gyro.signalPT1_133.x) >> spiInput->gyro.raw2realShift, 0, false, "gyroRawX_int: ");
-    measureData(meas2Card.measureGyroPT1X200_int, true, (spiInput->gyro.raw2realMulti * spiInput->gyro.signalPT1_200.x) >> spiInput->gyro.raw2realShift, 0, false, "gyroRawX_int: ");
+    measureData(meas2Card.measureGyroRawX_int, true, calcRealFromInt(&SPI.gyro, E_direction::X, false), 3, false, "gyroRawX_int: ");
+    measureData(meas2Card.measureGyroRawY_int, true, calcRealFromInt(&SPI.gyro, E_direction::Y, false), 3, false, "gyroRawY_int: ");
+    measureData(meas2Card.measureGyroRawZ_int, true, calcRealFromInt(&SPI.gyro, E_direction::Z, false), 3, false, "gyroRawZ_int: ");
+    measureData(meas2Card.measureGyroPT1X_int, true, calcRealFromInt(&SPI.gyro, E_direction::X, true), 3, false, "gyroPT1X_int: ");
+    measureData(meas2Card.measureGyroPT1Y_int, true, calcRealFromInt(&SPI.gyro, E_direction::Y, true), 3, false, "gyroPT1Y_int: ");
+    measureData(meas2Card.measureGyroPT1Z_int, true, calcRealFromInt(&SPI.gyro, E_direction::Z, true), 3, false, "gyroPT1Z_int: ");
     //acc
     measureData(meas2Card.measureAccRawX, true, spiInput->acc.signal.x, 3, false, "accRawX: ");
     measureData(meas2Card.measureAccRawY, true, spiInput->acc.signal.y, 3, false, "accRawY: ");
@@ -1604,6 +1607,12 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
     measureData(meas2Card.measureAccPT2X, true, accData->PT2.signal.x, 3, false, "accPT2X: ");
     measureData(meas2Card.measureAccPT2Y, true, accData->PT2.signal.y, 3, false, "accPT2Y: ");
     measureData(meas2Card.measureAccPT2Z, true, accData->PT2.signal.z, 3, false, "accPT2Z: ");
+	measureData(meas2Card.measureAccRawX_int, true, calcRealFromInt(&SPI.acc, E_direction::X, false), 3, false, "accRawX_int: ");
+	measureData(meas2Card.measureAccRawY_int, true, calcRealFromInt(&SPI.acc, E_direction::Y, false), 3, false, "accRawY_int: ");
+	measureData(meas2Card.measureAccRawZ_int, true, calcRealFromInt(&SPI.acc, E_direction::Z, false), 3, false, "accRawZ_int: ");
+	measureData(meas2Card.measureAccPT1X_int, true, calcRealFromInt(&SPI.acc, E_direction::X, true), 3, false, "accPT1X_int: ");
+	measureData(meas2Card.measureAccPT1Y_int, true, calcRealFromInt(&SPI.acc, E_direction::Y, true), 3, false, "accPT1Y_int: ");
+	measureData(meas2Card.measureAccPT1Z_int, true, calcRealFromInt(&SPI.acc, E_direction::Z, true), 3, false, "accPT1Z_int: ");
     //angle
     measureData(meas2Card.measureAngleRawRoll, true, accData->rollAngle, 3, false, "rollAngleRaw: ");
     measureData(meas2Card.measureAngleRawPitch, true, accData->pitchAngle, 3, false, "pitchAngleRaw: ");
@@ -1946,8 +1955,11 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureGyroPT2Y, true, "GPT2Y", 5);
         addMeasNameHeader(meas2Card.measureGyroPT2Z, true, "GPT2Z", 5);
         addMeasNameHeader(meas2Card.measureGyroRawX_int, true, "GRawXi", 6);
-        addMeasNameHeader(meas2Card.measureGyroPT1X133_int, true, "GPT1Xi133", 9);
-        addMeasNameHeader(meas2Card.measureGyroPT1X200_int, true, "GPT1Xi200", 9);
+        addMeasNameHeader(meas2Card.measureGyroRawY_int, true, "GRawYi", 6);
+        addMeasNameHeader(meas2Card.measureGyroRawZ_int, true, "GRawZi", 6);
+        addMeasNameHeader(meas2Card.measureGyroPT1X_int, true, "GPT1Xi", 9);
+        addMeasNameHeader(meas2Card.measureGyroPT1Y_int, true, "GPT1Yi", 9);
+        addMeasNameHeader(meas2Card.measureGyroPT1Z_int, true, "GPT1Zi", 9);
         //acc
         addMeasNameHeader(meas2Card.measureAccRawX, true, "ARawX", 5);
         addMeasNameHeader(meas2Card.measureAccRawY, true, "ARawY", 5);
@@ -1958,6 +1970,12 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureAccPT2X, true, "APT2X", 5);
         addMeasNameHeader(meas2Card.measureAccPT2Y, true, "APT2Y", 5);
         addMeasNameHeader(meas2Card.measureAccPT2Z, true, "APT2Z", 5);
+		addMeasNameHeader(meas2Card.measureAccRawX_int, true, "ARawXi", 6);
+		addMeasNameHeader(meas2Card.measureAccRawY_int, true, "ARawYi", 6);
+		addMeasNameHeader(meas2Card.measureAccRawZ_int, true, "ARawZi", 6);
+		addMeasNameHeader(meas2Card.measureAccPT1X_int, true, "APT1Xi", 6);
+		addMeasNameHeader(meas2Card.measureAccPT1Y_int, true, "APT1Yi", 6);
+		addMeasNameHeader(meas2Card.measureAccPT1Z_int, true, "APT1Zi", 6);
         //angle
         addMeasNameHeader(meas2Card.measureAngleRawRoll, true, "aRawR", 5);
         addMeasNameHeader(meas2Card.measureAngleRawPitch, true, "aRawP", 5);

@@ -74,18 +74,30 @@
 #define ID_meas_2_card_angle_CF_weighted_raw_pitch 165
 #define ID_meas_2_card_angle_CF_weighted_PT01_roll 166
 #define ID_meas_2_card_angle_CF_weighted_PT01_pitch 167
+#define ID_meas_2_card_gyro_raw_X_int 168
+#define ID_meas_2_card_gyro_raw_Y_int 169
+#define ID_meas_2_card_gyro_raw_Z_int 170
+#define ID_meas_2_card_gyro_PT1_X_int 171
+#define ID_meas_2_card_gyro_PT1_Y_int 172
+#define ID_meas_2_card_gyro_PT1_Z_int 173
+#define ID_meas_2_card_acc_raw_X_int 174
+#define ID_meas_2_card_acc_raw_Y_int 175
+#define ID_meas_2_card_acc_raw_Z_int 176
+#define ID_meas_2_card_acc_PT1_X_int 177
+#define ID_meas_2_card_acc_PT1_Y_int 178
+#define ID_meas_2_card_acc_PT1_Z_int 179
 
 
 
 
-//uint8
+//uint8-16-32
 #define ID_SDCARD_MAINSTATE 1000
 #define ID_SDCARD_RESET_MEASRUEMENT 1001
 #define ID_SDCARD_REINIT_SDCARD 1002
+#define ID_spi_acc_offset_int_x 1003
+#define ID_spi_acc_offset_int_y 1004
+#define ID_spi_acc_offset_int_z 1005
 
-
-
-//uint16
 
 
 

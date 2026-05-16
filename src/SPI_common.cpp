@@ -70,34 +70,64 @@ void SpiDmaTxRx(volatile uint32_t* txBuff, volatile uint8_t* rxBuff, uint32_t ct
 // param C = dataRate/cutoffFreq
 void PT1Filter(volatile float* yOut, const volatile float xIn, const volatile float paramC)
 {
-    *yOut = (xIn + paramC * (*yOut)) / (paramC + 1);
+	*yOut = (xIn + paramC * (*yOut)) / (paramC + 1);
 }
 
 void signalPT1Filter(volatile signal* sig)
 {
-    PT1Filter(&sig->signalsPT1.x, sig->offset.x, sig->paramC);
-    PT1Filter(&sig->signalsPT1.y, sig->offset.y, sig->paramC);
-    PT1Filter(&sig->signalsPT1.z, sig->offset.z, sig->paramC);
+	PT1Filter(&sig->signalsPT1.x, sig->offset.x, sig->paramC);
+	PT1Filter(&sig->signalsPT1.y, sig->offset.y, sig->paramC);
+	PT1Filter(&sig->signalsPT1.z, sig->offset.z, sig->paramC);
 }
 
-//y=alpha(x-y) where alpha=1/(1+dataRate/cutoffFreq)
-//>>15 is equal 1/32768, 2979/32768 = 1/(1+2000/200)
-inline int32_t gyroPT1_200(int32_t y, const int32_t x)
+float calcRealFromInt(volatile signal* sig, E_direction dir, bool isPT1)
 {
-    return y + ((2979 * (x - y)) >> 15);    //equivalent to 200Hz cutoff
-}
-inline int32_t gyroPT1_133(int32_t y, const int32_t x)
-{
-    return y + ((x - y) >> 4);    //equivalent to 133Hz cutoff
+	int32_t value{ 0 };
+
+	switch (dir)
+	{
+	case E_direction::X:
+		value = (isPT1) ? sig->signalsPT1_int.x : sig->signals_int.x;
+		break;
+
+	case E_direction::Y:
+		value = (isPT1) ? sig->signalsPT1_int.y : sig->signals_int.y;
+		break;
+
+	case E_direction::Z:
+		value = (isPT1) ? sig->signalsPT1_int.z : sig->signals_int.z;
+		break;
+	}
+
+	return (float)(sig->raw2realMultiplier * value) / (float)sig->raw2realDivider;
 }
 
-void gyroSignalPT1(volatile signal* sig)
+void calcMovingAverage(MovingAverage* ma, axis* value)
 {
-    sig->signalsPT1_int_200.x = gyroPT1_200(sig->signalsPT1_int_200.x, sig->signals_int.x);
-    sig->signalsPT1_int_200.y = gyroPT1_200(sig->signalsPT1_int_200.y, sig->signals_int.y);
-    sig->signalsPT1_int_200.z = gyroPT1_200(sig->signalsPT1_int_200.z, sig->signals_int.z);
-    
-    sig->signalsPT1_int_133.x = gyroPT1_133(sig->signalsPT1_int_133.x, sig->signals_int.x);
-    sig->signalsPT1_int_133.y = gyroPT1_133(sig->signalsPT1_int_133.y, sig->signals_int.y);
-    sig->signalsPT1_int_133.z = gyroPT1_133(sig->signalsPT1_int_133.z, sig->signals_int.z);
+	// Remove oldest value from sum
+	ma->sumX -= ma->dataX[ma->index];
+	ma->sumY -= ma->dataY[ma->index];
+	ma->sumZ -= ma->dataZ[ma->index];
+
+	// Store new value
+	ma->dataX[ma->index] = value->x;
+	ma->dataY[ma->index] = value->y;
+	ma->dataZ[ma->index] = value->z;
+
+	// Add new value to sum
+	ma->sumX += value->x;
+	ma->sumY += value->y;
+	ma->sumZ += value->z;
+
+	// Move circular index
+	ma->index = (ma->index + 1) % ma->window_size;
+
+	// Increase count until full
+	if (ma->count < ma->window_size) {
+		ma->count++;
+	}
+
+	ma->averageX = ma->sumX / ma->count;
+	ma->averageY = ma->sumY / ma->count;
+	ma->averageZ = ma->sumZ / ma->count;
 }

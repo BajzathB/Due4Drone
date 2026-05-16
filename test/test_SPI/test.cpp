@@ -6,7 +6,6 @@
 #include "../helper/support4Testing.h"
 #include "../helper/support4Testing.hpp"
 
-
 extern NVIC_Type* NVIC;
 extern Pio* PIOC;
 extern Pio* PIOA;
@@ -57,9 +56,11 @@ TEST(test_SPI, SPI_Call)
     float y{1}, x{ 1 }, paramC{ 1 };
     PT1Filter(&y,x,paramC);
     signalPT1Filter(&testSig);
-    gyroPT1_200(1,1);
-    gyroPT1_133(1,1);
-    gyroSignalPT1(&testSig);
+    calcRealFromInt(&testSig, E_direction::X, false);
+    gyroPT1_133Hz(1,1);
+    gyroSignalPT1_133Hz(&testSig);
+    accPT1_25Hz(1, 1);
+    accSignalPT1_25Hz(&testSig);
 }
 
 TEST(test_SPI, PIOC_Handler_Test)
@@ -622,19 +623,43 @@ TEST(test_SPI, getGyroAndAcc_Test)
     SPI.gyro.signals.x = 5.0f;
     SPI.gyro.signals.y = 4.5f;
     SPI.gyro.signals.z = 3.0f;
+    SPI.gyro.signals_int.x = 5;
+    SPI.gyro.signals_int.y = 4;
+    SPI.gyro.signals_int.z = 3;
+    SPI.gyro.signalsPT1_int.x = 5;
+    SPI.gyro.signalsPT1_int.y = 4;
+    SPI.gyro.signalsPT1_int.z = 3;
     SPI.gyro.newData = true;
     SPI.acc.signals.x = -2.0;
     SPI.acc.signals.y = -4.2f;
     SPI.acc.signals.z = -10.9f;
+    SPI.acc.signals_int.x = -2;
+    SPI.acc.signals_int.y = -4;
+    SPI.acc.signals_int.z = 10;
+    SPI.acc.signalsPT1_int.x = -2;
+    SPI.acc.signalsPT1_int.y = -4;
+    SPI.acc.signalsPT1_int.z = 10;
     SPI.acc.newData = true;
     getGyroAndAcc(&testAxisGyro, &testAxisAcc);
     EXPECT_NEAR(testAxisGyro.signal.x, 5, 0.1);
     EXPECT_NEAR(testAxisGyro.signal.y, 4.5, 0.1);
     EXPECT_NEAR(testAxisGyro.signal.z, 3, 0.1);
+    EXPECT_EQ(testAxisGyro.signal_int.x, 5);
+    EXPECT_EQ(testAxisGyro.signal_int.y, 4);
+    EXPECT_EQ(testAxisGyro.signal_int.z, 3);
+    EXPECT_EQ(testAxisGyro.signalPT1_int.x, 5);
+    EXPECT_EQ(testAxisGyro.signalPT1_int.y, 4);
+    EXPECT_EQ(testAxisGyro.signalPT1_int.z, 3);
     EXPECT_TRUE(testAxisGyro.newData);
     EXPECT_NEAR(testAxisAcc.signal.x, -2, 0.1);
     EXPECT_NEAR(testAxisAcc.signal.y, -4.2, 0.1);
     EXPECT_NEAR(testAxisAcc.signal.z, -10.9, 0.1);
+    EXPECT_EQ(testAxisAcc.signal_int.x, -2);
+    EXPECT_EQ(testAxisAcc.signal_int.y, -4);
+    EXPECT_EQ(testAxisAcc.signal_int.z, 10);
+    EXPECT_EQ(testAxisAcc.signalPT1_int.x, -2);
+    EXPECT_EQ(testAxisAcc.signalPT1_int.y, -4);
+    EXPECT_EQ(testAxisAcc.signalPT1_int.z, 10);
     EXPECT_TRUE(testAxisAcc.newData);
 
     //2nd
@@ -667,8 +692,94 @@ TEST(test_SPI, RunSPI_Test)
     EXPECT_EQ(getSPISdCard()->sdCardInitFinished, false);
 }
 
-TEST(test_SPI, gyroPT1_200_Test)
+TEST(test_SPI, gyroPT1_133Hz_Test)
 {
-    EXPECT_EQ(gyroPT1_200(100,150), 104);
-    EXPECT_EQ(gyroPT1_200(100,-3000), -182);
+    EXPECT_EQ(gyroPT1_133Hz(100,150), 103);
+    EXPECT_EQ(gyroPT1_133Hz(100,-3000), -94);
+}
+
+TEST(test_SPI, gyroSignalPT1_Test)
+{
+    volatile signal testSig;
+
+    //test: 
+    testSig.signals_int.x = 100;
+    testSig.signals_int.y = -200;
+    testSig.signals_int.z = 500;
+    testSig.signalsPT1_int.x = 0;
+    testSig.signalsPT1_int.y = 0;
+    testSig.signalsPT1_int.z = 0;
+    gyroSignalPT1_133Hz(&testSig);
+    EXPECT_EQ(testSig.signalsPT1_int.x, 6);
+    EXPECT_EQ(testSig.signalsPT1_int.y, -13);
+    EXPECT_EQ(testSig.signalsPT1_int.z, 31);
+}
+
+TEST(test_SPI, accPT1_25Hz_Test)
+{
+    EXPECT_EQ(accPT1_25Hz(100, 150), 100);
+    EXPECT_EQ(accPT1_25Hz(-100, 30000), 370);
+}
+
+TEST(test_SPI, accSignalPT1_25Hz_Test)
+{
+    volatile signal testSig;
+
+    //test: 
+    testSig.signals_int.x = 100;
+    testSig.signals_int.y = -2000;
+    testSig.signals_int.z = 20000;
+    testSig.signalsPT1_int.x = 0;
+    testSig.signalsPT1_int.y = 0;
+    testSig.signalsPT1_int.z = 0;
+    accSignalPT1_25Hz(&testSig);
+    EXPECT_EQ(testSig.signalsPT1_int.x, 1);
+    EXPECT_EQ(testSig.signalsPT1_int.y, -32);
+    EXPECT_EQ(testSig.signalsPT1_int.z, 312);
+}
+
+TEST(test_SPI, calcRealFromInt_Test)
+{
+    signal sig;
+
+    //
+    sig.raw2realMultiplier = 100;
+    sig.raw2realDivider = 2;
+    sig.signals_int.x = 50;
+    sig.signalsPT1_int.y = -1000;
+    sig.signalsPT1_int.z = 5000;
+    EXPECT_NEAR(calcRealFromInt(&sig, E_direction::X, false), 2500.0, 0.1);
+    EXPECT_NEAR(calcRealFromInt(&sig, E_direction::Y ,true), -50000.0, 0.1);
+    EXPECT_NEAR(calcRealFromInt(&sig, E_direction::Z ,true), 250000, 0.1);
+}
+
+TEST(test_SPI, calcMovingAverage_Test)
+{
+    MovingAverage ma;
+    axis value;
+
+    //test: 0
+    calcMovingAverage(&ma, &value);
+    EXPECT_NEAR(ma.averageX, 0.0 ,0.1);
+    EXPECT_EQ(ma.count, 1);
+    EXPECT_EQ(ma.index, 1);
+
+    //test 
+    for (uint8_t i = 0; i < 50; i++)
+    {
+        ma.dataX[i] = 100.0f;
+        ma.sumX += 100.0f;
+    }
+    for (uint8_t i = 50; i < 99; i++)
+    {
+        ma.dataX[i] = 200.0f;
+        ma.sumX += 200.0f;
+    }
+    ma.count = 99;
+    ma.index = 99;
+    value.x = 200.0f;
+    calcMovingAverage(&ma, &value);
+    EXPECT_NEAR(ma.averageX, 150.0, 0.1);
+    EXPECT_EQ(ma.count, 100);
+    EXPECT_EQ(ma.index, 0);
 }

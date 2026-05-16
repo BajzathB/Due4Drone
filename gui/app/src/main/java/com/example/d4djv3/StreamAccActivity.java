@@ -99,7 +99,7 @@ public class StreamAccActivity extends BaseActivity
         //get the spinner from the xml.
         accFilterParams = findViewById(R.id.spinner_accFilterParams);
         //create a list of items for the spinner.
-        String[] items = new String[]{"PT_c", "Alpha", "KF_q_ang", "KF_q_bias", "KF_r", "offsetX", "offsetY", "offsetZ"};
+        String[] items = new String[]{"PT_c", "Alpha", "KF_q_ang", "KF_q_bias", "KF_r", "offsetX", "offsetY", "offsetZ", "offsetX_int", "offsetY_int", "offsetZ_int"};
         //create an adapter to describe how the items are displayed, adapters are used in several places in android.
         //There are multiple variations of this, but this is the basic variant.
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items);
@@ -632,6 +632,21 @@ public class StreamAccActivity extends BaseActivity
                 returnVal = 2021;
                 break;
             }
+            case "offsetX_int":
+            {
+                returnVal = 1003;
+                break;
+            }
+            case "offsetY_int":
+            {
+                returnVal = 1004;
+                break;
+            }
+            case "offsetZ_int":
+            {
+                returnVal = 1005;
+                break;
+            }
         }
 
         return returnVal;
@@ -655,6 +670,9 @@ public class StreamAccActivity extends BaseActivity
                 break;
             }
             case "KF_r":
+            case "offsetX_int":
+            case "offsetY_int":
+            case "offsetZ_int":
             {
                 returnVal = 1.0f;
                 break;

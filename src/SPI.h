@@ -75,4 +75,16 @@ void getGyroAndAcc(sigOut* axisGyro, sigOut* axisAcc);
 // Method to get SPI struct
 spi_st* getSPI();
 
+// Method to filter integer gyro value with PT1 with 133Hz cutoff
+inline int32_t gyroPT1_133Hz(int32_t y, const int32_t x);
+
+// Method to filter 3axis integer gyro signal with PT1  with 133Hz cutoff
+void gyroSignalPT1_133Hz(volatile signal* sig);
+
+// Method to filter integer acc value with PT1 with 25Hz cutoff
+inline int32_t accPT1_25Hz(int32_t y, const int32_t x);
+
+// Method to filter 3axis integer acc signal with PT1  with 25Hz cutoff
+void accSignalPT1_25Hz(volatile signal* sig);
+
 #endif // !SPI_HPP

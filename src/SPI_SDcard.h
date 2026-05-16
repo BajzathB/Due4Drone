@@ -157,15 +157,12 @@ typedef struct Meas2Card
     bool measureGyroPT2X{ false };
     bool measureGyroPT2Y{ false };
     bool measureGyroPT2Z{ false };
-    bool measureGyroRawX_int{ true };
+    bool measureGyroRawX_int{ false };
     bool measureGyroRawY_int{ false };
     bool measureGyroRawZ_int{ false };
-    bool measureGyroPT1X133_int{ true };
-    bool measureGyroPT1Y133_int{ false };
-    bool measureGyroPT1Z133_int{ false };
-    bool measureGyroPT1X200_int{ true };
-    bool measureGyroPT1Y200_int{ false };
-    bool measureGyroPT1Z200_int{ false };
+    bool measureGyroPT1X_int{ false };
+    bool measureGyroPT1Y_int{ false };
+    bool measureGyroPT1Z_int{ false };
     //acc
     bool measureAccRawX{ false };
     bool measureAccRawY{ false };
@@ -176,6 +173,12 @@ typedef struct Meas2Card
     bool measureAccPT2X{ false };
     bool measureAccPT2Y{ false };
     bool measureAccPT2Z{ false };
+	bool measureAccRawX_int{ false };
+	bool measureAccRawY_int{ false };
+	bool measureAccRawZ_int{ false };
+	bool measureAccPT1X_int{ false };
+	bool measureAccPT1Y_int{ false };
+	bool measureAccPT1Z_int{ false };
     //angle
     bool measureAngleRawRoll{ false };
     bool measureAngleRawPitch{ false };

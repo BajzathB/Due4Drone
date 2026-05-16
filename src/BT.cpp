@@ -375,6 +375,9 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
                 case ID_control_PID_cascade_FF_Y: pidCascadseSet->FFr.y = ConvertStrToDouble(&BT.input); break;
                 case ID_control_PID_cascade_FF_DX: pidCascadseSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
                 case ID_control_PID_cascade_FF_DY: pidCascadseSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
+				case ID_spi_acc_offset_int_x: spi->acc.offset_int.x = ConvertStrToInt32(&BT.input);	break;
+				case ID_spi_acc_offset_int_y: spi->acc.offset_int.y = ConvertStrToInt32(&BT.input);	break;
+				case ID_spi_acc_offset_int_z: spi->acc.offset_int.z = ConvertStrToInt32(&BT.input);	break;
 
 				//
 				case ID_update_global_time: setGlobalTime(ConvertStrToGlobalTime(&BT.input), ctrlIn->sysTime); break;
@@ -392,6 +395,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_gyro_PT2_X: meas2card->measureGyroPT2X = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_gyro_PT2_Y: meas2card->measureGyroPT2Y = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_gyro_PT2_Z: meas2card->measureGyroPT2Z = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_raw_X_int: meas2card->measureGyroRawX_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_raw_Y_int: meas2card->measureGyroRawY_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_raw_Z_int: meas2card->measureGyroRawZ_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_PT1_X_int: meas2card->measureGyroPT1X_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_PT1_Y_int: meas2card->measureGyroPT1Y_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_PT1_Z_int: meas2card->measureGyroPT1Z_int = ConvertStrToBool(&BT.input); break;
                 //acc
 				case ID_meas_2_card_acc_raw_X: meas2card->measureAccRawX = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_raw_Y: meas2card->measureAccRawY = ConvertStrToBool(&BT.input); break;
@@ -402,6 +411,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_acc_PT2_X: meas2card->measureAccPT2X = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_PT2_Y: meas2card->measureAccPT2Y = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_PT2_Z: meas2card->measureAccPT2Z = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_raw_X_int: meas2card->measureAccRawX_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_raw_Y_int: meas2card->measureAccRawY_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_raw_Z_int: meas2card->measureAccRawZ_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_PT1_X_int: meas2card->measureAccPT1X_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_PT1_Y_int: meas2card->measureAccPT1Y_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_PT1_Z_int: meas2card->measureAccPT1Z_int = ConvertStrToBool(&BT.input); break;
                 //angle
 				case ID_meas_2_card_angle_raw_roll: meas2card->measureAngleRawRoll = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_raw_pitch: meas2card->measureAngleRawPitch = ConvertStrToBool(&BT.input); break;
@@ -526,6 +541,9 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
                 case ID_SDCARD_MAINSTATE: BT.txFrame.paramData = sdcard->MainState; BT.txFrame.numberOfFrac = 0; break;
                 case ID_SDCARD_RESET_MEASRUEMENT: BT.txFrame.paramData = ResetMeasurement(); BT.txFrame.numberOfFrac = 0; break;
                 case ID_SDCARD_REINIT_SDCARD: BT.txFrame.paramData = ReinitSDCard(); BT.txFrame.numberOfFrac = 0; break;
+                case ID_spi_acc_offset_int_x: BT.txFrame.paramData = spi->acc.offset_int.x; BT.txFrame.numberOfFrac = 0; break;
+                case ID_spi_acc_offset_int_y: BT.txFrame.paramData = spi->acc.offset_int.y; BT.txFrame.numberOfFrac = 0; break;
+                case ID_spi_acc_offset_int_z: BT.txFrame.paramData = spi->acc.offset_int.z; BT.txFrame.numberOfFrac = 0; break;
 
 				//
 				case ID_update_global_time: BT.txFrame.paramData = ConvertGlobalTime(&sdcard->globalDateAndTime); BT.txFrame.numberOfFrac = 0; break;
@@ -543,6 +561,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_gyro_PT2_X: BT.txFrame.paramData = meas2card->measureGyroPT2X; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_gyro_PT2_Y: BT.txFrame.paramData = meas2card->measureGyroPT2Y; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_gyro_PT2_Z: BT.txFrame.paramData = meas2card->measureGyroPT2Z; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_raw_X_int: BT.txFrame.paramData = meas2card->measureGyroRawX_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_raw_Y_int: BT.txFrame.paramData = meas2card->measureGyroRawY_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_raw_Z_int: BT.txFrame.paramData = meas2card->measureGyroRawZ_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_PT1_X_int: BT.txFrame.paramData = meas2card->measureGyroPT1X_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_PT1_Y_int: BT.txFrame.paramData = meas2card->measureGyroPT1Y_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_PT1_Z_int: BT.txFrame.paramData = meas2card->measureGyroPT1Z_int; BT.txFrame.numberOfFrac = 0; break;
                 //acc
 				case ID_meas_2_card_acc_raw_X: BT.txFrame.paramData = meas2card->measureAccRawX; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_raw_Y: BT.txFrame.paramData = meas2card->measureAccRawY; BT.txFrame.numberOfFrac = 0; break;
@@ -553,6 +577,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_acc_PT2_X: BT.txFrame.paramData = meas2card->measureAccPT2X; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_PT2_Y: BT.txFrame.paramData = meas2card->measureAccPT2Y; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_PT2_Z: BT.txFrame.paramData = meas2card->measureAccPT2Z; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_raw_X_int: BT.txFrame.paramData = meas2card->measureAccRawX_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_raw_Y_int: BT.txFrame.paramData = meas2card->measureAccRawY_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_raw_Z_int: BT.txFrame.paramData = meas2card->measureAccRawZ_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_PT1_X_int: BT.txFrame.paramData = meas2card->measureAccPT1X_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_PT1_Y_int: BT.txFrame.paramData = meas2card->measureAccPT1Y_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_PT1_Z_int: BT.txFrame.paramData = meas2card->measureAccPT1Z_int; BT.txFrame.numberOfFrac = 0; break;
                 //angle
 				case ID_meas_2_card_angle_raw_roll: BT.txFrame.paramData = meas2card->measureAngleRawRoll; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleRawPitch; BT.txFrame.numberOfFrac = 0; break;
@@ -760,6 +790,34 @@ uint16_t ConvertStrToUint16(volatile buffer_* input)
 		integer_diff = last_char - pos - 1;
 		returnVal += uint16_t(pow(10, integer_diff)) * uint16_t(input->vector[pos] - '0');
 	}
+
+	return returnVal;
+}
+
+int32_t ConvertStrToInt32(volatile buffer_* input)
+{
+	int8_t first_char = 3;
+	int8_t last_char = input->ctr - 2;	// \r\n
+	int8_t integer_diff = 0;
+	int32_t returnVal = 0;
+	bool isNegative = false;
+
+	//if its a negative value raise flag and increment first_char
+	if ('-' == input->vector[first_char])
+	{
+		first_char++;
+		isNegative = true;
+	}
+
+	//integer calcu
+	for (uint8_t pos = first_char; pos < last_char; pos++)
+	{
+		integer_diff = last_char - pos - 1;
+		returnVal += int32_t(pow(10, integer_diff)) * int32_t(input->vector[pos] - '0');
+	}
+
+	//if negative
+	if (isNegative) returnVal *= -1;
 
 	return returnVal;
 }

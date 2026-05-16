@@ -125,6 +125,12 @@ void ResetMeasDataFlags(void)
     meas2Card.measureGyroPT2X = false;
     meas2Card.measureGyroPT2Y = false;
     meas2Card.measureGyroPT2Z = false;
+    meas2Card.measureGyroRawX_int = false;
+    meas2Card.measureGyroRawY_int = false;
+    meas2Card.measureGyroRawZ_int = false;
+    meas2Card.measureGyroPT1X_int = false;
+    meas2Card.measureGyroPT1Y_int = false;
+    meas2Card.measureGyroPT1Z_int = false;
     meas2Card.measureAccRawX = false;
     meas2Card.measureAccRawY = false;
     meas2Card.measureAccRawZ = false;
@@ -134,6 +140,12 @@ void ResetMeasDataFlags(void)
     meas2Card.measureAccPT2X = false;
     meas2Card.measureAccPT2Y = false;
     meas2Card.measureAccPT2Z = false;
+    meas2Card.measureAccRawX_int = false;
+    meas2Card.measureAccRawY_int = false;
+    meas2Card.measureAccRawZ_int = false;
+    meas2Card.measureAccPT1X_int = false;
+    meas2Card.measureAccPT1Y_int = false;
+    meas2Card.measureAccPT1Z_int = false;
     meas2Card.measureAngleRawRoll = false;
     meas2Card.measureAngleRawPitch = false;
     meas2Card.measureAnglePT1Roll = false;

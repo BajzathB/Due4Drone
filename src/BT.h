@@ -79,6 +79,7 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn);
 bool ConvertStrToBool(volatile buffer_* input);
 uint8_t ConvertStrToUint8(volatile buffer_* input);
 uint16_t ConvertStrToUint16(volatile buffer_* input);
+int32_t ConvertStrToInt32(volatile buffer_* input);
 float ConvertStrToDouble(volatile buffer_* input);
 date ConvertStrToGlobalTime(const volatile buffer_* input);
 date ConvertStrToGlobalDate(const volatile buffer_* input);

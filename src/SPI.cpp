@@ -36,6 +36,9 @@
 //  nameing convention: MEAS1.txt, MEAS2.txt,... MEASXXXX.txt
 //  storing meas in a linear fasion, clusters follow each other, also means FAT is linear
 
+#define INT_BASE_VALUE
+//#define FLOAT_BASE_VALUE
+
 #include "pch.h"
 #include "SPI.h"
 #include "LED.h"
@@ -75,6 +78,9 @@ volatile uint32_t testCtrAccActive{0};
 volatile uint32_t testCtrAccPending{0};
 volatile uint32_t testCtrAccFinish{0};
 volatile uint32_t testCtrAccGoActive{0};
+
+MovingAverage movingAverage;
+
 
 void SetupSPI(void)
 {
@@ -119,11 +125,21 @@ void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput)
   // SerialUSB.print(testCtrGyroFinish); SerialUSB.print("\t");
   // SerialUSB.print(testCtrGyroGoActive); SerialUSB.print("\t");
 
-   //SerialUSB.print(SPI.gyro.signals.x); SerialUSB.print("\t");
-   SerialUSB.print(  (float)SPI.gyro.signals_int.x); SerialUSB.print("\t");
-   SerialUSB.print(  (float)SPI.gyro.signalsPT1_int_133.x); SerialUSB.print("\t");
-   SerialUSB.println((float)SPI.gyro.signalsPT1_int_200.x);
+	//axis accVal;
+	//accVal.x = calcRealFromInt(&SPI.gyro, E_direction::X, false);
+	//accVal.y = calcRealFromInt(&SPI.gyro, E_direction::Y, false);
+	//accVal.z = calcRealFromInt(&SPI.gyro, E_direction::Z, false);
+	//calcMovingAverage(&movingAverage, &accVal);
 
+ //  SerialUSB.print(accVal.x); SerialUSB.print("\t");
+ //  SerialUSB.print(accVal.y); SerialUSB.print("\t");
+ //  SerialUSB.print(accVal.z); SerialUSB.print("\t");
+ //  SerialUSB.print(movingAverage.averageX); SerialUSB.print("\t");
+ //  SerialUSB.print(movingAverage.averageY); SerialUSB.print("\t");
+ //  SerialUSB.print(movingAverage.averageZ); SerialUSB.print("\t");
+ //  SerialUSB.print((float)SPI.gyro.offset_int.x); SerialUSB.print("\t");
+ //  SerialUSB.print((float)SPI.gyro.offset_int.y); SerialUSB.print("\t");
+ //  SerialUSB.println((float)SPI.gyro.offset_int.z);
 }
 
 //Handling interrupt for gyro
@@ -261,13 +277,23 @@ void DMAC_Handler(void)
 			calcSignalGyro(&SPI.gyro, SPI.sensorRx);
 			calcOffsetGyro(&SPI.gyro);
 			compensateData(&SPI.gyro); 
-            //signalPT1Filter(&SPI.gyro);
-            gyroSignalPT1(&SPI.gyro);
+#ifdef INT_BASE_VALUE
+			gyroSignalPT1_133Hz(&SPI.gyro); //int runtime is 5 microsec
+#endif
+#ifdef FLOAT_BASE_VALUE
+			signalPT1Filter(&SPI.gyro);	//float runtime is 33 microsec
+#endif
 		}
 		else if (isAccReadFinished)
 		{
 			calcSignalAcc(&SPI.acc, SPI.sensorRx);
 			compensateData(&SPI.acc);
+#ifdef INT_BASE_VALUE
+			accSignalPT1_25Hz(&SPI.acc); //int runtime is ? microsec
+#endif
+#ifdef FLOAT_BASE_VALUE
+			signalPT1Filter(&SPI.acc);	//float runtime is ? microsec
+#endif
 		}
 		else
 		{
@@ -343,7 +369,7 @@ void SetupGyro(void)
     SPI.gyro.offset_int.z = 0;
     
     SPI.gyro.raw2realMultiplier = 2000;
-    SPI.gyro.raw2realBitshift = 15;
+    SPI.gyro.raw2realDivider = 32768;
 
 	// flag for bad configuration
 	uint8_t badRegContent = false;
@@ -420,10 +446,18 @@ void SetupAcc(void)
 {
 	// setting default acc values
     SPI.acc.const_raw2real = 24.0f * 9.81 / 32768.0f;
+	SPI.acc.paramC = 64;   // 1600/25
     //offset manually tuned
     SPI.acc.offset.x = 0.0125;
     SPI.acc.offset.y = 0.022;
     SPI.acc.offset.z = 0.005;
+    //intiger values
+    SPI.acc.offset_int.x = 18;
+    SPI.acc.offset_int.y = -5;
+    SPI.acc.offset_int.z = 0;
+    SPI.acc.raw2realMultiplier = 235;	//~235.44
+    SPI.acc.raw2realDivider = 32768;
+
     SPI.acc.offsetCalcDone = true;  //this is done manually
     SPI.acc.newData = false;
 
@@ -573,13 +607,16 @@ void calcSignalGyro(volatile signal* gyroSig, volatile uint8_t* buffer)
 	int16_t y = (buffer[4] << 8) | buffer[3];
 	int16_t z = (buffer[6] << 8) | buffer[5];
 	
-	gyroSig->signals.x = (float)x * gyroSig->const_raw2real;
-	gyroSig->signals.y = (float)y * gyroSig->const_raw2real;
-	gyroSig->signals.z = (float)z * gyroSig->const_raw2real;
-
+#ifdef INT_BASE_VALUE
     gyroSig->signals_int.x = (int32_t)(x);
     gyroSig->signals_int.y = (int32_t)(y);
     gyroSig->signals_int.z = (int32_t)(z);
+#endif
+#ifdef FLOAT_BASE_VALUE
+	gyroSig->signals.x = (float)x * gyroSig->const_raw2real;
+	gyroSig->signals.y = (float)y * gyroSig->const_raw2real;
+	gyroSig->signals.z = (float)z * gyroSig->const_raw2real;
+#endif
 
 }
 
@@ -590,9 +627,16 @@ void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer)
     int16_t y = (buffer[5] << 8) | buffer[4];
     int16_t z = (buffer[7] << 8) | buffer[6];
 
+#ifdef INT_BASE_VALUE
+	accSig->signals_int.x = (int32_t)(x);
+	accSig->signals_int.y = (int32_t)(y);
+	accSig->signals_int.z = (int32_t)(z);
+#endif
+#ifdef FLOAT_BASE_VALUE
     accSig->signals.x = (float)x * accSig->const_raw2real;
     accSig->signals.y = (float)y * accSig->const_raw2real;
     accSig->signals.z = (float)z * accSig->const_raw2real;
+#endif
 }
 
 void calcOffsetGyro(volatile signal* gyroSig)
@@ -603,28 +647,34 @@ void calcOffsetGyro(volatile signal* gyroSig)
 	{
 		if (1000 <= n && n < 2024)
 		{
-			gyroSig->offset.x += gyroSig->signals.x;
-			gyroSig->offset.y += gyroSig->signals.y;
-			gyroSig->offset.z += gyroSig->signals.z;
-
+#ifdef INT_BASE_VALUE
             gyroSig->offset_int.x += gyroSig->signals_int.x;
             gyroSig->offset_int.y += gyroSig->signals_int.y;
             gyroSig->offset_int.z += gyroSig->signals_int.z;
+#endif
+#ifdef FLOAT_BASE_VALUE
+			gyroSig->offset.x += gyroSig->signals.x;
+			gyroSig->offset.y += gyroSig->signals.y;
+			gyroSig->offset.z += gyroSig->signals.z;
+#endif
 		}
 		else if (2024 < n)
 		{
 			// divide by the number of measurements
 			// multiply by -1, positive offset should be extracted
+#ifdef INT_BASE_VALUE
+            gyroSig->offset_int.x /= -1024;
+            gyroSig->offset_int.y /= -1024;
+            gyroSig->offset_int.z /= -1024;
+#endif
+#ifdef FLOAT_BASE_VALUE
 			gyroSig->offset.x /= 1024.f;
 			gyroSig->offset.x *= -1.0f;
 			gyroSig->offset.y /= 1024.f;
 			gyroSig->offset.y *= -1.0f;
 			gyroSig->offset.z /= 1024.f;
 			gyroSig->offset.z *= -1.0f;
-
-            gyroSig->offset_int.x /= -1024;
-            gyroSig->offset_int.y /= -1024;
-            gyroSig->offset_int.z /= -1024;
+#endif
 
 			// set calc done flag
 			gyroSig->offsetCalcDone = true;
@@ -648,14 +698,16 @@ void compensateData(volatile signal* Sig)
 {
     if (true == Sig->offsetCalcDone)
     {
-        Sig->signals.x += Sig->offset.x;
-        Sig->signals.y += Sig->offset.y;
-        Sig->signals.z += Sig->offset.z;
-
-        // Sig->signals_int.x += Sig->offset_int.x;
-        // Sig->signals_int.y += Sig->offset_int.y;
-        // Sig->signals_int.z += Sig->offset_int.z;
-
+#ifdef INT_BASE_VALUE
+        Sig->signals_int.x += Sig->offset_int.x;
+        Sig->signals_int.y += Sig->offset_int.y;
+        Sig->signals_int.z += Sig->offset_int.z;
+#endif
+#ifdef FLOAT_BASE_VALUE
+		Sig->signals.x += Sig->offset.x;
+		Sig->signals.y += Sig->offset.y;
+		Sig->signals.z += Sig->offset.z;
+#endif
         Sig->newData = true;
     }
     else
@@ -664,32 +716,65 @@ void compensateData(volatile signal* Sig)
     }
 }
 
+//y=alpha*(x-y) where alpha=1/(1+dataRate/cutoffFreq)
+//>>15 is equal 1/32768, 2979/32768 = 1/(1+2000/200)
+inline int32_t gyroPT1_133Hz(int32_t y, const int32_t x)
+{
+	return y + ((x - y) >> 4);    //equivalent to 133Hz cutoff
+}
+
+void gyroSignalPT1_133Hz(volatile signal* sig)
+{
+	sig->signalsPT1_int.x = gyroPT1_133Hz(sig->signalsPT1_int.x, sig->signals_int.x);
+	sig->signalsPT1_int.y = gyroPT1_133Hz(sig->signalsPT1_int.y, sig->signals_int.y);
+	sig->signalsPT1_int.z = gyroPT1_133Hz(sig->signalsPT1_int.z, sig->signals_int.z);
+}
+
+//>>15 is equal 1/32768, 504/32768 = 1/(1+1600/25)
+inline int32_t accPT1_25Hz(int32_t y, const int32_t x)
+{
+	return y + ((x - y) >> 6);    //equivalent to ~25.4Hz cutoff
+}
+
+void accSignalPT1_25Hz(volatile signal* sig)
+{
+	sig->signalsPT1_int.x = accPT1_25Hz(sig->signalsPT1_int.x, sig->signals_int.x);
+	sig->signalsPT1_int.y = accPT1_25Hz(sig->signalsPT1_int.y, sig->signals_int.y);
+	sig->signalsPT1_int.z = accPT1_25Hz(sig->signalsPT1_int.z, sig->signals_int.z);
+}
+
 void getGyroAndAcc(sigOut* sigGyro, sigOut* sigAcc)
 {
     sigGyro->raw2realMulti = SPI.gyro.raw2realMultiplier;
-    sigGyro->raw2realShift = SPI.gyro.raw2realBitshift;
+    sigGyro->raw2realDivider = SPI.gyro.raw2realDivider;
+	sigAcc->raw2realMulti = SPI.acc.raw2realMultiplier;
+	sigAcc->raw2realDivider = SPI.acc.raw2realDivider;
 
     //disable DMAC interrupt
 	NVIC_DisableIRQ(DMAC_IRQn);
 
     //copy data
+	//gyro
     sigGyro->signal.x = SPI.gyro.signals.x;
     sigGyro->signal.y = SPI.gyro.signals.y;
     sigGyro->signal.z = SPI.gyro.signals.z;
     sigGyro->signal_int.x = SPI.gyro.signals_int.x;
     sigGyro->signal_int.y = SPI.gyro.signals_int.y;
     sigGyro->signal_int.z = SPI.gyro.signals_int.z;
-    sigGyro->signalPT1_133.x = SPI.gyro.signalsPT1_int_133.x;
-    sigGyro->signalPT1_133.y = SPI.gyro.signalsPT1_int_133.y;
-    sigGyro->signalPT1_133.z = SPI.gyro.signalsPT1_int_133.z;
-    sigGyro->signalPT1_200.x = SPI.gyro.signalsPT1_int_200.x;
-    sigGyro->signalPT1_200.y = SPI.gyro.signalsPT1_int_200.y;
-    sigGyro->signalPT1_200.z = SPI.gyro.signalsPT1_int_200.z;
+    sigGyro->signalPT1_int.x = SPI.gyro.signalsPT1_int.x;
+    sigGyro->signalPT1_int.y = SPI.gyro.signalsPT1_int.y;
+    sigGyro->signalPT1_int.z = SPI.gyro.signalsPT1_int.z;
     sigGyro->newData = SPI.gyro.newData;
-
+	//acc
     sigAcc->signal.x  = SPI.acc.signals.x;
     sigAcc->signal.y  = SPI.acc.signals.y;
     sigAcc->signal.z  = SPI.acc.signals.z;
+	sigAcc->signal_int.x = SPI.acc.signals_int.x;
+	sigAcc->signal_int.y = SPI.acc.signals_int.y;
+	sigAcc->signal_int.z = SPI.acc.signals_int.z;
+	sigAcc->signalPT1_int.x = SPI.acc.signalsPT1_int.x;
+	sigAcc->signalPT1_int.y = SPI.acc.signalsPT1_int.y;
+	sigAcc->signalPT1_int.z = SPI.acc.signalsPT1_int.z;
     sigAcc->newData = SPI.acc.newData;
 
 	//reset newData flag

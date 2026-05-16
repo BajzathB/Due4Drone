@@ -29,6 +29,7 @@ TEST(test_BT, BT_Call)
 	ConvertStrToBool(&testBuffer);
 	ConvertStrToUint8(&testBuffer);
 	ConvertStrToUint16(&testBuffer);
+	ConvertStrToInt32(&testBuffer);
 	ConvertStrToDouble(&testBuffer);
 	ConvertStrToGlobalTime(&testBuffer);
 	date testGlobaltime{};
@@ -189,6 +190,55 @@ TEST(test_BT, ConvertStrToUint16_Test)
 	EXPECT_EQ(ConvertStrToUint16(&testBuffer), 65534);
 }
 
+TEST(test_BT, ConvertStrToInt32_Test)
+{
+	buffer_ testBuffer;
+	//1st
+	testBuffer.vector[0] = 0;
+	testBuffer.vector[1] = 0;
+	testBuffer.vector[2] = 0;
+	testBuffer.vector[3] = '1';
+	testBuffer.vector[4] = '2';
+	testBuffer.vector[5] = '3';
+	testBuffer.vector[6] = '\r';
+	testBuffer.vector[7] = '\n';
+	testBuffer.ctr = 8;
+	EXPECT_EQ(ConvertStrToInt32(&testBuffer), 123);
+
+	//2nd
+	testBuffer.vector[0] = 0;
+	testBuffer.vector[1] = 0;
+	testBuffer.vector[2] = 0;
+	testBuffer.vector[3] = '6';
+	testBuffer.vector[4] = '5';
+	testBuffer.vector[5] = '5';
+	testBuffer.vector[6] = '3';
+	testBuffer.vector[7] = '4';
+	testBuffer.vector[8] = '\r';
+	testBuffer.vector[9] = '\n';
+	testBuffer.ctr = 10;
+	EXPECT_EQ(ConvertStrToInt32(&testBuffer), 65534);
+
+	//4th
+	testBuffer.vector[0] = 0;
+	testBuffer.vector[1] = 0;
+	testBuffer.vector[2] = 0;
+	testBuffer.vector[3] = '-';
+	testBuffer.vector[4] = '9';
+	testBuffer.vector[5] = '5';
+	testBuffer.vector[6] = '1';
+	testBuffer.vector[7] = '2';
+	testBuffer.vector[8] = '4';
+	testBuffer.vector[9] = '7';
+	testBuffer.vector[10] = '8';
+	testBuffer.vector[11] = '6';
+	testBuffer.vector[12] = '3';
+	testBuffer.vector[13] = '\r';
+	testBuffer.vector[14] = '\n';
+	testBuffer.ctr = 15;
+	EXPECT_EQ(ConvertStrToInt32(&testBuffer), -951247863);
+}
+
 TEST(test_BT, ConvertStrToFloat_Test)
 {
 	buffer_ testBuffer;
@@ -268,7 +318,7 @@ TEST(test_BT, ConvertStrToFloat_Test)
 	EXPECT_NEAR(ConvertStrToDouble(&testBuffer), 2831.93174, 0.0001);
 }
 
-TEST(test_BT, ConvertStrToGlobalTime_Test)
+TEST(test_BT, ConvertStrToGlobalTimeAndDate_Test)
 {
 	buffer_ testBuffer;
 	date testDate;
@@ -280,16 +330,18 @@ TEST(test_BT, ConvertStrToGlobalTime_Test)
 	testBuffer.vector[6] = '5';
 	testBuffer.vector[7] = '1';
 	testBuffer.vector[8] = '5';
-	testBuffer.vector[9] = '1';
-	testBuffer.vector[10] = '2';
-	testBuffer.vector[11] = '0';
-	testBuffer.vector[12] = '0';
-	testBuffer.vector[13] = '0';
-	testBuffer.vector[14] = '0';
-	testDate = ConvertStrToGlobalTime(&testBuffer);
+	testDate = ConvertStrToGlobalDate(&testBuffer);
 	EXPECT_EQ(testDate.year, 25);
 	EXPECT_EQ(testDate.month, 5);
 	EXPECT_EQ(testDate.day, 15);
+
+	testBuffer.vector[3] = '1';
+	testBuffer.vector[4] = '2';
+	testBuffer.vector[5] = '0';
+	testBuffer.vector[6] = '0';
+	testBuffer.vector[7] = '0';
+	testBuffer.vector[8] = '0';
+	testDate = ConvertStrToGlobalTime(&testBuffer);
 	EXPECT_EQ(testDate.hour, 12);
 	EXPECT_EQ(testDate.min, 0);
 	EXPECT_EQ(testDate.sec, 0);
@@ -301,16 +353,18 @@ TEST(test_BT, ConvertStrToGlobalTime_Test)
 	testBuffer.vector[6] = '2';
 	testBuffer.vector[7] = '0';
 	testBuffer.vector[8] = '7';
-	testBuffer.vector[9] = '0';
-	testBuffer.vector[10] = '9';
-	testBuffer.vector[11] = '3';
-	testBuffer.vector[12] = '5';
-	testBuffer.vector[13] = '2';
-	testBuffer.vector[14] = '4';
-	testDate = ConvertStrToGlobalTime(&testBuffer);
+	testDate = ConvertStrToGlobalDate(&testBuffer);
 	EXPECT_EQ(testDate.year, 24);
 	EXPECT_EQ(testDate.month, 12);
 	EXPECT_EQ(testDate.day, 7);
+
+	testBuffer.vector[3] = '0';
+	testBuffer.vector[4] = '9';
+	testBuffer.vector[5] = '3';
+	testBuffer.vector[6] = '5';
+	testBuffer.vector[7] = '2';
+	testBuffer.vector[8] = '4';
+	testDate = ConvertStrToGlobalTime(&testBuffer);
 	EXPECT_EQ(testDate.hour, 9);
 	EXPECT_EQ(testDate.min, 35);
 	EXPECT_EQ(testDate.sec, 24);
