@@ -6,6 +6,7 @@
 #include "stdint.h"
 #include "SPI.h"
 #include "RC.h"
+#include "sysTime.h"
 
 typedef enum E_flightMode : uint8_t
 {
@@ -13,7 +14,7 @@ typedef enum E_flightMode : uint8_t
     RATE_CTRL_PT1_IRelax_Dmax= 1,
     ANGLE_CASCADE_CTRL = 2,
     GPS_CTRL = 3,
-
+    RATE_CTRL_INT = 4,
 };
 
 typedef struct controllerIn_st 
@@ -21,13 +22,13 @@ typedef struct controllerIn_st
 	sigOut gyro;
 	sigOut acc;
     rcSignals_st rcSignals;
-    float loopTime{ 0 };
-    float sysTime{ 0 };
+    droneTimes_st droneTimes;
 }controllerIn_st;
 
 typedef struct controllerOut_st 
 {
     axis U;
+    axis_i32 U_int;
     E_armState armState{DISARMED};
 }controllerOut_st;
 
@@ -47,6 +48,15 @@ typedef struct pid_st
     sigOut sensorPrev;
 	float deltaT{0.1f};
     float PFactor, IFactor, DFactor, FFrFactor, FFdrFactor;
+
+    axis_i32 error_int, errorSum_int, errorDot_int, errorPrev_int, errorDotPT1_int;
+    axis_i32 refSignal_int, refSignalPrev_int, refSignalDot_int, refSignalDotPT1_int;
+    axis_i32 P_int, I_int, D_int, Dmax_int, FFr_int, FFdr_int, u_int;
+    axis_i32 Pout_int, Iout_int, Dout_int, FFout_int;
+    uint32_t deltaTicks{ 1 };
+    int32_t inverseDt{1};
+    int32_t satI_int, satPID_int;
+    axis_i32 signalPT1Prev_int;
 }pid_st;
 
 // Kalman Filter Struct
@@ -144,11 +154,17 @@ E_flightMode EvalFlightMode(const uint16_t flightModeChannel);
 // Function to calculate parabolical scaling of stick value
 float ParabolicScale(const uint16_t channel);
 
+// Function to calculate expo scaling for stick value
+inline int32_t expo(const uint16_t channel);
+
 // Function to linear interpolate stick value
 float LinearInterpol(const uint16_t xn, const uint16_t x0, const uint16_t x1, const float y0, const float y1);
 
+// Function to optimally linear interpolate to ~-8192-8192
+inline int32_t linearScale_8192(uint16_t ch);
+
 // Method to calculate low-pass filtered value of a signal
-void PT1Filter(float* yOut, const float xIn, const float paramC );
+//void PT1Filter(float* yOut, const float xIn, const float paramC );
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
 //void CalcPID_wo_Dkick(pid_st* pidSt, axis* u);
@@ -158,6 +174,30 @@ void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u);
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
 void CalcPID_wo_Dkick_FF_IRelax_Dmax(pid_st* pidSt, axis* u, uint16_t twoWayswitch);
+
+// Method to calc PID integer based
+void CalcPID_int(pid_st* pidSt, axis_i32* u);
+
+// Method to scale input up
+void ScalePIDinput_int(pid_st* pid, uint8_t shift);
+
+// Method to calc PID proportional part
+void CalcProportional_int(pid_st* pid);
+
+// Method to calc PID integral part
+void CalcIntegral_int(pid_st* pid);
+
+// Method to calc PID derivative part
+void CalcDerivative_int(pid_st* pid);
+
+// Method to calc PID feedforward part
+void CalcFeedforward_int(pid_st* pid);
+
+// Method to calc PID feedforward part
+void CalcPIDoutput_int(pid_st* pid, axis_i32* u);
+
+// Method to scale output down
+void ScalePIDoutput_int(axis_i32* u, uint8_t shift);
 
 // Function to return PID rate values
 pid_st* getPIDrates();
@@ -197,5 +237,8 @@ void calcDmaxFactor(axis* dDynamic, pid_st* pidSt);
 
 // Function to claculate the wobble amplitude value
 float wobble(uint16_t pot1, uint16_t poti2);
+
+// Function to clamp value inbetween bounds
+inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max);
 
 #endif // !CONTROLLER_HEADER

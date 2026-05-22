@@ -43,10 +43,11 @@ void UpdateMotorSpeeds(const MotorInput* motorInput)
 	//set TC compare registers accordingly
 	SetTcCompareRegister(&motorCommand);
 
-	motorCommand.sysTime = motorInput->sysTime;
+	//motorCommand.sysTime = motorInput->sysTime;
 
 	//trigger TC channels, not earlier than 250 us
-	TriggerTcRegisters(&motorCommand);
+	TriggerTcRegisters(&motorCommand, motorInput->sysTick);
+
 //  SerialUSB.print(motorCommand.FL);SerialUSB.print("\t");
 //  SerialUSB.print(motorCommand.FR);SerialUSB.print("\t");
 //  SerialUSB.print(motorCommand.RL);SerialUSB.print("\t");
@@ -59,25 +60,38 @@ void CalcMotorSpeeds(const MotorInput* motorInput, MotorCommander* motorCmd)
 {
 	if (E_armState::ARMED == motorInput->armState)
 	{
-		//calculation of the four motor speed, 8 divider for oneshot protocol
-		motorCmd->FL = motorInput->throttle/8 + motorInput->x + motorInput->y + motorInput->z;
-		motorCmd->FR = motorInput->throttle/8 - motorInput->x + motorInput->y - motorInput->z;
-		motorCmd->RL = motorInput->throttle/8 + motorInput->x - motorInput->y - motorInput->z;
-		motorCmd->RR = motorInput->throttle/8 - motorInput->x - motorInput->y + motorInput->z;
+		////calculation of the four motor speed, 8 divider for oneshot protocol
+		//motorCmd->FL = motorInput->throttle/8 + motorInput->x + motorInput->y + motorInput->z;
+		//motorCmd->FR = motorInput->throttle/8 - motorInput->x + motorInput->y - motorInput->z;
+		//motorCmd->RL = motorInput->throttle/8 + motorInput->x - motorInput->y - motorInput->z;
+		//motorCmd->RR = motorInput->throttle/8 - motorInput->x - motorInput->y + motorInput->z;
 
-		//saturation if values are out of 125-250 us band
-		if (motorCmd->FL < 125.0) motorCmd->FL = 125.0;
-		else if (motorCmd->FL > 250.0) motorCmd->FL = 250.0;
-		else;//do nothing
-		if (motorCmd->FR < 125.0) motorCmd->FR = 125.0;
-		else if (motorCmd->FR > 250.0) motorCmd->FR = 250.0;
-		else;//do nothing
-		if (motorCmd->RL < 125.0) motorCmd->RL = 125.0;
-		else if (motorCmd->RL > 250.0) motorCmd->RL = 250.0;
-		else;//do nothing
-		if (motorCmd->RR < 125.0) motorCmd->RR = 125.0;
-		else if (motorCmd->RR > 250.0) motorCmd->RR = 250.0;
-		else;//do nothing
+		////saturation if values are out of 125-250 us band
+		//if (motorCmd->FL < 125.0) motorCmd->FL = 125.0;
+		//else if (motorCmd->FL > 250.0) motorCmd->FL = 250.0;
+		//else;//do nothing
+		//if (motorCmd->FR < 125.0) motorCmd->FR = 125.0;
+		//else if (motorCmd->FR > 250.0) motorCmd->FR = 250.0;
+		//else;//do nothing
+		//if (motorCmd->RL < 125.0) motorCmd->RL = 125.0;
+		//else if (motorCmd->RL > 250.0) motorCmd->RL = 250.0;
+		//else;//do nothing
+		//if (motorCmd->RR < 125.0) motorCmd->RR = 125.0;
+		//else if (motorCmd->RR > 250.0) motorCmd->RR = 250.0;
+		//else;//do nothing
+
+
+		uint32_t scaledThrottle = interpolateThrottle(motorInput->throttle);
+
+		motorCmd->FL_tick_int = scaledThrottle + motorInput->x_int + motorInput->y_int + motorInput->z_int;
+		motorCmd->FR_tick_int = scaledThrottle - motorInput->x_int + motorInput->y_int - motorInput->z_int;
+		motorCmd->RL_tick_int = scaledThrottle + motorInput->x_int - motorInput->y_int - motorInput->z_int;
+		motorCmd->RR_tick_int = scaledThrottle - motorInput->x_int - motorInput->y_int + motorInput->z_int;
+
+		clampMotorSpeed(&motorCmd->FL_tick_int);
+		clampMotorSpeed(&motorCmd->FR_tick_int);
+		clampMotorSpeed(&motorCmd->RL_tick_int);
+		clampMotorSpeed(&motorCmd->RR_tick_int);
 	}
 	else
 	{
@@ -87,12 +101,30 @@ void CalcMotorSpeeds(const MotorInput* motorInput, MotorCommander* motorCmd)
        // }
        // else
        // {
-            motorCmd->FL = 125.0;
-            motorCmd->FR = 125.0;
-            motorCmd->RL = 125.0;
-            motorCmd->RR = 125.0;
+            //motorCmd->FL = 125.0;
+            //motorCmd->FR = 125.0;
+            //motorCmd->RL = 125.0;
+            //motorCmd->RR = 125.0;
+
+			motorCmd->FL_tick_int = 1312;
+			motorCmd->FR_tick_int = 1312;
+			motorCmd->RL_tick_int = 1312;
+			motorCmd->RR_tick_int = 1312;
        // }
 	}
+}
+
+uint32_t interpolateThrottle(uint16_t throttle)
+{
+	uint32_t dx = (uint32_t)throttle - 1000;
+
+	return 1312 + dx + (dx >> 2) + (dx >> 4);
+}
+
+inline void clampMotorSpeed(uint32_t* x)
+{
+	if (*x > 2625) *x = 2625;
+	if (*x < 1312) *x = 1312;
 }
 
 void handleBeeps(const MotorInput* motorInput, MotorCommander* motorCmd)
@@ -164,14 +196,22 @@ void SetupMotorPins(void)
     TC1->TC_BCR = TC_BCR_SYNC;
 }
 
-void TriggerTcRegisters(MotorCommander* motorCmd)
+void TriggerTcRegisters(MotorCommander* motorCmd, uint64_t sysTick)
 {
 	 //SerialUSB.print(motorCommand.sysTime - motorCommand.lastpulseTime,6); SerialUSB.print("\t");
 	 //SerialUSB.println(motorCommand.lastpulseTime,6);
 
-	if ((motorCmd->sysTime - motorCmd->lastpulseTime) > MICROSEC_250)
+	//if ((motorCmd->sysTime - motorCmd->lastpulseTime) > MICROSEC_250)
+	//{
+	//	motorCmd->lastpulseTime = motorCmd->sysTime;
+
+	//	//software triggering TC1
+	//	TC1->TC_BCR = TC_BCR_SYNC;
+	//}
+
+	if ((sysTick - motorCmd->lastpulseTick) > 2625)
 	{
-		motorCmd->lastpulseTime = motorCmd->sysTime;
+		motorCmd->lastpulseTick = sysTick;
 
 		//software triggering TC1
 		TC1->TC_BCR = TC_BCR_SYNC;
@@ -180,19 +220,19 @@ void TriggerTcRegisters(MotorCommander* motorCmd)
 
 void SetTcCompareRegister(MotorCommander* motorCmd)
 {
-	motorCmd->FL_tick = motorCmd->FL * motorCmd->const_TC_clock_freq;
-	motorCmd->FR_tick = motorCmd->FR * motorCmd->const_TC_clock_freq;
-	motorCmd->RL_tick = motorCmd->RL * motorCmd->const_TC_clock_freq;
-	motorCmd->RR_tick = motorCmd->RR * motorCmd->const_TC_clock_freq;
+	//motorCmd->FL_tick = motorCmd->FL * motorCmd->const_TC_clock_freq;
+	//motorCmd->FR_tick = motorCmd->FR * motorCmd->const_TC_clock_freq;
+	//motorCmd->RL_tick = motorCmd->RL * motorCmd->const_TC_clock_freq;
+	//motorCmd->RR_tick = motorCmd->RR * motorCmd->const_TC_clock_freq;
 
 	//setting TIO0 RA value which corresponds to FRONT LEFT
-	TC1->TC_CHANNEL[0].TC_RA = uint32_t(motorCmd->FL_tick);
+	TC1->TC_CHANNEL[0].TC_RA = uint32_t(motorCmd->FL_tick_int);
 	//setting TIO6 RB value which corresponds to FRONT LEFT motor
-	TC1->TC_CHANNEL[0].TC_RB = uint32_t(motorCmd->RL_tick);
+	TC1->TC_CHANNEL[0].TC_RB = uint32_t(motorCmd->RL_tick_int);
 	//setting TIO6 RA value which corresponds to REAR RIGHT
-	TC1->TC_CHANNEL[1].TC_RA = uint32_t(motorCmd->FR_tick);
+	TC1->TC_CHANNEL[1].TC_RA = uint32_t(motorCmd->FR_tick_int);
 	//setting TIO7 RA value which corresponds to REAR RIGHT
-	TC1->TC_CHANNEL[1].TC_RB = uint32_t(motorCmd->RR_tick);
+	TC1->TC_CHANNEL[1].TC_RB = uint32_t(motorCmd->RR_tick_int);
 }
 
 void Setup_PB0_PB1_for_oneshot_pulse(void)
@@ -256,12 +296,17 @@ void Setup_PB2_PB3_for_oneshot_pulse(void)
 //set output for bluetooth transmission
 void getMotorSpeeds(MotorSpeeds* motorSpeeds)
 {
-    motorSpeeds->FL = motorCommand.FL;
-    motorSpeeds->FR = motorCommand.FR;
-    motorSpeeds->RL = motorCommand.RL;
-    motorSpeeds->RR = motorCommand.RR;
-    motorSpeeds->FL_tick = motorCommand.FL_tick;
-    motorSpeeds->FR_tick = motorCommand.FR_tick;
-    motorSpeeds->RL_tick = motorCommand.RL_tick;
-    motorSpeeds->RR_tick = motorCommand.RR_tick;
+    //motorSpeeds->FL = motorCommand.FL;
+    //motorSpeeds->FR = motorCommand.FR;
+    //motorSpeeds->RL = motorCommand.RL;
+    //motorSpeeds->RR = motorCommand.RR;
+    //motorSpeeds->FL_tick = motorCommand.FL_tick;
+    //motorSpeeds->FR_tick = motorCommand.FR_tick;
+    //motorSpeeds->RL_tick = motorCommand.RL_tick;
+    //motorSpeeds->RR_tick = motorCommand.RR_tick;
+
+	motorSpeeds->FL_tick_int = motorCommand.FL_tick_int;
+	motorSpeeds->FR_tick_int = motorCommand.FR_tick_int;
+	motorSpeeds->RL_tick_int = motorCommand.RL_tick_int;
+	motorSpeeds->RR_tick_int = motorCommand.RR_tick_int;
 }

@@ -1665,6 +1665,27 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
     measureData(meas2Card.measurePIDUX, true, pidData->u.x, 3, false, "PIDUX: ");
     measureData(meas2Card.measurePIDUY, true, pidData->u.y, 3, false, "PIDUY: ");
     measureData(meas2Card.measurePIDUZ, true, pidData->u.z, 3, false, "PIDUZ: ");
+	measureData(meas2Card.measurePIDRefsigX_int, true, pidData->refSignal_int.x, 0, false, "PIDRefSigXi: ");
+	measureData(meas2Card.measurePIDRefsigY_int, true, pidData->refSignal_int.y, 0, false, "PIDRefSigYi: ");
+	measureData(meas2Card.measurePIDRefsigZ_int, true, pidData->refSignal_int.z, 0, false, "PIDRefSigZi: ");
+	measureData(meas2Card.measurePIDSensorX_int, true, pidData->sensor.signalPT1_int.x, 0, false, "PIDSensorXi: ");
+	measureData(meas2Card.measurePIDSensorY_int, true, pidData->sensor.signalPT1_int.y, 0, false, "PIDSensorYi: ");
+	measureData(meas2Card.measurePIDSensorZ_int, true, pidData->sensor.signalPT1_int.z, 0, false, "PIDSensorZi: ");
+	measureData(meas2Card.measurePIDPoutX_int, true, pidData->Pout_int.x, 0, false, "PIDPoutXi: ");
+	measureData(meas2Card.measurePIDPoutY_int, true, pidData->Pout_int.y, 0, false, "PIDPoutYi: ");
+	measureData(meas2Card.measurePIDPoutZ_int, true, pidData->Pout_int.z, 0, false, "PIDPoutZi: ");
+	measureData(meas2Card.measurePIDIoutX_int, true, pidData->Iout_int.x, 0, false, "PIDIoutXi: ");
+	measureData(meas2Card.measurePIDIoutY_int, true, pidData->Iout_int.y, 0, false, "PIDIoutYi: ");
+	measureData(meas2Card.measurePIDIoutZ_int, true, pidData->Iout_int.z, 0, false, "PIDIoutZi: ");
+	measureData(meas2Card.measurePIDDoutX_int, true, pidData->Dout_int.x, 0, false, "PIDDoutXi: ");
+	measureData(meas2Card.measurePIDDoutY_int, true, pidData->Dout_int.y, 0, false, "PIDDoutYi: ");
+	measureData(meas2Card.measurePIDDoutZ_int, true, pidData->Dout_int.z, 0, false, "PIDDoutZi: ");
+	measureData(meas2Card.measurePIDFFoutX_int, true, pidData->FFout_int.x, 0, false, "PIDFFoutXi: ");
+	measureData(meas2Card.measurePIDFFoutY_int, true, pidData->FFout_int.y, 0, false, "PIDFFoutYi: ");
+	measureData(meas2Card.measurePIDFFoutZ_int, true, pidData->FFout_int.z, 0, false, "PIDFFoutZi: ");
+	measureData(meas2Card.measurePIDUX_int, true, pidData->u_int.x, 0, false, "PIDUXi: ");
+	measureData(meas2Card.measurePIDUY_int, true, pidData->u_int.y, 0, false, "PIDUYi: ");
+	measureData(meas2Card.measurePIDUZ_int, true, pidData->u_int.z, 0, false, "PIDUZi: ");
 
 	appendNewLine();
 }
@@ -2027,6 +2048,27 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measurePIDUX, true, "PIDUX", 5);
         addMeasNameHeader(meas2Card.measurePIDUY, true, "PIDUY", 5);
         addMeasNameHeader(meas2Card.measurePIDUZ, true, "PIDUZ", 5);
+		addMeasNameHeader(meas2Card.measurePIDRefsigX_int, true, "PIDRefXi", 8);
+		addMeasNameHeader(meas2Card.measurePIDRefsigY_int, true, "PIDRefYi", 8);
+		addMeasNameHeader(meas2Card.measurePIDRefsigZ_int, true, "PIDRefZi", 8);
+		addMeasNameHeader(meas2Card.measurePIDSensorX_int, true, "PIDSensXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDSensorY_int, true, "PIDSensYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDSensorZ_int, true, "PIDSensZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDPoutX_int, true, "PIDPoutXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDPoutY_int, true, "PIDPoutYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDPoutZ_int, true, "PIDPoutZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDIoutX_int, true, "PIDIoutXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDIoutY_int, true, "PIDIoutYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDIoutZ_int, true, "PIDIoutZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDDoutX_int, true, "PIDDoutXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDDoutY_int, true, "PIDDoutYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDDoutZ_int, true, "PIDDoutZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDFFoutX_int, true, "PIDFFoutXi", 10);
+		addMeasNameHeader(meas2Card.measurePIDFFoutY_int, true, "PIDFFoutYi", 10);
+		addMeasNameHeader(meas2Card.measurePIDFFoutZ_int, true, "PIDFFoutZi", 10);
+		addMeasNameHeader(meas2Card.measurePIDUX_int, true, "PIDUXi", 6);
+		addMeasNameHeader(meas2Card.measurePIDUY_int, true, "PIDUYi", 6);
+		addMeasNameHeader(meas2Card.measurePIDUZ_int, true, "PIDUZi", 6);
 
 
         appendNewLine();

@@ -13,7 +13,6 @@ extern DummySerial SerialUSB;
 extern Pio* PIOA;
 extern Pio* PIOB;
 extern Pio* PIOC;
-extern Tc* TC1;
 extern Spi* SPI0;
 extern Dmac* DMAC;
 
@@ -78,6 +77,19 @@ void signalPT1Filter(volatile signal* sig)
 	PT1Filter(&sig->signalsPT1.x, sig->offset.x, sig->paramC);
 	PT1Filter(&sig->signalsPT1.y, sig->offset.y, sig->paramC);
 	PT1Filter(&sig->signalsPT1.z, sig->offset.z, sig->paramC);
+}
+
+//y=alpha*(x-y) where alpha=1/(1+dataRate/cutoffFreq)
+//>>15 is equal 1/32768, 2979/32768 = 1/(1+2000/200)
+int32_t PT1_133Hz(int32_t y, const int32_t x)
+{
+	return y + ((x - y) >> 4);    //equivalent to 133Hz cutoff
+}
+
+//>>15 is equal 1/32768, 504/32768 = 1/(1+1600/25)
+int32_t PT1_25Hz(int32_t y, const int32_t x)
+{
+	return y + ((x - y) >> 6);    //equivalent to ~25.4Hz cutoff
 }
 
 float calcRealFromInt(volatile signal* sig, E_direction dir, bool isPT1)

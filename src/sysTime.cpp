@@ -1,4 +1,4 @@
-// Calulation of loop time with TC1 channel 2 counter
+// Calulation of loop time with TC0 channel 2 counter
 
 #include "pch.h"
 
@@ -28,17 +28,17 @@ void SetupSysTimer(void)
     // initalize internal variable
 	sysTimer.loopTime = 0.001f;
 
-	pmc_enable_periph_clk(ID_TC2);  //enable peripheral clock for TC1-channel 2
+	pmc_enable_periph_clk(ID_TC2);  //enable peripheral clock for TC0-channel 2
 
 	TC0->TC_WPMR = 0x504D4300;  //disable write protection mode
 	TC0->TC_CHANNEL[2].TC_CCR |= TC_CCR_CLKEN;  //enable clock
-	TC0->TC_CHANNEL[2].TC_CMR |= TC_CMR_TCCLKS_TIMER_CLOCK2;  //clock selection MCK/8=10.5 MHz
+	TC0->TC_CHANNEL[2].TC_CMR |= TC_CMR_TCCLKS_TIMER_CLOCK2;  //clock selection MCK/8=10.5 MHz -> 1tick=95.238 nanosec
 	TC0->TC_WPMR = 0x504D4301;  //reenable write protection mode
 	//software triggering
 	TC0->TC_CHANNEL[2].TC_CCR |= TC_CCR_SWTRG;
 }
 
-void UpdateSysTime(void)
+void UpdateSysTime(droneTimes_st* times)
 {
   //read raw counter value
 	sysTimer.raw = TC0->TC_CHANNEL[2].TC_CV;
@@ -48,12 +48,27 @@ void UpdateSysTime(void)
 	sysTimer.loopTime = (float)sysTimer.raw * sysTimer.const_raw2real;
 	sysTimer.sysTime += sysTimer.loopTime;
 
+	sysTimer.sysTick += (uint64_t)sysTimer.raw;
+
+	times->loopTime = sysTimer.loopTime;
+	times->sysTime = sysTimer.sysTime;
+	times->loopTick = sysTimer.raw;
+	times->sysTick = sysTimer.sysTick;
+	times->divider = 10500000;
+
 //	Serial.print(sysTimer.const_raw2real,9); Serial.print("\t");
 //	SerialUSB.print(sysTimer.raw);  SerialUSB.print("\t");
 //  SerialUSB.print(sysTimer.loopTime, 6);  SerialUSB.print("\t");
 //	SerialUSB.print(sysTimer.sysTime,6);SerialUSB.print("\t");
 //  SerialUSB.println();
 
+}
+
+void getDroneTimes(droneTimes_st* times)
+{
+	times->loopTime = sysTimer.loopTime;
+	times->sysTime = sysTimer.sysTime;
+	times->loopTick = sysTimer.raw;
 }
 
 float getTimeSinceReset(void)

@@ -9,12 +9,12 @@ typedef struct axis
 	float z{ 0 };
 }axis;
 
-typedef struct axis_int32
+typedef struct axis_i32
 {
     int32_t x{ 0 };
     int32_t y{ 0 };
     int32_t z{ 0 };
-}axis_int32;
+}axis_i32;
 
 typedef struct sigOut
 {
@@ -22,8 +22,8 @@ typedef struct sigOut
 
 	int32_t raw2realMulti;
 	int32_t raw2realDivider;
-    axis_int32 signal_int;
-    axis_int32 signalPT1_int;
+    axis_i32 signal_int;		//-32678...32768
+    axis_i32 signalPT1_int;	//-32678...32768
 
 	bool newData{ false };
 }sigOut;
@@ -63,6 +63,7 @@ typedef struct SpiInput
 	sigOut gyro, acc;
 	rcSignals_st rcSignals;
 	float sysTime{0};
+  uint64_t sysTick{0};
 	E_armState armState{ DISARMED };
 }SPIInput;
 
@@ -81,9 +82,9 @@ typedef struct signal
 
     int32_t raw2realMultiplier{1};
     int32_t raw2realDivider{1};
-    axis_int32 offset_int;
-    axis_int32 signals_int;
-    axis_int32 signalsPT1_int;
+    axis_i32 offset_int;
+    axis_i32 signals_int;		//-32678...32768
+    axis_i32 signalsPT1_int;	//-32678...32768
 
 	bool offsetCalcDone{ false };
 	bool newData{ false };
@@ -130,6 +131,12 @@ void PT1Filter(volatile float* yOut, const volatile float xIn, const volatile fl
 
 // Method to filter 3axis signal with PT1
 void signalPT1Filter(volatile signal* sig);
+
+// Method to filter integer gyro value with PT1 with 133Hz cutoff
+int32_t PT1_133Hz(int32_t y, const int32_t x);
+
+// Method to filter integer acc value with PT1 with 25Hz cutoff
+int32_t PT1_25Hz(int32_t y, const int32_t x);
 
 // Function to calc float value from raw int
 float calcRealFromInt(volatile signal* sig, direction dir, bool isPT1);

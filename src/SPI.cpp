@@ -56,7 +56,6 @@ extern DummySerial SerialUSB;
 extern Pio* PIOA;
 extern Pio* PIOB;
 extern Pio* PIOC;
-extern Tc* TC1;
 extern Spi* SPI0;
 extern Dmac* DMAC;
 
@@ -716,31 +715,18 @@ void compensateData(volatile signal* Sig)
     }
 }
 
-//y=alpha*(x-y) where alpha=1/(1+dataRate/cutoffFreq)
-//>>15 is equal 1/32768, 2979/32768 = 1/(1+2000/200)
-inline int32_t gyroPT1_133Hz(int32_t y, const int32_t x)
-{
-	return y + ((x - y) >> 4);    //equivalent to 133Hz cutoff
-}
-
 void gyroSignalPT1_133Hz(volatile signal* sig)
 {
-	sig->signalsPT1_int.x = gyroPT1_133Hz(sig->signalsPT1_int.x, sig->signals_int.x);
-	sig->signalsPT1_int.y = gyroPT1_133Hz(sig->signalsPT1_int.y, sig->signals_int.y);
-	sig->signalsPT1_int.z = gyroPT1_133Hz(sig->signalsPT1_int.z, sig->signals_int.z);
-}
-
-//>>15 is equal 1/32768, 504/32768 = 1/(1+1600/25)
-inline int32_t accPT1_25Hz(int32_t y, const int32_t x)
-{
-	return y + ((x - y) >> 6);    //equivalent to ~25.4Hz cutoff
+	sig->signalsPT1_int.x = PT1_133Hz(sig->signalsPT1_int.x, sig->signals_int.x);
+	sig->signalsPT1_int.y = PT1_133Hz(sig->signalsPT1_int.y, sig->signals_int.y);
+	sig->signalsPT1_int.z = PT1_133Hz(sig->signalsPT1_int.z, sig->signals_int.z);
 }
 
 void accSignalPT1_25Hz(volatile signal* sig)
 {
-	sig->signalsPT1_int.x = accPT1_25Hz(sig->signalsPT1_int.x, sig->signals_int.x);
-	sig->signalsPT1_int.y = accPT1_25Hz(sig->signalsPT1_int.y, sig->signals_int.y);
-	sig->signalsPT1_int.z = accPT1_25Hz(sig->signalsPT1_int.z, sig->signals_int.z);
+	sig->signalsPT1_int.x = PT1_25Hz(sig->signalsPT1_int.x, sig->signals_int.x);
+	sig->signalsPT1_int.y = PT1_25Hz(sig->signalsPT1_int.y, sig->signals_int.y);
+	sig->signalsPT1_int.z = PT1_25Hz(sig->signalsPT1_int.z, sig->signals_int.z);
 }
 
 void getGyroAndAcc(sigOut* sigGyro, sigOut* sigAcc)
@@ -755,26 +741,34 @@ void getGyroAndAcc(sigOut* sigGyro, sigOut* sigAcc)
 
     //copy data
 	//gyro
+#ifdef FLOAT_BASE_VALUE
     sigGyro->signal.x = SPI.gyro.signals.x;
     sigGyro->signal.y = SPI.gyro.signals.y;
     sigGyro->signal.z = SPI.gyro.signals.z;
+#endif
+#ifdef INT_BASE_VALUE
     sigGyro->signal_int.x = SPI.gyro.signals_int.x;
     sigGyro->signal_int.y = SPI.gyro.signals_int.y;
     sigGyro->signal_int.z = SPI.gyro.signals_int.z;
     sigGyro->signalPT1_int.x = SPI.gyro.signalsPT1_int.x;
     sigGyro->signalPT1_int.y = SPI.gyro.signalsPT1_int.y;
     sigGyro->signalPT1_int.z = SPI.gyro.signalsPT1_int.z;
+#endif
     sigGyro->newData = SPI.gyro.newData;
 	//acc
+#ifdef FLOAT_BASE_VALUE
     sigAcc->signal.x  = SPI.acc.signals.x;
     sigAcc->signal.y  = SPI.acc.signals.y;
     sigAcc->signal.z  = SPI.acc.signals.z;
+#endif
+#ifdef INT_BASE_VALUE
 	sigAcc->signal_int.x = SPI.acc.signals_int.x;
 	sigAcc->signal_int.y = SPI.acc.signals_int.y;
 	sigAcc->signal_int.z = SPI.acc.signals_int.z;
 	sigAcc->signalPT1_int.x = SPI.acc.signalsPT1_int.x;
 	sigAcc->signalPT1_int.y = SPI.acc.signalsPT1_int.y;
 	sigAcc->signalPT1_int.z = SPI.acc.signalsPT1_int.z;
+#endif
     sigAcc->newData = SPI.acc.newData;
 
 	//reset newData flag

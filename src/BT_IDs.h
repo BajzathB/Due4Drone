@@ -86,6 +86,27 @@
 #define ID_meas_2_card_acc_PT1_X_int 177
 #define ID_meas_2_card_acc_PT1_Y_int 178
 #define ID_meas_2_card_acc_PT1_Z_int 179
+#define ID_meas_2_card_PID_refsig_X_int 181
+#define ID_meas_2_card_PID_refsig_Y_int 182
+#define ID_meas_2_card_PID_refsig_Z_int 183
+#define ID_meas_2_card_PID_sensor_X_int 184
+#define ID_meas_2_card_PID_sensor_Y_int 185
+#define ID_meas_2_card_PID_sensor_Z_int 186
+#define ID_meas_2_card_PID_Pout_X_int 187
+#define ID_meas_2_card_PID_Pout_Y_int 188
+#define ID_meas_2_card_PID_Pout_Z_int 189
+#define ID_meas_2_card_PID_Iout_X_int 190
+#define ID_meas_2_card_PID_Iout_Y_int 191
+#define ID_meas_2_card_PID_Iout_Z_int 192
+#define ID_meas_2_card_PID_Dout_X_int 193
+#define ID_meas_2_card_PID_Dout_Y_int 194
+#define ID_meas_2_card_PID_Dout_Z_int 195
+#define ID_meas_2_card_PID_FFout_X_int 196
+#define ID_meas_2_card_PID_FFout_Y_int 197
+#define ID_meas_2_card_PID_FFout_Z_int 198
+#define ID_meas_2_card_PID_U_X_int 199
+#define ID_meas_2_card_PID_U_Y_int 200
+#define ID_meas_2_card_PID_U_Z_int 201
 
 
 
@@ -97,6 +118,21 @@
 #define ID_spi_acc_offset_int_x 1003
 #define ID_spi_acc_offset_int_y 1004
 #define ID_spi_acc_offset_int_z 1005
+#define ID_control_PID_rate_P_X_int 1006
+#define ID_control_PID_rate_I_X_int 1007
+#define ID_control_PID_rate_D_X_int 1008
+#define ID_control_PID_rate_P_Y_int 1009
+#define ID_control_PID_rate_I_Y_int 1010
+#define ID_control_PID_rate_D_Y_int 1011
+#define ID_control_PID_rate_P_Z_int 1012
+#define ID_control_PID_rate_I_Z_int 1013
+#define ID_control_PID_rate_D_Z_int 1014
+#define ID_control_PID_rate_FF_X_int 1015
+#define ID_control_PID_rate_FF_Y_int 1016
+#define ID_control_PID_rate_FF_DX_int 1017
+#define ID_control_PID_rate_FF_DY_int 1018
+#define ID_control_PID_rate_sat_I_int 1019
+#define ID_control_PID_rate_sat_PID_int 1020
 
 
 
@@ -206,4 +242,5 @@
 #define ID_roll_KF_AccPT2_GyroPT2 3042
 #define ID_pitch_KF_AccPT2_GyroPT2 3043
 #define ID_loop_time_ms 3044
+#define ID_loop_tick 3045
 

@@ -57,9 +57,9 @@ TEST(test_SPI, SPI_Call)
     PT1Filter(&y,x,paramC);
     signalPT1Filter(&testSig);
     calcRealFromInt(&testSig, E_direction::X, false);
-    gyroPT1_133Hz(1,1);
+    PT1_133Hz(1,1);
     gyroSignalPT1_133Hz(&testSig);
-    accPT1_25Hz(1, 1);
+    PT1_25Hz(1, 1);
     accSignalPT1_25Hz(&testSig);
 }
 
@@ -694,8 +694,8 @@ TEST(test_SPI, RunSPI_Test)
 
 TEST(test_SPI, gyroPT1_133Hz_Test)
 {
-    EXPECT_EQ(gyroPT1_133Hz(100,150), 103);
-    EXPECT_EQ(gyroPT1_133Hz(100,-3000), -94);
+    EXPECT_EQ(PT1_133Hz(100,150), 103);
+    EXPECT_EQ(PT1_133Hz(100,-3000), -94);
 }
 
 TEST(test_SPI, gyroSignalPT1_Test)
@@ -717,8 +717,8 @@ TEST(test_SPI, gyroSignalPT1_Test)
 
 TEST(test_SPI, accPT1_25Hz_Test)
 {
-    EXPECT_EQ(accPT1_25Hz(100, 150), 100);
-    EXPECT_EQ(accPT1_25Hz(-100, 30000), 370);
+    EXPECT_EQ(PT1_25Hz(100, 150), 100);
+    EXPECT_EQ(PT1_25Hz(-100, 30000), 370);
 }
 
 TEST(test_SPI, accSignalPT1_25Hz_Test)
