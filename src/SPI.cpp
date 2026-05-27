@@ -36,9 +36,6 @@
 //  nameing convention: MEAS1.txt, MEAS2.txt,... MEASXXXX.txt
 //  storing meas in a linear fasion, clusters follow each other, also means FAT is linear
 
-#define INT_BASE_VALUE
-//#define FLOAT_BASE_VALUE
-
 #include "pch.h"
 #include "SPI.h"
 #include "LED.h"
@@ -65,6 +62,11 @@ extern Dmac* DMAC;
 #include "variant.h"
 
 #endif
+
+#define INT_BASE_VALUE
+//#define FLOAT_BASE_VALUE
+
+#define THREE_SECOND 31500000u //3sec in ticks
 
 spi_st SPI;
 
@@ -114,7 +116,7 @@ void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput)
 		getSPISdCard()->sdCardInitFinished = false;
 	}
 
-	if (spiInput->sysTime > 3.0f)
+	if (spiInput->sysTick > THREE_SECOND)
 	{
 		RunSdCard(spiInput, spiOutput);
 	}

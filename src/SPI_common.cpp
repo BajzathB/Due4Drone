@@ -114,6 +114,11 @@ float calcRealFromInt(volatile signal* sig, E_direction dir, bool isPT1)
 	return (float)(sig->raw2realMultiplier * value) / (float)sig->raw2realDivider;
 }
 
+float calcRealFromInt(int32_t value)
+{
+    return (float)(2000 * value) / 32768;
+}
+
 void calcMovingAverage(MovingAverage* ma, axis* value)
 {
 	// Remove oldest value from sum

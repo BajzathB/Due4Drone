@@ -9,6 +9,7 @@
 #include "Controller.h"
 #include "RC.h"
 #include "sysTime.h"
+#include "MotorControl.h"
 #include <cmath>
 
 #ifdef UNIT_TEST
@@ -25,10 +26,11 @@ extern DummySerial SerialUSB;
 #endif
 
 //element: 1th order(x), 3rd order(x^3), 5th order(x^5) 
-float parabolicConst4Rate[3];
+//float parabolicConst4Rate[3];
 float maxYawRate = 500.0f;
 int32_t maxYawRate_int = 500;
 
+#define CTRL_CYCLE_TICK 5250 //0.005ms in ticks
 #define HALFPI 1.57079f
 #define PI 3.14159f
 #define TWOPI 6.28318f
@@ -50,41 +52,41 @@ accData_st accData;
 void SetupController(void)
 {
     //values comming from basic excel evaluation
-    parabolicConst4Rate[0] = 0.1486979167f;         //1st order
-    parabolicConst4Rate[1] = 0.000005052083f;       //3rd order
-    parabolicConst4Rate[2] = 0.000000000007813f;    //5th order
+    //parabolicConst4Rate[0] = 0.1486979167f;         //1st order
+    //parabolicConst4Rate[1] = 0.000005052083f;       //3rd order
+    //parabolicConst4Rate[2] = 0.000000000007813f;    //5th order
 
     //RATE
-    pidRate.P.x = 45.0f;
-    pidRate.I.x = 15.0f;
-    pidRate.D.x = 25.0f;
-    pidRate.P.y = 45.0f;
-    pidRate.I.y = 5.0f;
-    pidRate.D.y = 25.0f;
-    pidRate.P.z = 350.0f;
-    pidRate.I.z = 10.0f;
-    pidRate.D.z = 150.0f;
-    pidRate.FFr.x = 0.0f;
-    pidRate.FFr.y = 0.0f;
-    pidRate.FFdr.x = 0.0f;
-    pidRate.FFdr.y = 0.0f;
-  	pidRate.saturationI = 35.0f;
-  	pidRate.saturationPID = 200.0f;
-  	pidRate.DTermC = 2000 / 200;	//datarate/filterrate = 2000hz/200hz
-    pidRate.FFDTermC = 10.0f;
-    pidRate.PFactor = 1000.0f;
-    pidRate.IFactor = 100.0f;
-    pidRate.DFactor = 10000.0f;
-    pidRate.FFrFactor = 1000.0f;
-    pidRate.FFdrFactor = 10000.0f;
-    pidRate.P_int.x = 46;
-    pidRate.P_int.y = 46;
+   // pidRate.P.x = 45.0f;
+   // pidRate.I.x = 15.0f;
+   // pidRate.D.x = 25.0f;
+   // pidRate.P.y = 45.0f;
+   // pidRate.I.y = 5.0f;
+   // pidRate.D.y = 25.0f;
+   // pidRate.P.z = 350.0f;
+   // pidRate.I.z = 10.0f;
+   // pidRate.D.z = 150.0f;
+   // pidRate.FFr.x = 0.0f;
+   // pidRate.FFr.y = 0.0f;
+   // pidRate.FFdr.x = 0.0f;
+   // pidRate.FFdr.y = 0.0f;
+  	//pidRate.saturationI = 35.0f;
+  	//pidRate.saturationPID = 200.0f;
+  	//pidRate.DTermC = 2000 / 200;	//datarate/filterrate = 2000hz/200hz
+   // pidRate.FFDTermC = 10.0f;
+    //pidRate.PFactor = 1000.0f;
+    //pidRate.IFactor = 100.0f;
+    //pidRate.DFactor = 10000.0f;
+    //pidRate.FFrFactor = 1000.0f;
+    //pidRate.FFdrFactor = 10000.0f;
+    pidRate.P_int.x = 35;
+    pidRate.I_int.x = 1;
+    pidRate.D_int.x = 25;
+    pidRate.P_int.y = 35;
+    pidRate.I_int.y = 1;
+    pidRate.D_int.y = 25;
     pidRate.P_int.z = 200;
-    pidRate.I_int.x = 5;
-    pidRate.I_int.y = 5;
-    pidRate.I_int.z = 5;
-    pidRate.D_int.x = 26;
-    pidRate.D_int.y = 26;
+    pidRate.I_int.z = 0;
     pidRate.D_int.z = 0;
     pidRate.FFr_int.x = 0;
     pidRate.FFr_int.y = 0;
@@ -92,343 +94,359 @@ void SetupController(void)
     pidRate.FFdr_int.x = 0;
     pidRate.FFdr_int.y = 0;
     pidRate.FFdr_int.z = 0;
-    pidRate.satI_int = 0x7FFFFFFF;  //int32 max
+    pidRate.satI_int = 0x7FFFFFFF;  //int32 close to max
     pidRate.satPID_int = 10000000;  //
-    //iRelax
-    pidRate.iRelaxRefThreshhold = 6000.0f;
-    pidRate.iRelaxErrThreshhold = 500.0f;
-    //Dmax
-    pidRate.Dmax.x = pidRate.D.x;
-    pidRate.Dmax.y = pidRate.D.y;
-    pidRate.Dmax.z = pidRate.D.z;
-    pidRate.dMaxRefThreshhold = 300.0f;
-    pidRate.dMaxErrThreshhold = 100.0f;
+ //   //iRelax
+ //   pidRate.iRelaxRefThreshhold = 6000.0f;
+ //   pidRate.iRelaxErrThreshhold = 500.0f;
+ //   //Dmax
+ //   pidRate.Dmax.x = pidRate.D.x;
+ //   pidRate.Dmax.y = pidRate.D.y;
+ //   pidRate.Dmax.z = pidRate.D.z;
+ //   pidRate.dMaxRefThreshhold = 300.0f;
+ //   pidRate.dMaxErrThreshhold = 100.0f;
 
-	//PID
-	pidRate.errorSum.x = 0.0f;
-	pidRate.errorSum.y = 0.0f;
-	pidRate.errorSum.z = 0.0f;
-	pidRate.errorPrev.x = 0.0f;
-	pidRate.errorPrev.y = 0.0f;
-	pidRate.errorPrev.z = 0.0f;
-	pidRate.errorDotFiltered.x = 0.0f;
-	pidRate.errorDotFiltered.y = 0.0f;
-	pidRate.errorDotFiltered.z = 0.0f;
+	////PID
+	//pidRate.errorSum.x = 0.0f;
+	//pidRate.errorSum.y = 0.0f;
+	//pidRate.errorSum.z = 0.0f;
+	//pidRate.errorPrev.x = 0.0f;
+	//pidRate.errorPrev.y = 0.0f;
+	//pidRate.errorPrev.z = 0.0f;
+	//pidRate.errorDotFiltered.x = 0.0f;
+	//pidRate.errorDotFiltered.y = 0.0f;
+	//pidRate.errorDotFiltered.z = 0.0f;
 
     //CASCADE
-    pidCascade.P.x = 30.0f;
-    pidCascade.I.x = 0.0f;
-    pidCascade.D.x = 0.0f;
-    pidCascade.P.y = 30.0f;
-    pidCascade.I.y = 0.0f;
-    pidCascade.D.y = 0.0f;
-    pidCascade.P.z = 0.0f;
-    pidCascade.I.z = 0.0f;
-    pidCascade.D.z = 0.0f;
-    pidCascade.saturationI = 75.0f;
-    pidCascade.saturationPID = 300.0f;
-    pidCascade.DTermC = 1600 / 25;	//datarate/filterrate = 2000hz/500hz
-    pidCascade.PFactor = 10.0f;
-    pidCascade.IFactor = 10.0f;
-    pidCascade.DFactor = 1.0f;
-    pidCascade.FFrFactor = 1.0f;
-    pidCascade.FFdrFactor = 1.0f;
+    //pidCascade.P.x = 30.0f;
+    //pidCascade.I.x = 0.0f;
+    //pidCascade.D.x = 0.0f;
+    //pidCascade.P.y = 30.0f;
+    //pidCascade.I.y = 0.0f;
+    //pidCascade.D.y = 0.0f;
+    //pidCascade.P.z = 0.0f;
+    //pidCascade.I.z = 0.0f;
+    //pidCascade.D.z = 0.0f;
+    //pidCascade.saturationI = 75.0f;
+    //pidCascade.saturationPID = 300.0f;
+    //pidCascade.DTermC = 1600 / 25;	//datarate/filterrate = 2000hz/500hz
+    //pidCascade.PFactor = 10.0f;
+    //pidCascade.IFactor = 10.0f;
+    //pidCascade.DFactor = 1.0f;
+    //pidCascade.FFrFactor = 1.0f;
+    //pidCascade.FFdrFactor = 1.0f;
 
     //PID
-    pidCascade.errorSum.x = 0.0f;
-    pidCascade.errorSum.y = 0.0f;
-    pidCascade.errorSum.z = 0.0f;
-    pidCascade.errorPrev.x = 0.0f;
-    pidCascade.errorPrev.y = 0.0f;
-    pidCascade.errorPrev.z = 0.0f;
-    pidCascade.errorDotFiltered.x = 0.0f;
-    pidCascade.errorDotFiltered.y = 0.0f;
-    pidCascade.errorDotFiltered.z = 0.0f;
+    //pidCascade.errorSum.x = 0.0f;
+    //pidCascade.errorSum.y = 0.0f;
+    //pidCascade.errorSum.z = 0.0f;
+    //pidCascade.errorPrev.x = 0.0f;
+    //pidCascade.errorPrev.y = 0.0f;
+    //pidCascade.errorPrev.z = 0.0f;
+    //pidCascade.errorDotFiltered.x = 0.0f;
+    //pidCascade.errorDotFiltered.y = 0.0f;
+    //pidCascade.errorDotFiltered.z = 0.0f;
 
 }
 
 void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 {
-    E_flightMode flightMode = EvalFlightMode(ctrlIn->rcSignals.flightModeSwitch);
-    //axis controlSignal;
-    //axis_i32 controlSignal_int;
-
-    EvalArmState(&ctrlIn->rcSignals);
-
-    ////gyro filter
-    //if (true == ctrlIn->gyro.newData)
-    //{
-    //    PT1Filter(&gyroData.PT1.signal.x, ctrlIn->gyro.signal.x, gyroData.paramC);  //2000/100 sampleRate/cutoffRate
-    //    PT1Filter(&gyroData.PT1.signal.y, ctrlIn->gyro.signal.y, gyroData.paramC);
-    //    PT1Filter(&gyroData.PT1.signal.z, ctrlIn->gyro.signal.z, gyroData.paramC);
-    //
-    //    PT1Filter(&gyroData.PT2.signal.x, gyroData.PT1.signal.x, gyroData.paramC);
-    //    PT1Filter(&gyroData.PT2.signal.y, gyroData.PT1.signal.y, gyroData.paramC);
-    //    PT1Filter(&gyroData.PT2.signal.z, gyroData.PT1.signal.z, gyroData.paramC);
-    //
-    //    //PT1Filter(&gyroData.PT3.signal.x, gyroData.PT2.signal.x, gyroData.paramC);
-    //    //PT1Filter(&gyroData.PT3.signal.y, gyroData.PT2.signal.y, gyroData.paramC);
-    //    //PT1Filter(&gyroData.PT3.signal.z, gyroData.PT2.signal.z, gyroData.paramC);
-    //
-    //    //KalmanFilter(&gyroData.KF.x, ctrlIn->gyro.signal.x);
-    //    //KalmanFilter(&gyroData.KF.y, ctrlIn->gyro.signal.y);
-    //    //KalmanFilter(&gyroData.KF.z, ctrlIn->gyro.signal.z);
-    //}
-    ////acc filter
-    //if (true == ctrlIn->acc.newData)
-    //{
-    //    PT1Filter(&accData.PT1.signal.x, ctrlIn->acc.signal.x, accData.paramC);
-    //    PT1Filter(&accData.PT1.signal.y, ctrlIn->acc.signal.y, accData.paramC);
-    //    PT1Filter(&accData.PT1.signal.z, ctrlIn->acc.signal.z, accData.paramC);
-
-    //    PT1Filter(&accData.PT2.signal.x, accData.PT1.signal.x, accData.paramC);
-    //    PT1Filter(&accData.PT2.signal.y, accData.PT1.signal.y, accData.paramC);
-    //    PT1Filter(&accData.PT2.signal.z, accData.PT1.signal.z, accData.paramC);
-    //
-    //    accData.rollAngle =  atan2(ctrlIn->acc.signal.y,  
-    //        sqrt(ctrlIn->acc.signal.x * ctrlIn->acc.signal.x + ctrlIn->acc.signal.z * ctrlIn->acc.signal.z)) * 180 / 3.14;
-    //    accData.pitchAngle = atan2(-ctrlIn->acc.signal.x, 
-    //        sqrt(ctrlIn->acc.signal.y * ctrlIn->acc.signal.y + ctrlIn->acc.signal.z * ctrlIn->acc.signal.z)) * 180 / 3.14;
-    //
-    //    accData.rollAnglePT1Acc = atan2(accData.PT1.signal.y,
-    //        sqrt(accData.PT1.signal.x * accData.PT1.signal.x + accData.PT1.signal.z * accData.PT1.signal.z)) * 180 / 3.14;
-    //    accData.pitchAnglePT1Acc = atan2(-accData.PT1.signal.x, 
-    //        sqrt(accData.PT1.signal.y * accData.PT1.signal.y + accData.PT1.signal.z * accData.PT1.signal.z)) * 180 / 3.14;
-  
-    //    accData.rollAnglePT2Acc = atan2(accData.PT2.signal.y,
-    //        sqrt(accData.PT2.signal.x * accData.PT2.signal.x + accData.PT2.signal.z * accData.PT2.signal.z)) * 180 / 3.14;
-    //    accData.pitchAnglePT2Acc = atan2(-accData.PT2.signal.x, 
-    //        sqrt(accData.PT2.signal.y * accData.PT2.signal.y + accData.PT2.signal.z * accData.PT2.signal.z)) * 180 / 3.14;
-
-    //    //SerialUSB.print(ctrlIn->acc.signal.x); SerialUSB.print('\t');
-    //    //SerialUSB.print(ctrlIn->acc.signal.y); SerialUSB.print('\t');
-    //    //SerialUSB.print(ctrlIn->acc.signal.z); SerialUSB.print('\t');
-    //    //SerialUSB.print(accData.rollAngle); SerialUSB.print('\t');
-    //    //SerialUSB.println(accData.pitchAngle);
-    //}
-    ////kalman filter angle
-    //{
-    //    KalmanFilterAngle(&accData.angleKF.roll, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime);
-    //    KalmanFilterAngle(&accData.angleKF.pitch, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime);
-    //
-    //    KalmanFilterAngle(&accData.angleKFPT10.roll, accData.rollAnglePT1Acc, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime);
-    //    KalmanFilterAngle(&accData.angleKFPT10.pitch, accData.pitchAnglePT1Acc, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime);
-
-    //    //KalmanFilterAngle(&accData.angleKFPT20.roll, accData.rollAnglePT2Acc, ctrlIn->gyro.signal.x, ctrlIn->loopTime);
-    //    //KalmanFilterAngle(&accData.angleKFPT20.pitch, accData.pitchAnglePT2Acc, ctrlIn->gyro.signal.y, ctrlIn->loopTime);
-    //
-    //    KalmanFilterAngle(&accData.angleKFPT11.roll, accData.rollAnglePT1Acc, gyroData.PT1.signal.x, ctrlIn->droneTimes.loopTime);
-    //    KalmanFilterAngle(&accData.angleKFPT11.pitch, accData.pitchAnglePT1Acc, gyroData.PT1.signal.y, ctrlIn->droneTimes.loopTime);
-
-    //    //KalmanFilterAngle(&accData.angleKFPT21.roll, accData.rollAnglePT2Acc, gyroData.PT1.signal.x, ctrlIn->loopTime);
-    //    //KalmanFilterAngle(&accData.angleKFPT21.pitch, accData.pitchAnglePT2Acc, gyroData.PT1.signal.y, ctrlIn->loopTime);
-
-    //    //KalmanFilterAngle(&accData.angleKFPT22.roll, accData.rollAnglePT2Acc, gyroData.PT2.signal.x, ctrlIn->loopTime);
-    //    //KalmanFilterAngle(&accData.angleKFPT22.pitch, accData.pitchAnglePT2Acc, gyroData.PT2.signal.y, ctrlIn->loopTime);
-    //}
-    ////complementary filter angle
-    //{
-    //    ComplementryFilterAngle(&accData.rollAngleCF, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime, accData.alpha);
-    //    ComplementryFilterAngle(&accData.pitchAngleCF, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime, accData.alpha);
-
-    //    ComplementryFilterAngle(&accData.rollAngleCF10, accData.rollAnglePT1Acc, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime, accData.alpha);
-    //    ComplementryFilterAngle(&accData.pitchAngleCF10, accData.pitchAnglePT1Acc, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime, accData.alpha);
-
-    //    ComplementryFilterAngle(&accData.rollAngleCF11, accData.rollAnglePT1Acc, gyroData.PT1.signal.x, ctrlIn->droneTimes.loopTime, accData.alpha);
-    //    ComplementryFilterAngle(&accData.pitchAngleCF11, accData.pitchAnglePT1Acc, gyroData.PT1.signal.y, ctrlIn->droneTimes.loopTime, accData.alpha);
-
-    //    //ComplementryFilterAngleWeighted(&accData.rollAngleCFw, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
-    //    //ComplementryFilterAngleWeighted(&accData.pitchAngleCFw, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
-
-    //    //ComplementryFilterAngleWeighted(&accData.rollAngleCFw01, accData.rollAngle, gyroData.PT1.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
-    //    //ComplementryFilterAngleWeighted(&accData.pitchAngleCFw01, accData.pitchAngle, gyroData.PT1.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
-
-    //    //SerialUSB.print(accData.rollAngleCFw, 3); SerialUSB.print('\t');
-    //    //SerialUSB.println(accData.rollAngleCFw01, 3);
-    //}
-    
-    //control when armed and on high throttle
-    if (ARMED == armState && ctrlIn->rcSignals.throttle > 1010)
+    if (ctrlIn->droneTimes.sysTick - pidRate.runCtrlTickPrev > CTRL_CYCLE_TICK)
     {
-        //float rollScaled{ ParabolicScale(ctrlIn->rcSignals.roll) };
-        //float pitchScaled{ ParabolicScale(ctrlIn->rcSignals.pitch) };
-        //float yawScaled{ LinearInterpol(ctrlIn->rcSignals.yaw, 1000u,2000u, -maxYawRate , maxYawRate) };
+        pidRate.runCtrlTickPrev = ctrlIn->droneTimes.sysTick;
 
-        int32_t rollScaled_int{ expo(ctrlIn->rcSignals.roll) };
-        int32_t pitchScaled_int{ expo(ctrlIn->rcSignals.pitch) };
-        int32_t yawScaled_int{ linearScale_8192(ctrlIn->rcSignals.yaw) };
+        E_flightMode flightMode = EvalFlightMode(ctrlIn->rcSignals.flightModeSwitch);
 
+        EvalArmState(&ctrlIn->rcSignals);
 
-        switch (flightMode)
-        {
-        //case RATE_CTRL_PT1:
+        ////gyro filter
+        //if (true == ctrlIn->gyro.newData)
         //{
-        //    // wobble for testing
-        //    if (ctrlIn->rcSignals.Switch2Way > 1500)
-        //    {
-        //        float wobbleAmp = wobble(ctrlIn->rcSignals.Poti1, ctrlIn->rcSignals.Poti2);
-
-        //        rollScaled += wobbleAmp;
-        //        //pitchScaled += wobbleAmp;
-        //    }
-        //    
-        //    pidRate.refSignal.x =  rollScaled;
-        //    pidRate.refSignal.y = -pitchScaled;
-        //    pidRate.refSignal.z =  yawScaled;
-        //    pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
-        //    pidRate.sensor.signal.y =  gyroData.PT1.signal.y;
-        //    pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
-        //    pidRate.sensor.newData = ctrlIn->gyro.newData;
-        //    pidRate.deltaT = ctrlIn->droneTimes.loopTime;
-
-        //    CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
-
-        //    break;
+        //    PT1Filter(&gyroData.PT1.signal.x, ctrlIn->gyro.signal.x, gyroData.paramC);  //2000/100 sampleRate/cutoffRate
+        //    PT1Filter(&gyroData.PT1.signal.y, ctrlIn->gyro.signal.y, gyroData.paramC);
+        //    PT1Filter(&gyroData.PT1.signal.z, ctrlIn->gyro.signal.z, gyroData.paramC);
+        //
+        //    PT1Filter(&gyroData.PT2.signal.x, gyroData.PT1.signal.x, gyroData.paramC);
+        //    PT1Filter(&gyroData.PT2.signal.y, gyroData.PT1.signal.y, gyroData.paramC);
+        //    PT1Filter(&gyroData.PT2.signal.z, gyroData.PT1.signal.z, gyroData.paramC);
+        //
+        //    //PT1Filter(&gyroData.PT3.signal.x, gyroData.PT2.signal.x, gyroData.paramC);
+        //    //PT1Filter(&gyroData.PT3.signal.y, gyroData.PT2.signal.y, gyroData.paramC);
+        //    //PT1Filter(&gyroData.PT3.signal.z, gyroData.PT2.signal.z, gyroData.paramC);
+        //
+        //    //KalmanFilter(&gyroData.KF.x, ctrlIn->gyro.signal.x);
+        //    //KalmanFilter(&gyroData.KF.y, ctrlIn->gyro.signal.y);
+        //    //KalmanFilter(&gyroData.KF.z, ctrlIn->gyro.signal.z);
         //}
-        case RATE_CTRL_INT:
-        {
-            pidRate.refSignal_int.x =  rollScaled_int;
-            pidRate.refSignal_int.y = -pitchScaled_int;
-            pidRate.refSignal_int.z =  yawScaled_int;
-            pidRate.sensor.signal_int.x = -ctrlIn->gyro.signalPT1_int.x;
-            pidRate.sensor.signal_int.y =  ctrlIn->gyro.signalPT1_int.y;
-            pidRate.sensor.signal_int.z = -ctrlIn->gyro.signalPT1_int.z;
-            pidRate.sensor.newData = ctrlIn->gyro.newData;
-            pidRate.deltaTicks = ctrlIn->droneTimes.loopTick;
-
-            CalcPID_int(&pidRate, &ctrlOut->U_int);
-
-            break;
-        }
-        //case RATE_CTRL_PT1_IRelax_Dmax:
+        ////acc filter
+        //if (true == ctrlIn->acc.newData)
         //{
-        //    pidRate.refSignal.x = rollScaled;
-        //    pidRate.refSignal.y = -pitchScaled;
-        //    pidRate.refSignal.z = yawScaled;
-        //    pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
-        //    pidRate.sensor.signal.y = gyroData.PT1.signal.y;
-        //    pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
-        //    pidRate.sensor.newData = ctrlIn->gyro.newData;
-        //    pidRate.deltaT = ctrlIn->droneTimes.loopTime;
+        //    PT1Filter(&accData.PT1.signal.x, ctrlIn->acc.signal.x, accData.paramC);
+        //    PT1Filter(&accData.PT1.signal.y, ctrlIn->acc.signal.y, accData.paramC);
+        //    PT1Filter(&accData.PT1.signal.z, ctrlIn->acc.signal.z, accData.paramC);
 
-        //    CalcPID_wo_Dkick_FF_IRelax_Dmax(&pidRate, &controlSignal, ctrlIn->rcSignals.Switch2Way);
+        //    PT1Filter(&accData.PT2.signal.x, accData.PT1.signal.x, accData.paramC);
+        //    PT1Filter(&accData.PT2.signal.y, accData.PT1.signal.y, accData.paramC);
+        //    PT1Filter(&accData.PT2.signal.z, accData.PT1.signal.z, accData.paramC);
+        //
+        //    accData.rollAngle =  atan2(ctrlIn->acc.signal.y,  
+        //        sqrt(ctrlIn->acc.signal.x * ctrlIn->acc.signal.x + ctrlIn->acc.signal.z * ctrlIn->acc.signal.z)) * 180 / 3.14;
+        //    accData.pitchAngle = atan2(-ctrlIn->acc.signal.x, 
+        //        sqrt(ctrlIn->acc.signal.y * ctrlIn->acc.signal.y + ctrlIn->acc.signal.z * ctrlIn->acc.signal.z)) * 180 / 3.14;
+        //
+        //    accData.rollAnglePT1Acc = atan2(accData.PT1.signal.y,
+        //        sqrt(accData.PT1.signal.x * accData.PT1.signal.x + accData.PT1.signal.z * accData.PT1.signal.z)) * 180 / 3.14;
+        //    accData.pitchAnglePT1Acc = atan2(-accData.PT1.signal.x, 
+        //        sqrt(accData.PT1.signal.y * accData.PT1.signal.y + accData.PT1.signal.z * accData.PT1.signal.z)) * 180 / 3.14;
 
-        //    break;
+        //    accData.rollAnglePT2Acc = atan2(accData.PT2.signal.y,
+        //        sqrt(accData.PT2.signal.x * accData.PT2.signal.x + accData.PT2.signal.z * accData.PT2.signal.z)) * 180 / 3.14;
+        //    accData.pitchAnglePT2Acc = atan2(-accData.PT2.signal.x, 
+        //        sqrt(accData.PT2.signal.y * accData.PT2.signal.y + accData.PT2.signal.z * accData.PT2.signal.z)) * 180 / 3.14;
+
+        //    //SerialUSB.print(ctrlIn->acc.signal.x); SerialUSB.print('\t');
+        //    //SerialUSB.print(ctrlIn->acc.signal.y); SerialUSB.print('\t');
+        //    //SerialUSB.print(ctrlIn->acc.signal.z); SerialUSB.print('\t');
+        //    //SerialUSB.print(accData.rollAngle); SerialUSB.print('\t');
+        //    //SerialUSB.println(accData.pitchAngle);
         //}
-        //case ANGLE_CASCADE_CTRL:
+        ////kalman filter angle
         //{
-        //    float rollAngle{ LinearInterpol(ctrlIn->rcSignals.roll, 1000u,2000u, -30.0f , 30.0f) };
-        //    float pitchAngle{ LinearInterpol(ctrlIn->rcSignals.pitch, 1000u,2000u, 30.0f , -30.0f) };
-        //    axis intermidiateSignal;
+        //    KalmanFilterAngle(&accData.angleKF.roll, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime);
+        //    KalmanFilterAngle(&accData.angleKF.pitch, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime);
+        //
+        //    KalmanFilterAngle(&accData.angleKFPT10.roll, accData.rollAnglePT1Acc, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime);
+        //    KalmanFilterAngle(&accData.angleKFPT10.pitch, accData.pitchAnglePT1Acc, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime);
 
-        //    //outter cascade: angle
-        //    pidCascade.refSignal.x = rollAngle;
-        //    pidCascade.refSignal.y = pitchAngle;
-        //    pidCascade.sensor.signal.x = -accData.angleKF.roll.angle;
-        //    pidCascade.sensor.signal.y = accData.angleKF.pitch.angle;
-        //    pidCascade.sensor.newData = false;  //no D term
-        //    pidCascade.deltaT = ctrlIn->droneTimes.loopTime;
+        //    //KalmanFilterAngle(&accData.angleKFPT20.roll, accData.rollAnglePT2Acc, ctrlIn->gyro.signal.x, ctrlIn->loopTime);
+        //    //KalmanFilterAngle(&accData.angleKFPT20.pitch, accData.pitchAnglePT2Acc, ctrlIn->gyro.signal.y, ctrlIn->loopTime);
+        //
+        //    KalmanFilterAngle(&accData.angleKFPT11.roll, accData.rollAnglePT1Acc, gyroData.PT1.signal.x, ctrlIn->droneTimes.loopTime);
+        //    KalmanFilterAngle(&accData.angleKFPT11.pitch, accData.pitchAnglePT1Acc, gyroData.PT1.signal.y, ctrlIn->droneTimes.loopTime);
 
-        //    CalcPID_wo_Dkick_FF(&pidCascade, &intermidiateSignal);
+        //    //KalmanFilterAngle(&accData.angleKFPT21.roll, accData.rollAnglePT2Acc, gyroData.PT1.signal.x, ctrlIn->loopTime);
+        //    //KalmanFilterAngle(&accData.angleKFPT21.pitch, accData.pitchAnglePT2Acc, gyroData.PT1.signal.y, ctrlIn->loopTime);
 
-        //    //inner cascade: rate
-        //    pidRate.refSignal.x = intermidiateSignal.x;
-        //    pidRate.refSignal.y = intermidiateSignal.y;
-        //    pidRate.refSignal.z = yawScaled;
-        //    pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
-        //    pidRate.sensor.signal.y = gyroData.PT1.signal.y;
-        //    pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
-        //    pidRate.sensor.newData = ctrlIn->gyro.newData;
-        //    pidRate.deltaT = ctrlIn->droneTimes.loopTime;
-
-        //    CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
-
-        //    break;
+        //    //KalmanFilterAngle(&accData.angleKFPT22.roll, accData.rollAnglePT2Acc, gyroData.PT2.signal.x, ctrlIn->loopTime);
+        //    //KalmanFilterAngle(&accData.angleKFPT22.pitch, accData.pitchAnglePT2Acc, gyroData.PT2.signal.y, ctrlIn->loopTime);
         //}
-        case GPS_CTRL:
+        ////complementary filter angle
+        //{
+        //    ComplementryFilterAngle(&accData.rollAngleCF, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime, accData.alpha);
+        //    ComplementryFilterAngle(&accData.pitchAngleCF, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime, accData.alpha);
+
+        //    ComplementryFilterAngle(&accData.rollAngleCF10, accData.rollAnglePT1Acc, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime, accData.alpha);
+        //    ComplementryFilterAngle(&accData.pitchAngleCF10, accData.pitchAnglePT1Acc, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime, accData.alpha);
+
+        //    ComplementryFilterAngle(&accData.rollAngleCF11, accData.rollAnglePT1Acc, gyroData.PT1.signal.x, ctrlIn->droneTimes.loopTime, accData.alpha);
+        //    ComplementryFilterAngle(&accData.pitchAngleCF11, accData.pitchAnglePT1Acc, gyroData.PT1.signal.y, ctrlIn->droneTimes.loopTime, accData.alpha);
+
+        //    //ComplementryFilterAngleWeighted(&accData.rollAngleCFw, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        //    //ComplementryFilterAngleWeighted(&accData.pitchAngleCFw, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+
+        //    //ComplementryFilterAngleWeighted(&accData.rollAngleCFw01, accData.rollAngle, gyroData.PT1.signal.x, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+        //    //ComplementryFilterAngleWeighted(&accData.pitchAngleCFw01, accData.pitchAngle, gyroData.PT1.signal.y, ctrlIn->loopTime, accData.alpha, &ctrlIn->acc.signal);
+
+        //    //SerialUSB.print(accData.rollAngleCFw, 3); SerialUSB.print('\t');
+        //    //SerialUSB.println(accData.rollAngleCFw01, 3);
+        //}
+
+        //control when armed and on high throttle
+        if (ARMED == armState && ctrlIn->rcSignals.throttle > 1010)
         {
-            break;
+            int32_t rollScaled_int{ expo(ctrlIn->rcSignals.roll) };
+            int32_t pitchScaled_int{ expo(ctrlIn->rcSignals.pitch) };
+            int32_t yawScaled_int{ linearScale_8192(ctrlIn->rcSignals.yaw) };
+
+            switch (flightMode)
+            {
+                //case RATE_CTRL_PT1:
+                //{
+                //    // wobble for testing
+                //    if (ctrlIn->rcSignals.Switch2Way > 1500)
+                //    {
+                //        float wobbleAmp = wobble(ctrlIn->rcSignals.Poti1, ctrlIn->rcSignals.Poti2);
+
+                //        rollScaled += wobbleAmp;
+                //        //pitchScaled += wobbleAmp;
+                //    }
+                //    
+                //    pidRate.refSignal.x =  rollScaled;
+                //    pidRate.refSignal.y = -pitchScaled;
+                //    pidRate.refSignal.z =  yawScaled;
+                //    pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
+                //    pidRate.sensor.signal.y =  gyroData.PT1.signal.y;
+                //    pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
+                //    pidRate.sensor.newData = ctrlIn->gyro.newData;
+                //    pidRate.deltaT = ctrlIn->droneTimes.loopTime;
+
+                //    CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
+
+                //    break;
+                //}
+            case RATE_CTRL_INT:
+            {
+                pidRate.refSignal_int.x = rollScaled_int;
+                pidRate.refSignal_int.y = -pitchScaled_int;
+                pidRate.refSignal_int.z = yawScaled_int;
+                pidRate.sensor.signalPT1_int.x = -ctrlIn->gyro.signalPT1_int.x;
+                pidRate.sensor.signalPT1_int.y = ctrlIn->gyro.signalPT1_int.y;
+                pidRate.sensor.signalPT1_int.z = -ctrlIn->gyro.signalPT1_int.z;
+                pidRate.sensor.newData = ctrlIn->gyro.newData;
+                pidRate.deltaTicks = 5250; // ctrlIn->droneTimes.loopTick;
+
+                CalcPID_int(&pidRate, &ctrlOut->U_int);
+
+                //SerialUSB.print("ct: ");
+                //SerialUSB.println(pidRate.refSignal_int.x);
+                //SerialUSB.println(ctrlOut->U_int.x);
+
+                break;
+            }
+            //case RATE_CTRL_PT1_IRelax_Dmax:
+            //{
+            //    pidRate.refSignal.x = rollScaled;
+            //    pidRate.refSignal.y = -pitchScaled;
+            //    pidRate.refSignal.z = yawScaled;
+            //    pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
+            //    pidRate.sensor.signal.y = gyroData.PT1.signal.y;
+            //    pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
+            //    pidRate.sensor.newData = ctrlIn->gyro.newData;
+            //    pidRate.deltaT = ctrlIn->droneTimes.loopTime;
+
+            //    CalcPID_wo_Dkick_FF_IRelax_Dmax(&pidRate, &controlSignal, ctrlIn->rcSignals.Switch2Way);
+
+            //    break;
+            //}
+            //case ANGLE_CASCADE_CTRL:
+            //{
+            //    float rollAngle{ LinearInterpol(ctrlIn->rcSignals.roll, 1000u,2000u, -30.0f , 30.0f) };
+            //    float pitchAngle{ LinearInterpol(ctrlIn->rcSignals.pitch, 1000u,2000u, 30.0f , -30.0f) };
+            //    axis intermidiateSignal;
+
+            //    //outter cascade: angle
+            //    pidCascade.refSignal.x = rollAngle;
+            //    pidCascade.refSignal.y = pitchAngle;
+            //    pidCascade.sensor.signal.x = -accData.angleKF.roll.angle;
+            //    pidCascade.sensor.signal.y = accData.angleKF.pitch.angle;
+            //    pidCascade.sensor.newData = false;  //no D term
+            //    pidCascade.deltaT = ctrlIn->droneTimes.loopTime;
+
+            //    CalcPID_wo_Dkick_FF(&pidCascade, &intermidiateSignal);
+
+            //    //inner cascade: rate
+            //    pidRate.refSignal.x = intermidiateSignal.x;
+            //    pidRate.refSignal.y = intermidiateSignal.y;
+            //    pidRate.refSignal.z = yawScaled;
+            //    pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
+            //    pidRate.sensor.signal.y = gyroData.PT1.signal.y;
+            //    pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
+            //    pidRate.sensor.newData = ctrlIn->gyro.newData;
+            //    pidRate.deltaT = ctrlIn->droneTimes.loopTime;
+
+            //    CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
+
+            //    break;
+            //}
+            case GPS_CTRL:
+            {
+                break;
+            }
+            default:
+                // should not reach
+                break;
+            }
         }
-        default:
-            // should not reach
-            break;
+        else
+        {
+            //stop control, no control
+            //controlSignal.x = 0.0f;
+            //controlSignal.y = 0.0f;
+            //controlSignal.z = 0.0f;
+            ctrlOut->U_int.x = 0;
+            ctrlOut->U_int.y = 0;
+            ctrlOut->U_int.z = 0;
+            //reset RATE
+            //pidRate.error.x = 0.0f;
+            //pidRate.error.y = 0.0f;
+            //pidRate.error.z = 0.0f;
+            //pidRate.errorSum.x = 0.0f;
+            //pidRate.errorSum.y = 0.0f;
+            //pidRate.errorSum.z = 0.0f;
+            //pidRate.errorDot.x = 0.0f;
+            //pidRate.errorDot.y = 0.0f;
+            //pidRate.errorDot.z = 0.0f;
+            //pidRate.errorPrev.x = 0.0f;
+            //pidRate.errorPrev.y = 0.0f;
+            //pidRate.errorPrev.z = 0.0f;
+            //pidRate.errorDotFiltered.x = 0.0f;
+            //pidRate.errorDotFiltered.y = 0.0f;
+            //pidRate.errorDotFiltered.z = 0.0f;
+            //pidRate.sensorPrev.signal.x = 0.0f;
+            //pidRate.sensorPrev.signal.y = 0.0f;
+            //pidRate.sensorPrev.signal.z = 0.0f;
+            pidRate.error_int.x = 0;
+            pidRate.error_int.y = 0;
+            pidRate.error_int.z = 0;
+            pidRate.errorSum_int.x = 0;
+            pidRate.errorSum_int.y = 0;
+            pidRate.errorSum_int.z = 0;
+            pidRate.errorDot_int.x = 0;
+            pidRate.errorDot_int.y = 0;
+            pidRate.errorDot_int.z = 0;
+            pidRate.errorPrev_int.x = 0;
+            pidRate.errorPrev_int.y = 0;
+            pidRate.errorPrev_int.z = 0;
+            pidRate.errorDotPT1_int.x = 0;
+            pidRate.errorDotPT1_int.y = 0;
+            pidRate.errorDotPT1_int.z = 0;
+            pidRate.signalPT1Prev_int.x = 0;
+            pidRate.signalPT1Prev_int.y = 0;
+            pidRate.signalPT1Prev_int.z = 0;
+            //reset CASCADE
+            //pidCascade.error.x = 0.0f;
+            //pidCascade.error.y = 0.0f;
+            //pidCascade.error.z = 0.0f;
+            //pidCascade.errorSum.x = 0.0f;
+            //pidCascade.errorSum.y = 0.0f;
+            //pidCascade.errorSum.z = 0.0f;
+            //pidCascade.errorDot.x = 0.0f;
+            //pidCascade.errorDot.y = 0.0f;
+            //pidCascade.errorDot.z = 0.0f;
+            //pidCascade.errorPrev.x = 0.0f;
+            //pidCascade.errorPrev.y = 0.0f;
+            //pidCascade.errorPrev.z = 0.0f;
+            //pidCascade.errorDotFiltered.x = 0.0f;
+            //pidCascade.errorDotFiltered.y = 0.0f;
+            //pidCascade.errorDotFiltered.z = 0.0f;
+            //pidCascade.sensorPrev.signal.x = 0.0f;
+            //pidCascade.sensorPrev.signal.y = 0.0f;
+            //pidCascade.sensorPrev.signal.z = 0.0f;
+
         }
+
+        //ctrlOut->U.x = controlSignal.x;
+        //ctrlOut->U.y = controlSignal.y;
+        //ctrlOut->U.z = controlSignal.z;
+        //ctrlOut->U_int.x = controlSignal_int.x;
+        //ctrlOut->U_int.y = controlSignal_int.y;
+        //ctrlOut->U_int.z = controlSignal_int.z;
+        ctrlOut->armState = armState;
+
+        MotorInput motorInput;
+
+        motorInput.throttle = ctrlIn->rcSignals.throttle;
+        motorInput.x_int = ctrlOut->U_int.x;
+        motorInput.y_int = ctrlOut->U_int.y;
+        motorInput.z_int = ctrlOut->U_int.z;
+        motorInput.armState = armState;
+        motorInput.sysTick = ctrlIn->droneTimes.sysTick;
+        motorInput.poti1 = ctrlIn->rcSignals.Poti1;
+        motorInput.poti2 = ctrlIn->rcSignals.Poti2;
+        motorInput.twoWaySwitch2 = ctrlIn->rcSignals.Switch2Way;
+
+        UpdateMotorSpeeds(&motorInput);
     }
-    else
-    {
-      //stop control, no control
-      //controlSignal.x = 0.0f;
-      //controlSignal.y = 0.0f;
-      //controlSignal.z = 0.0f;
-      ctrlOut->U_int.x = 0;
-      ctrlOut->U_int.y = 0;
-      ctrlOut->U_int.z = 0;
-      //reset RATE
-      //pidRate.error.x = 0.0f;
-      //pidRate.error.y = 0.0f;
-      //pidRate.error.z = 0.0f;
-      //pidRate.errorSum.x = 0.0f;
-      //pidRate.errorSum.y = 0.0f;
-      //pidRate.errorSum.z = 0.0f;
-      //pidRate.errorDot.x = 0.0f;
-      //pidRate.errorDot.y = 0.0f;
-      //pidRate.errorDot.z = 0.0f;
-      //pidRate.errorPrev.x = 0.0f;
-      //pidRate.errorPrev.y = 0.0f;
-      //pidRate.errorPrev.z = 0.0f;
-      //pidRate.errorDotFiltered.x = 0.0f;
-      //pidRate.errorDotFiltered.y = 0.0f;
-      //pidRate.errorDotFiltered.z = 0.0f;
-      //pidRate.sensorPrev.signal.x = 0.0f;
-      //pidRate.sensorPrev.signal.y = 0.0f;
-      //pidRate.sensorPrev.signal.z = 0.0f;
-      pidRate.error_int.x = 0;
-      pidRate.error_int.y = 0;
-      pidRate.error_int.z = 0;
-      pidRate.errorSum_int.x = 0;
-      pidRate.errorSum_int.y = 0;
-      pidRate.errorSum_int.z = 0;
-      pidRate.errorDot_int.x = 0;
-      pidRate.errorDot_int.y = 0;
-      pidRate.errorDot_int.z = 0;
-      pidRate.errorPrev_int.x = 0;
-      pidRate.errorPrev_int.y = 0;
-      pidRate.errorPrev_int.z = 0;
-      pidRate.errorDotPT1_int.x = 0;
-      pidRate.errorDotPT1_int.y = 0;
-      pidRate.errorDotPT1_int.z = 0;
-      pidRate.signalPT1Prev_int.x = 0;
-      pidRate.signalPT1Prev_int.y = 0;
-      pidRate.signalPT1Prev_int.z = 0;
-      //reset CASCADE
-      //pidCascade.error.x = 0.0f;
-      //pidCascade.error.y = 0.0f;
-      //pidCascade.error.z = 0.0f;
-      //pidCascade.errorSum.x = 0.0f;
-      //pidCascade.errorSum.y = 0.0f;
-      //pidCascade.errorSum.z = 0.0f;
-      //pidCascade.errorDot.x = 0.0f;
-      //pidCascade.errorDot.y = 0.0f;
-      //pidCascade.errorDot.z = 0.0f;
-      //pidCascade.errorPrev.x = 0.0f;
-      //pidCascade.errorPrev.y = 0.0f;
-      //pidCascade.errorPrev.z = 0.0f;
-      //pidCascade.errorDotFiltered.x = 0.0f;
-      //pidCascade.errorDotFiltered.y = 0.0f;
-      //pidCascade.errorDotFiltered.z = 0.0f;
-      //pidCascade.sensorPrev.signal.x = 0.0f;
-      //pidCascade.sensorPrev.signal.y = 0.0f;
-      //pidCascade.sensorPrev.signal.z = 0.0f;
-
-    }
-    
-    //ctrlOut->U.x = controlSignal.x;
-    //ctrlOut->U.y = controlSignal.y;
-    //ctrlOut->U.z = controlSignal.z;
-    //ctrlOut->U_int.x = controlSignal_int.x;
-    //ctrlOut->U_int.y = controlSignal_int.y;
-    //ctrlOut->U_int.z = controlSignal_int.z;
-    ctrlOut->armState = armState;
 }
 
 void EvalArmState(const rcSignals_st* rcSig)
@@ -466,22 +484,22 @@ E_flightMode EvalFlightMode(const uint16_t flightModeChannel)
     }
 }
 
-float ParabolicScale(const uint16_t channel)
-{
-    float shiftedChannel = float(channel) - 1500.0f;
+//float ParabolicScale(const uint16_t channel)
+//{
+//    float shiftedChannel = float(channel) - 1500.0f;
+//
+//    return shiftedChannel * parabolicConst4Rate[0]
+//        + float(pow(shiftedChannel, 3)) * parabolicConst4Rate[1]
+//        + float(pow(shiftedChannel, 5)) * parabolicConst4Rate[2];
+//}
 
-    return shiftedChannel * parabolicConst4Rate[0]
-        + float(pow(shiftedChannel, 3)) * parabolicConst4Rate[1]
-        + float(pow(shiftedChannel, 5)) * parabolicConst4Rate[2];
-}
-
-//[-17500 ... +17500]=~-1000...-1000
+//[-17453 ... +17453]=~-1000...-1000
 inline int32_t expo(const uint16_t channel)
 {
     int64_t x = (int32_t)channel - 1500;
-    int32_t linear = x * 33;
-    int64_t cubic = (int64_t)x * x * x;
-    return linear + (int32_t)(cubic >> 17);
+    int32_t linear = x * 3;
+    int64_t power5 = (int64_t)x * x * x * x * x;
+    return linear + (int32_t)(power5 >> 31);
 }
 
 float LinearInterpol(const uint16_t xn, const uint16_t x0, const uint16_t x1, const float y0, const float y1)
@@ -664,213 +682,213 @@ inline int32_t linearScale_8192(uint16_t ch)
 ////        SerialUSB.print(pidSt->errorDeltaFiltered.x); SerialUSB.print("\t");
 ////    SerialUSB.println();
 //}
-
-void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u)
-{
-    //feedforward(FF)
-    pidSt->refSignalDot.x = (pidSt->refSignal.x - pidSt->refSignalPrev.x) / pidSt->deltaT;
-    pidSt->refSignalDot.y = (pidSt->refSignal.y - pidSt->refSignalPrev.y) / pidSt->deltaT;
-    pidSt->refSignalDot.z = (pidSt->refSignal.z - pidSt->refSignalPrev.z) / pidSt->deltaT;
-    pidSt->refSignalPrev.x = pidSt->refSignal.x;
-    pidSt->refSignalPrev.y = pidSt->refSignal.y;
-    pidSt->refSignalPrev.z = pidSt->refSignal.z;    
-    PT1Filter(&pidSt->refSignalDotFiltered.x, pidSt->refSignalDot.x, pidSt->FFDTermC);
-    PT1Filter(&pidSt->refSignalDotFiltered.y, pidSt->refSignalDot.y, pidSt->FFDTermC);
-    PT1Filter(&pidSt->refSignalDotFiltered.z, pidSt->refSignalDot.z, pidSt->FFDTermC);
-    pidSt->FFout.x = pidSt->FFr.x / pidSt->FFrFactor * pidSt->refSignal.x + pidSt->FFdr.x / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.x;
-    pidSt->FFout.y = pidSt->FFr.y / pidSt->FFrFactor * pidSt->refSignal.y + pidSt->FFdr.y / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.y;
-    pidSt->FFout.z = pidSt->FFr.z / pidSt->FFrFactor * pidSt->refSignal.z + pidSt->FFdr.z / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.z;
-
-    //error
-    pidSt->error.x = pidSt->refSignal.x - pidSt->sensor.signal.x;
-    pidSt->error.y = pidSt->refSignal.y - pidSt->sensor.signal.y;
-    pidSt->error.z = pidSt->refSignal.z - pidSt->sensor.signal.z;
-    //Pout
-    pidSt->Pout.x = pidSt->P.x / pidSt->PFactor * pidSt->error.x;
-    pidSt->Pout.y = pidSt->P.y / pidSt->PFactor * pidSt->error.y;
-    pidSt->Pout.z = pidSt->P.z / pidSt->PFactor * pidSt->error.z;
-
-    //errorSum
-    pidSt->errorSum.x += pidSt->error.x * pidSt->deltaT;
-    pidSt->errorSum.y += pidSt->error.y * pidSt->deltaT;
-    pidSt->errorSum.z += pidSt->error.z * pidSt->deltaT;
-    //anti-windup of integral(saturation)
-    if (pidSt->errorSum.x > pidSt->saturationI) pidSt->errorSum.x = pidSt->saturationI;
-    else if (pidSt->errorSum.x < -pidSt->saturationI) pidSt->errorSum.x = -pidSt->saturationI;
-    else; //do nothing
-    if (pidSt->errorSum.y > pidSt->saturationI) pidSt->errorSum.y = pidSt->saturationI;
-    else if (pidSt->errorSum.y < -pidSt->saturationI) pidSt->errorSum.y = -pidSt->saturationI;
-    else; //do nothing
-    if (pidSt->errorSum.z > pidSt->saturationI) pidSt->errorSum.z = pidSt->saturationI;
-    else if (pidSt->errorSum.z < -pidSt->saturationI) pidSt->errorSum.z = -pidSt->saturationI;
-    else; //do nothin
-    //Iout
-    pidSt->Iout.x = pidSt->I.x / pidSt->IFactor * pidSt->errorSum.x;
-    pidSt->Iout.y = pidSt->I.y / pidSt->IFactor * pidSt->errorSum.y;
-    pidSt->Iout.z = pidSt->I.z / pidSt->IFactor * pidSt->errorSum.z;
-
-    //errorDelta(D), avoid kick
-    if (true == pidSt->sensor.newData)
-    {
-        pidSt->errorDot.x = (pidSt->sensor.signal.x - pidSt->sensorPrev.signal.x) / pidSt->deltaT;
-        pidSt->errorDot.y = (pidSt->sensor.signal.y - pidSt->sensorPrev.signal.y) / pidSt->deltaT;
-        pidSt->errorDot.z = (pidSt->sensor.signal.z - pidSt->sensorPrev.signal.z) / pidSt->deltaT;
-        pidSt->sensorPrev.signal.x = pidSt->sensor.signal.x;
-        pidSt->sensorPrev.signal.y = pidSt->sensor.signal.y;
-        pidSt->sensorPrev.signal.z = pidSt->sensor.signal.z;
-        //PT1 filtering D
-        PT1Filter(&pidSt->errorDotFiltered.x, pidSt->errorDot.x, pidSt->DTermC);
-        PT1Filter(&pidSt->errorDotFiltered.y, pidSt->errorDot.y, pidSt->DTermC);
-        PT1Filter(&pidSt->errorDotFiltered.z, pidSt->errorDot.z, pidSt->DTermC);
-
-        pidSt->sensor.newData = false;
-    }
-    else; //do nothing, keep previously calculated delta
-    //Dout
-    pidSt->Dout.x = pidSt->D.x / pidSt->DFactor * pidSt->errorDotFiltered.x;
-    pidSt->Dout.y = pidSt->D.y / pidSt->DFactor * pidSt->errorDotFiltered.y;
-    pidSt->Dout.z = pidSt->D.z / pidSt->DFactor * pidSt->errorDotFiltered.z;
-
-
-    //output(PID)
-    u->x = pidSt->FFout.x + pidSt->Pout.x + pidSt->Iout.x - pidSt->Dout.x;
-    u->y = pidSt->FFout.y + pidSt->Pout.y + pidSt->Iout.y - pidSt->Dout.y;
-    u->z = pidSt->FFout.z + pidSt->Pout.z + pidSt->Iout.z - pidSt->Dout.z;
-    pidSt->u.x = u->x;
-    pidSt->u.y = u->y;
-    pidSt->u.z = u->z;
-    //limit output(saturation)
-    if (u->x > pidSt->saturationPID) u->x = pidSt->saturationPID;
-    else if (u->x < -pidSt->saturationPID) u->x = -pidSt->saturationPID;
-    else; //do nothing
-    if (u->y > pidSt->saturationPID) u->y = pidSt->saturationPID;
-    else if (u->y < -pidSt->saturationPID) u->y = -pidSt->saturationPID;
-    else; //do nothing
-    if (u->z > pidSt->saturationPID) u->z = pidSt->saturationPID;
-    else if (u->z < -pidSt->saturationPID) u->z = -pidSt->saturationPID;
-    else; //do nothing
-
-//    SerialUSB.print(u->x); SerialUSB.print("\t");
-//        SerialUSB.print(refSignalDot.x); SerialUSB.print("\t");
-    //SerialUSB.print(u_ff.x); SerialUSB.print("\t");
-//        SerialUSB.print(pidSt->error.x); SerialUSB.print("\t");
-    //    SerialUSB.print(pidSt->errorSum.x); SerialUSB.print("\t");
-        //SerialUSB.print(pidSt->error.x, 6); SerialUSB.print("\t");
-        //SerialUSB.print(pidSt->errorPrev.x, 6); SerialUSB.print("\t");
-        //SerialUSB.print(pidSt->deltaT, 6); SerialUSB.print("\t");
-//        SerialUSB.print(pidSt->errorDelta.x); SerialUSB.print("\t");
-//        SerialUSB.print(pidSt->errorDeltaFiltered.x); SerialUSB.print("\t");
-    //SerialUSB.print(pidSt->P.x / 10000.0f * pidSt->error.x); SerialUSB.print("\t");
-    //SerialUSB.println();
-}
-
-void CalcPID_wo_Dkick_FF_IRelax_Dmax(pid_st* pidSt, axis* u, uint16_t twoWayswitch)
-{
-    //feedforward(FF)
-    pidSt->refSignalDot.x = (pidSt->refSignal.x - pidSt->refSignalPrev.x) / pidSt->deltaT;
-    pidSt->refSignalDot.y = (pidSt->refSignal.y - pidSt->refSignalPrev.y) / pidSt->deltaT;
-    pidSt->refSignalDot.z = (pidSt->refSignal.z - pidSt->refSignalPrev.z) / pidSt->deltaT;
-    pidSt->refSignalPrev.x = pidSt->refSignal.x;
-    pidSt->refSignalPrev.y = pidSt->refSignal.y;
-    pidSt->refSignalPrev.z = pidSt->refSignal.z;
-    PT1Filter(&pidSt->refSignalDotFiltered.x, pidSt->refSignalDot.x, pidSt->FFDTermC);
-    PT1Filter(&pidSt->refSignalDotFiltered.y, pidSt->refSignalDot.y, pidSt->FFDTermC);
-    PT1Filter(&pidSt->refSignalDotFiltered.z, pidSt->refSignalDot.z, pidSt->FFDTermC);
-    pidSt->FFout.x = pidSt->FFr.x / pidSt->FFrFactor * pidSt->refSignal.x + pidSt->FFdr.x / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.x;
-    pidSt->FFout.y = pidSt->FFr.y / pidSt->FFrFactor * pidSt->refSignal.y + pidSt->FFdr.y / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.y;
-    pidSt->FFout.z = pidSt->FFr.z / pidSt->FFrFactor * pidSt->refSignal.z + pidSt->FFdr.z / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.z;
-
-    //error
-    pidSt->error.x = pidSt->refSignal.x - pidSt->sensor.signal.x;
-    pidSt->error.y = pidSt->refSignal.y - pidSt->sensor.signal.y;
-    pidSt->error.z = pidSt->refSignal.z - pidSt->sensor.signal.z;
-    //Pout
-    pidSt->Pout.x = pidSt->P.x / pidSt->PFactor * pidSt->error.x;
-    pidSt->Pout.y = pidSt->P.y / pidSt->PFactor * pidSt->error.y;
-    pidSt->Pout.z = pidSt->P.z / pidSt->PFactor * pidSt->error.z;
-
-    //I relax factor calc
-    axis relaxFactor;
-    relaxFactor.x = 1.0f;
-    relaxFactor.y = 1.0f;
-    relaxFactor.z = 1.0f;
-    calcIRelaxFactor(&relaxFactor, pidSt, twoWayswitch);
-
-    //errorSum
-    pidSt->errorSum.x += relaxFactor.x * pidSt->error.x * pidSt->deltaT;
-    pidSt->errorSum.y += relaxFactor.y * pidSt->error.y * pidSt->deltaT;
-    pidSt->errorSum.z += relaxFactor.z * pidSt->error.z * pidSt->deltaT;
-    //anti-windup of integral(saturation)
-    if (pidSt->errorSum.x > pidSt->saturationI) pidSt->errorSum.x = pidSt->saturationI;
-    else if (pidSt->errorSum.x < -pidSt->saturationI) pidSt->errorSum.x = -pidSt->saturationI;
-    else; //do nothing
-    if (pidSt->errorSum.y > pidSt->saturationI) pidSt->errorSum.y = pidSt->saturationI;
-    else if (pidSt->errorSum.y < -pidSt->saturationI) pidSt->errorSum.y = -pidSt->saturationI;
-    else; //do nothing
-    if (pidSt->errorSum.z > pidSt->saturationI) pidSt->errorSum.z = pidSt->saturationI;
-    else if (pidSt->errorSum.z < -pidSt->saturationI) pidSt->errorSum.z = -pidSt->saturationI;
-    else; //do nothin
-    //Iout
-    pidSt->Iout.x = pidSt->I.x / pidSt->IFactor * pidSt->errorSum.x;
-    pidSt->Iout.y = pidSt->I.y / pidSt->IFactor * pidSt->errorSum.y;
-    pidSt->Iout.z = pidSt->I.z / pidSt->IFactor * pidSt->errorSum.z;
-
-    //errorDelta(D), avoid kick
-    if (true == pidSt->sensor.newData)
-    {
-        pidSt->errorDot.x = (pidSt->sensor.signal.x - pidSt->sensorPrev.signal.x) / pidSt->deltaT;
-        pidSt->errorDot.y = (pidSt->sensor.signal.y - pidSt->sensorPrev.signal.y) / pidSt->deltaT;
-        pidSt->errorDot.z = (pidSt->sensor.signal.z - pidSt->sensorPrev.signal.z) / pidSt->deltaT;
-        pidSt->sensorPrev.signal.x = pidSt->sensor.signal.x;
-        pidSt->sensorPrev.signal.y = pidSt->sensor.signal.y;
-        pidSt->sensorPrev.signal.z = pidSt->sensor.signal.z;
-        //PT1 filtering D
-        PT1Filter(&pidSt->errorDotFiltered.x, pidSt->errorDot.x, pidSt->DTermC);
-        PT1Filter(&pidSt->errorDotFiltered.y, pidSt->errorDot.y, pidSt->DTermC);
-        PT1Filter(&pidSt->errorDotFiltered.z, pidSt->errorDot.z, pidSt->DTermC);
-
-        pidSt->sensor.newData = false;
-    }
-    else; //do nothing, keep previously calculated delta
-    //Dmax-dynamic
-    axis dDynamic;
-    calcDmaxFactor(&dDynamic, pidSt);
-    //Dout
-    pidSt->Dout.x = dDynamic.x / pidSt->DFactor * pidSt->errorDotFiltered.x;
-    pidSt->Dout.y = dDynamic.y / pidSt->DFactor * pidSt->errorDotFiltered.y;
-    pidSt->Dout.z = dDynamic.z / pidSt->DFactor * pidSt->errorDotFiltered.z;
-
-    //output(PID)
-    u->x = pidSt->FFout.x + pidSt->Pout.x + pidSt->Iout.x - pidSt->Dout.x;
-    u->y = pidSt->FFout.y + pidSt->Pout.y + pidSt->Iout.y - pidSt->Dout.y;
-    u->z = pidSt->FFout.z + pidSt->Pout.z + pidSt->Iout.z - pidSt->Dout.z;
-    pidSt->u.x = u->x;
-    pidSt->u.y = u->y;
-    pidSt->u.z = u->z;
-    //limit output(saturation)
-    if (u->x > pidSt->saturationPID) u->x = pidSt->saturationPID;
-    else if (u->x < -pidSt->saturationPID) u->x = -pidSt->saturationPID;
-    else; //do nothing
-    if (u->y > pidSt->saturationPID) u->y = pidSt->saturationPID;
-    else if (u->y < -pidSt->saturationPID) u->y = -pidSt->saturationPID;
-    else; //do nothing
-    if (u->z > pidSt->saturationPID) u->z = pidSt->saturationPID;
-    else if (u->z < -pidSt->saturationPID) u->z = -pidSt->saturationPID;
-    else; //do nothing
-
-//    SerialUSB.print(u->x); SerialUSB.print("\t");
-//        SerialUSB.print(refSignalDot.x); SerialUSB.print("\t");
-    //SerialUSB.print(u_ff.x); SerialUSB.print("\t");
-//        SerialUSB.print(pidSt->error.x); SerialUSB.print("\t");
-    //    SerialUSB.print(pidSt->errorSum.x); SerialUSB.print("\t");
-        //SerialUSB.print(pidSt->error.x, 6); SerialUSB.print("\t");
-        //SerialUSB.print(pidSt->errorPrev.x, 6); SerialUSB.print("\t");
-        //SerialUSB.print(pidSt->deltaT, 6); SerialUSB.print("\t");
-//        SerialUSB.print(pidSt->errorDelta.x); SerialUSB.print("\t");
-//        SerialUSB.print(pidSt->errorDeltaFiltered.x); SerialUSB.print("\t");
-    //SerialUSB.print(pidSt->P.x / 10000.0f * pidSt->error.x); SerialUSB.print("\t");
-    //SerialUSB.println();
-}
+//
+//void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u)
+//{
+//    //feedforward(FF)
+//    pidSt->refSignalDot.x = (pidSt->refSignal.x - pidSt->refSignalPrev.x) / pidSt->deltaT;
+//    pidSt->refSignalDot.y = (pidSt->refSignal.y - pidSt->refSignalPrev.y) / pidSt->deltaT;
+//    pidSt->refSignalDot.z = (pidSt->refSignal.z - pidSt->refSignalPrev.z) / pidSt->deltaT;
+//    pidSt->refSignalPrev.x = pidSt->refSignal.x;
+//    pidSt->refSignalPrev.y = pidSt->refSignal.y;
+//    pidSt->refSignalPrev.z = pidSt->refSignal.z;    
+//    PT1Filter(&pidSt->refSignalDotFiltered.x, pidSt->refSignalDot.x, pidSt->FFDTermC);
+//    PT1Filter(&pidSt->refSignalDotFiltered.y, pidSt->refSignalDot.y, pidSt->FFDTermC);
+//    PT1Filter(&pidSt->refSignalDotFiltered.z, pidSt->refSignalDot.z, pidSt->FFDTermC);
+//    pidSt->FFout.x = pidSt->FFr.x / pidSt->FFrFactor * pidSt->refSignal.x + pidSt->FFdr.x / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.x;
+//    pidSt->FFout.y = pidSt->FFr.y / pidSt->FFrFactor * pidSt->refSignal.y + pidSt->FFdr.y / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.y;
+//    pidSt->FFout.z = pidSt->FFr.z / pidSt->FFrFactor * pidSt->refSignal.z + pidSt->FFdr.z / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.z;
+//
+//    //error
+//    pidSt->error.x = pidSt->refSignal.x - pidSt->sensor.signal.x;
+//    pidSt->error.y = pidSt->refSignal.y - pidSt->sensor.signal.y;
+//    pidSt->error.z = pidSt->refSignal.z - pidSt->sensor.signal.z;
+//    //Pout
+//    pidSt->Pout.x = pidSt->P.x / pidSt->PFactor * pidSt->error.x;
+//    pidSt->Pout.y = pidSt->P.y / pidSt->PFactor * pidSt->error.y;
+//    pidSt->Pout.z = pidSt->P.z / pidSt->PFactor * pidSt->error.z;
+//
+//    //errorSum
+//    pidSt->errorSum.x += pidSt->error.x * pidSt->deltaT;
+//    pidSt->errorSum.y += pidSt->error.y * pidSt->deltaT;
+//    pidSt->errorSum.z += pidSt->error.z * pidSt->deltaT;
+//    //anti-windup of integral(saturation)
+//    if (pidSt->errorSum.x > pidSt->saturationI) pidSt->errorSum.x = pidSt->saturationI;
+//    else if (pidSt->errorSum.x < -pidSt->saturationI) pidSt->errorSum.x = -pidSt->saturationI;
+//    else; //do nothing
+//    if (pidSt->errorSum.y > pidSt->saturationI) pidSt->errorSum.y = pidSt->saturationI;
+//    else if (pidSt->errorSum.y < -pidSt->saturationI) pidSt->errorSum.y = -pidSt->saturationI;
+//    else; //do nothing
+//    if (pidSt->errorSum.z > pidSt->saturationI) pidSt->errorSum.z = pidSt->saturationI;
+//    else if (pidSt->errorSum.z < -pidSt->saturationI) pidSt->errorSum.z = -pidSt->saturationI;
+//    else; //do nothin
+//    //Iout
+//    pidSt->Iout.x = pidSt->I.x / pidSt->IFactor * pidSt->errorSum.x;
+//    pidSt->Iout.y = pidSt->I.y / pidSt->IFactor * pidSt->errorSum.y;
+//    pidSt->Iout.z = pidSt->I.z / pidSt->IFactor * pidSt->errorSum.z;
+//
+//    //errorDelta(D), avoid kick
+//    if (true == pidSt->sensor.newData)
+//    {
+//        pidSt->errorDot.x = (pidSt->sensor.signal.x - pidSt->sensorPrev.signal.x) / pidSt->deltaT;
+//        pidSt->errorDot.y = (pidSt->sensor.signal.y - pidSt->sensorPrev.signal.y) / pidSt->deltaT;
+//        pidSt->errorDot.z = (pidSt->sensor.signal.z - pidSt->sensorPrev.signal.z) / pidSt->deltaT;
+//        pidSt->sensorPrev.signal.x = pidSt->sensor.signal.x;
+//        pidSt->sensorPrev.signal.y = pidSt->sensor.signal.y;
+//        pidSt->sensorPrev.signal.z = pidSt->sensor.signal.z;
+//        //PT1 filtering D
+//        PT1Filter(&pidSt->errorDotFiltered.x, pidSt->errorDot.x, pidSt->DTermC);
+//        PT1Filter(&pidSt->errorDotFiltered.y, pidSt->errorDot.y, pidSt->DTermC);
+//        PT1Filter(&pidSt->errorDotFiltered.z, pidSt->errorDot.z, pidSt->DTermC);
+//
+//        pidSt->sensor.newData = false;
+//    }
+//    else; //do nothing, keep previously calculated delta
+//    //Dout
+//    pidSt->Dout.x = pidSt->D.x / pidSt->DFactor * pidSt->errorDotFiltered.x;
+//    pidSt->Dout.y = pidSt->D.y / pidSt->DFactor * pidSt->errorDotFiltered.y;
+//    pidSt->Dout.z = pidSt->D.z / pidSt->DFactor * pidSt->errorDotFiltered.z;
+//
+//
+//    //output(PID)
+//    u->x = pidSt->FFout.x + pidSt->Pout.x + pidSt->Iout.x - pidSt->Dout.x;
+//    u->y = pidSt->FFout.y + pidSt->Pout.y + pidSt->Iout.y - pidSt->Dout.y;
+//    u->z = pidSt->FFout.z + pidSt->Pout.z + pidSt->Iout.z - pidSt->Dout.z;
+//    pidSt->u.x = u->x;
+//    pidSt->u.y = u->y;
+//    pidSt->u.z = u->z;
+//    //limit output(saturation)
+//    if (u->x > pidSt->saturationPID) u->x = pidSt->saturationPID;
+//    else if (u->x < -pidSt->saturationPID) u->x = -pidSt->saturationPID;
+//    else; //do nothing
+//    if (u->y > pidSt->saturationPID) u->y = pidSt->saturationPID;
+//    else if (u->y < -pidSt->saturationPID) u->y = -pidSt->saturationPID;
+//    else; //do nothing
+//    if (u->z > pidSt->saturationPID) u->z = pidSt->saturationPID;
+//    else if (u->z < -pidSt->saturationPID) u->z = -pidSt->saturationPID;
+//    else; //do nothing
+//
+////    SerialUSB.print(u->x); SerialUSB.print("\t");
+////        SerialUSB.print(refSignalDot.x); SerialUSB.print("\t");
+//    //SerialUSB.print(u_ff.x); SerialUSB.print("\t");
+////        SerialUSB.print(pidSt->error.x); SerialUSB.print("\t");
+//    //    SerialUSB.print(pidSt->errorSum.x); SerialUSB.print("\t");
+//        //SerialUSB.print(pidSt->error.x, 6); SerialUSB.print("\t");
+//        //SerialUSB.print(pidSt->errorPrev.x, 6); SerialUSB.print("\t");
+//        //SerialUSB.print(pidSt->deltaT, 6); SerialUSB.print("\t");
+////        SerialUSB.print(pidSt->errorDelta.x); SerialUSB.print("\t");
+////        SerialUSB.print(pidSt->errorDeltaFiltered.x); SerialUSB.print("\t");
+//    //SerialUSB.print(pidSt->P.x / 10000.0f * pidSt->error.x); SerialUSB.print("\t");
+//    //SerialUSB.println();
+//}
+//
+//void CalcPID_wo_Dkick_FF_IRelax_Dmax(pid_st* pidSt, axis* u, uint16_t twoWayswitch)
+//{
+//    //feedforward(FF)
+//    pidSt->refSignalDot.x = (pidSt->refSignal.x - pidSt->refSignalPrev.x) / pidSt->deltaT;
+//    pidSt->refSignalDot.y = (pidSt->refSignal.y - pidSt->refSignalPrev.y) / pidSt->deltaT;
+//    pidSt->refSignalDot.z = (pidSt->refSignal.z - pidSt->refSignalPrev.z) / pidSt->deltaT;
+//    pidSt->refSignalPrev.x = pidSt->refSignal.x;
+//    pidSt->refSignalPrev.y = pidSt->refSignal.y;
+//    pidSt->refSignalPrev.z = pidSt->refSignal.z;
+//    PT1Filter(&pidSt->refSignalDotFiltered.x, pidSt->refSignalDot.x, pidSt->FFDTermC);
+//    PT1Filter(&pidSt->refSignalDotFiltered.y, pidSt->refSignalDot.y, pidSt->FFDTermC);
+//    PT1Filter(&pidSt->refSignalDotFiltered.z, pidSt->refSignalDot.z, pidSt->FFDTermC);
+//    pidSt->FFout.x = pidSt->FFr.x / pidSt->FFrFactor * pidSt->refSignal.x + pidSt->FFdr.x / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.x;
+//    pidSt->FFout.y = pidSt->FFr.y / pidSt->FFrFactor * pidSt->refSignal.y + pidSt->FFdr.y / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.y;
+//    pidSt->FFout.z = pidSt->FFr.z / pidSt->FFrFactor * pidSt->refSignal.z + pidSt->FFdr.z / pidSt->FFdrFactor * pidSt->refSignalDotFiltered.z;
+//
+//    //error
+//    pidSt->error.x = pidSt->refSignal.x - pidSt->sensor.signal.x;
+//    pidSt->error.y = pidSt->refSignal.y - pidSt->sensor.signal.y;
+//    pidSt->error.z = pidSt->refSignal.z - pidSt->sensor.signal.z;
+//    //Pout
+//    pidSt->Pout.x = pidSt->P.x / pidSt->PFactor * pidSt->error.x;
+//    pidSt->Pout.y = pidSt->P.y / pidSt->PFactor * pidSt->error.y;
+//    pidSt->Pout.z = pidSt->P.z / pidSt->PFactor * pidSt->error.z;
+//
+//    //I relax factor calc
+//    axis relaxFactor;
+//    relaxFactor.x = 1.0f;
+//    relaxFactor.y = 1.0f;
+//    relaxFactor.z = 1.0f;
+//    calcIRelaxFactor(&relaxFactor, pidSt, twoWayswitch);
+//
+//    //errorSum
+//    pidSt->errorSum.x += relaxFactor.x * pidSt->error.x * pidSt->deltaT;
+//    pidSt->errorSum.y += relaxFactor.y * pidSt->error.y * pidSt->deltaT;
+//    pidSt->errorSum.z += relaxFactor.z * pidSt->error.z * pidSt->deltaT;
+//    //anti-windup of integral(saturation)
+//    if (pidSt->errorSum.x > pidSt->saturationI) pidSt->errorSum.x = pidSt->saturationI;
+//    else if (pidSt->errorSum.x < -pidSt->saturationI) pidSt->errorSum.x = -pidSt->saturationI;
+//    else; //do nothing
+//    if (pidSt->errorSum.y > pidSt->saturationI) pidSt->errorSum.y = pidSt->saturationI;
+//    else if (pidSt->errorSum.y < -pidSt->saturationI) pidSt->errorSum.y = -pidSt->saturationI;
+//    else; //do nothing
+//    if (pidSt->errorSum.z > pidSt->saturationI) pidSt->errorSum.z = pidSt->saturationI;
+//    else if (pidSt->errorSum.z < -pidSt->saturationI) pidSt->errorSum.z = -pidSt->saturationI;
+//    else; //do nothin
+//    //Iout
+//    pidSt->Iout.x = pidSt->I.x / pidSt->IFactor * pidSt->errorSum.x;
+//    pidSt->Iout.y = pidSt->I.y / pidSt->IFactor * pidSt->errorSum.y;
+//    pidSt->Iout.z = pidSt->I.z / pidSt->IFactor * pidSt->errorSum.z;
+//
+//    //errorDelta(D), avoid kick
+//    if (true == pidSt->sensor.newData)
+//    {
+//        pidSt->errorDot.x = (pidSt->sensor.signal.x - pidSt->sensorPrev.signal.x) / pidSt->deltaT;
+//        pidSt->errorDot.y = (pidSt->sensor.signal.y - pidSt->sensorPrev.signal.y) / pidSt->deltaT;
+//        pidSt->errorDot.z = (pidSt->sensor.signal.z - pidSt->sensorPrev.signal.z) / pidSt->deltaT;
+//        pidSt->sensorPrev.signal.x = pidSt->sensor.signal.x;
+//        pidSt->sensorPrev.signal.y = pidSt->sensor.signal.y;
+//        pidSt->sensorPrev.signal.z = pidSt->sensor.signal.z;
+//        //PT1 filtering D
+//        PT1Filter(&pidSt->errorDotFiltered.x, pidSt->errorDot.x, pidSt->DTermC);
+//        PT1Filter(&pidSt->errorDotFiltered.y, pidSt->errorDot.y, pidSt->DTermC);
+//        PT1Filter(&pidSt->errorDotFiltered.z, pidSt->errorDot.z, pidSt->DTermC);
+//
+//        pidSt->sensor.newData = false;
+//    }
+//    else; //do nothing, keep previously calculated delta
+//    //Dmax-dynamic
+//    axis dDynamic;
+//    calcDmaxFactor(&dDynamic, pidSt);
+//    //Dout
+//    pidSt->Dout.x = dDynamic.x / pidSt->DFactor * pidSt->errorDotFiltered.x;
+//    pidSt->Dout.y = dDynamic.y / pidSt->DFactor * pidSt->errorDotFiltered.y;
+//    pidSt->Dout.z = dDynamic.z / pidSt->DFactor * pidSt->errorDotFiltered.z;
+//
+//    //output(PID)
+//    u->x = pidSt->FFout.x + pidSt->Pout.x + pidSt->Iout.x - pidSt->Dout.x;
+//    u->y = pidSt->FFout.y + pidSt->Pout.y + pidSt->Iout.y - pidSt->Dout.y;
+//    u->z = pidSt->FFout.z + pidSt->Pout.z + pidSt->Iout.z - pidSt->Dout.z;
+//    pidSt->u.x = u->x;
+//    pidSt->u.y = u->y;
+//    pidSt->u.z = u->z;
+//    //limit output(saturation)
+//    if (u->x > pidSt->saturationPID) u->x = pidSt->saturationPID;
+//    else if (u->x < -pidSt->saturationPID) u->x = -pidSt->saturationPID;
+//    else; //do nothing
+//    if (u->y > pidSt->saturationPID) u->y = pidSt->saturationPID;
+//    else if (u->y < -pidSt->saturationPID) u->y = -pidSt->saturationPID;
+//    else; //do nothing
+//    if (u->z > pidSt->saturationPID) u->z = pidSt->saturationPID;
+//    else if (u->z < -pidSt->saturationPID) u->z = -pidSt->saturationPID;
+//    else; //do nothing
+//
+////    SerialUSB.print(u->x); SerialUSB.print("\t");
+////        SerialUSB.print(refSignalDot.x); SerialUSB.print("\t");
+//    //SerialUSB.print(u_ff.x); SerialUSB.print("\t");
+////        SerialUSB.print(pidSt->error.x); SerialUSB.print("\t");
+//    //    SerialUSB.print(pidSt->errorSum.x); SerialUSB.print("\t");
+//        //SerialUSB.print(pidSt->error.x, 6); SerialUSB.print("\t");
+//        //SerialUSB.print(pidSt->errorPrev.x, 6); SerialUSB.print("\t");
+//        //SerialUSB.print(pidSt->deltaT, 6); SerialUSB.print("\t");
+////        SerialUSB.print(pidSt->errorDelta.x); SerialUSB.print("\t");
+////        SerialUSB.print(pidSt->errorDeltaFiltered.x); SerialUSB.print("\t");
+//    //SerialUSB.print(pidSt->P.x / 10000.0f * pidSt->error.x); SerialUSB.print("\t");
+//    //SerialUSB.println();
+//}
 
 void CalcPID_int(pid_st* pidSt, axis_i32* u)
 {
@@ -901,8 +919,22 @@ void CalcPID_int(pid_st* pidSt, axis_i32* u)
     //PID
     CalcPIDoutput_int(pidSt, u);
 
-    //scale down output by 512
-    ScalePIDoutput_int(u, 9);
+    //scale down output
+    ScalePIDoutput_int(u, 12);
+
+
+    //  SerialUSB.print(float(pidSt->refSignal_int.x)); SerialUSB.print("\t");
+    //  SerialUSB.print(float(pidSt->sensor.signalPT1_int.x)); SerialUSB.print("\t");
+    // // SerialUSB.print(float(pidSt->error_int.x)); SerialUSB.print("\t");
+    //  SerialUSB.print(float(pidSt->Pout_int.x)); SerialUSB.print("\t");
+    // // SerialUSB.print(float(pidSt->errorSum_int.x)); SerialUSB.print("\t");
+    //  SerialUSB.print(float(pidSt->Iout_int.x)); SerialUSB.print("\t");
+    // // SerialUSB.print(float(pidSt->errorDot_int.x)); SerialUSB.print("\t");
+    // // SerialUSB.print(float(pidSt->errorDotPT1_int.x)); SerialUSB.print("\t");
+    //  SerialUSB.print(float(pidSt->Dout_int.x)); SerialUSB.print("\t");
+    //  SerialUSB.print(float(pidSt->u_int.x)); SerialUSB.print("\t");
+      //SerialUSB.print(float(u->x)); SerialUSB.print("\t");
+      //SerialUSB.println();
 }
 
 void ScalePIDinput_int(pid_st* pid, uint8_t shift)
@@ -922,27 +954,27 @@ void CalcProportional_int(pid_st* pid)
     pid->error_int.y = pid->refSignal_int.y - pid->sensor.signalPT1_int.y;
     pid->error_int.z = pid->refSignal_int.z - pid->sensor.signalPT1_int.z;
     //P
-    //PFactor = 1024
-    pid->Pout_int.x = (pid->P_int.x * pid->error_int.x) >> 10;
-    pid->Pout_int.y = (pid->P_int.y * pid->error_int.y) >> 10;
-    pid->Pout_int.z = (pid->P_int.z * pid->error_int.z) >> 10;
+    //PFactor = 1024, 2x for scaling
+    pid->Pout_int.x = (pid->P_int.x * pid->error_int.x) >> 9;
+    pid->Pout_int.y = (pid->P_int.y * pid->error_int.y) >> 9;
+    pid->Pout_int.z = (pid->P_int.z * pid->error_int.z) >> 9;
 }
 
 void CalcIntegral_int(pid_st* pid)
 {
     //errorSum, shift due to tick
-    pid->errorSum_int.x += (int32_t)(((int64_t)pid->error_int.x * pid->deltaTicks) >> 10);
-    pid->errorSum_int.y += (int32_t)(((int64_t)pid->error_int.y * pid->deltaTicks) >> 10);
-    pid->errorSum_int.z += (int32_t)(((int64_t)pid->error_int.z * pid->deltaTicks) >> 10);
+    int64_t x_i64 = (int64_t)pid->errorSum_int.x + (((int64_t)pid->error_int.x * (int64_t)pid->deltaTicks) >> 10);
+    int64_t y_i64 = (int64_t)pid->errorSum_int.y + (((int64_t)pid->error_int.y * (int64_t)pid->deltaTicks) >> 10);
+    int64_t z_i64 = (int64_t)pid->errorSum_int.z + (((int64_t)pid->error_int.z * (int64_t)pid->deltaTicks) >> 10);
     //anit-windup
-    pid->errorSum_int.x = clamp_i32(pid->errorSum_int.x, -pid->satI_int, pid->satI_int);
-    pid->errorSum_int.y = clamp_i32(pid->errorSum_int.y, -pid->satI_int, pid->satI_int);
-    pid->errorSum_int.z = clamp_i32(pid->errorSum_int.z, -pid->satI_int, pid->satI_int);
+    pid->errorSum_int.x = clamp_i64(x_i64, -pid->satI_int, pid->satI_int);
+    pid->errorSum_int.y = clamp_i64(y_i64, -pid->satI_int, pid->satI_int);
+    pid->errorSum_int.z = clamp_i64(z_i64, -pid->satI_int, pid->satI_int);
     //I
-    //IFactor = 128
-    pid->Iout_int.x = (int32_t)(((int64_t)pid->I_int.x * (int64_t)pid->errorSum_int.x) >> 17);
-    pid->Iout_int.y = (int32_t)(((int64_t)pid->I_int.y * (int64_t)pid->errorSum_int.y) >> 17);
-    pid->Iout_int.z = (int32_t)(((int64_t)pid->I_int.z * (int64_t)pid->errorSum_int.z) >> 17);
+    //IFactor = 128, + 3x scaling
+    pid->Iout_int.x = (int32_t)(((int64_t)pid->I_int.x * (int64_t)pid->errorSum_int.x) >> 20);
+    pid->Iout_int.y = (int32_t)(((int64_t)pid->I_int.y * (int64_t)pid->errorSum_int.y) >> 20);
+    pid->Iout_int.z = (int32_t)(((int64_t)pid->I_int.z * (int64_t)pid->errorSum_int.z) >> 20);
 }
 
 void CalcDerivative_int(pid_st* pid)
@@ -963,10 +995,10 @@ void CalcDerivative_int(pid_st* pid)
         pid->errorDotPT1_int.z = PT1_133Hz(pid->errorDotPT1_int.z, pid->errorDot_int.z);
 
         //D
-        //DFactor = 8192
-        pid->Dout_int.x = (int32_t)(((int64_t)pid->D_int.x * (int64_t)pid->errorDotPT1_int.x) >> 13);
-        pid->Dout_int.y = (int32_t)(((int64_t)pid->D_int.y * (int64_t)pid->errorDotPT1_int.y) >> 13);
-        pid->Dout_int.z = (int32_t)(((int64_t)pid->D_int.z * (int64_t)pid->errorDotPT1_int.z) >> 13);
+        //DFactor = 8192, + scaling
+        pid->Dout_int.x = (int32_t)(((int64_t)pid->D_int.x * (int64_t)pid->errorDotPT1_int.x) >> 16);
+        pid->Dout_int.y = (int32_t)(((int64_t)pid->D_int.y * (int64_t)pid->errorDotPT1_int.y) >> 16);
+        pid->Dout_int.z = (int32_t)(((int64_t)pid->D_int.z * (int64_t)pid->errorDotPT1_int.z) >> 16);
 
         pid->sensor.newData = false;
     }
@@ -1016,6 +1048,14 @@ void ScalePIDoutput_int(axis_i32* u, uint8_t shift)
 }
 
 inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max)
+{
+    if (x > max) return max;
+    if (x < min) return min;
+
+    return x;
+}
+
+inline int64_t clamp_i64(int64_t x, int64_t min, int64_t max)
 {
     if (x > max) return max;
     if (x < min) return min;
@@ -1117,70 +1157,70 @@ float maxVal(float value1, float value2)
 {
     return (value1 < value2) ? value2 : value1;
 }
-
-void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch)
-{
-    if (twoWaySwitch < 1500)
-    {
-        if (abs(pidSt->refSignalDotFiltered.x) > pidSt->iRelaxRefThreshhold || abs(pidSt->error.x) > pidSt->iRelaxErrThreshhold) factor->x = 0.0f;
-        if (abs(pidSt->refSignalDotFiltered.y) > pidSt->iRelaxRefThreshhold || abs(pidSt->error.y) > pidSt->iRelaxErrThreshhold) factor->y = 0.0f;
-        if (abs(pidSt->refSignalDotFiltered.z) > pidSt->iRelaxRefThreshhold || abs(pidSt->error.z) > pidSt->iRelaxErrThreshhold) factor->z = 0.0f;
-    }
-    else
-    {
-        axis spNorm;
-        axis errNorm;
-        axis maxNorm;
-        //normalize values
-        spNorm.x = abs(pidSt->refSignalDotFiltered.x) / pidSt->iRelaxRefThreshhold;
-        spNorm.y = abs(pidSt->refSignalDotFiltered.y) / pidSt->iRelaxRefThreshhold;
-        spNorm.z = abs(pidSt->refSignalDotFiltered.z) / pidSt->iRelaxRefThreshhold;
-        errNorm.x = abs(pidSt->error.x) / pidSt->iRelaxErrThreshhold;
-        errNorm.y = abs(pidSt->error.y) / pidSt->iRelaxErrThreshhold;
-        errNorm.z = abs(pidSt->error.z) / pidSt->iRelaxErrThreshhold;
-        //find max
-        maxNorm.x = maxVal(spNorm.x, errNorm.x);
-        maxNorm.y = maxVal(spNorm.y, errNorm.y);
-        maxNorm.z = maxVal(spNorm.z, errNorm.z);
-        //constraint 0-1
-        maxNorm.x = minVal(maxNorm.x, 1);
-        maxNorm.y = minVal(maxNorm.y, 1);
-        maxNorm.z = minVal(maxNorm.z, 1);
-        //maxNorm.x = maxVal(0, maxNorm.x);
-        //maxNorm.y = maxVal(0, maxNorm.y);
-        //maxNorm.z = maxVal(0, maxNorm.z);
-        //factor
-        factor->x = 1.0f - maxNorm.x;
-        factor->y = 1.0f - maxNorm.y;
-        factor->z = 1.0f - maxNorm.z;
-    }
-}
-
-void calcDmaxFactor(axis* dDynamic, pid_st* pidSt)
-{
-    axis spNorm;
-    axis errNorm;
-    axis factor;
-    //normalize values
-    spNorm.x = abs(pidSt->refSignalDotFiltered.x) / pidSt->dMaxRefThreshhold;
-    spNorm.y = abs(pidSt->refSignalDotFiltered.y) / pidSt->dMaxRefThreshhold;
-    spNorm.z = abs(pidSt->refSignalDotFiltered.z) / pidSt->dMaxRefThreshhold;
-    errNorm.x = abs(pidSt->error.x) / pidSt->dMaxErrThreshhold;
-    errNorm.y = abs(pidSt->error.y) / pidSt->dMaxErrThreshhold;
-    errNorm.z = abs(pidSt->error.z) / pidSt->dMaxErrThreshhold;
-    //find max
-    factor.x = maxVal(spNorm.x, errNorm.x);
-    factor.y = maxVal(spNorm.y, errNorm.y);
-    factor.z = maxVal(spNorm.z, errNorm.z);
-    //constraint 0-1
-    factor.x = minVal(factor.x, 1);
-    factor.y = minVal(factor.y, 1);
-    factor.z = minVal(factor.z, 1);
-
-    dDynamic->x = pidSt->D.x + factor.x * (pidSt->Dmax.x - pidSt->D.x);
-    dDynamic->y = pidSt->D.y + factor.y * (pidSt->Dmax.y - pidSt->D.y);
-    dDynamic->z = pidSt->D.z + factor.z * (pidSt->Dmax.z - pidSt->D.z);
-}
+//
+//void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch)
+//{
+//    if (twoWaySwitch < 1500)
+//    {
+//        if (abs(pidSt->refSignalDotFiltered.x) > pidSt->iRelaxRefThreshhold || abs(pidSt->error.x) > pidSt->iRelaxErrThreshhold) factor->x = 0.0f;
+//        if (abs(pidSt->refSignalDotFiltered.y) > pidSt->iRelaxRefThreshhold || abs(pidSt->error.y) > pidSt->iRelaxErrThreshhold) factor->y = 0.0f;
+//        if (abs(pidSt->refSignalDotFiltered.z) > pidSt->iRelaxRefThreshhold || abs(pidSt->error.z) > pidSt->iRelaxErrThreshhold) factor->z = 0.0f;
+//    }
+//    else
+//    {
+//        axis spNorm;
+//        axis errNorm;
+//        axis maxNorm;
+//        //normalize values
+//        spNorm.x = abs(pidSt->refSignalDotFiltered.x) / pidSt->iRelaxRefThreshhold;
+//        spNorm.y = abs(pidSt->refSignalDotFiltered.y) / pidSt->iRelaxRefThreshhold;
+//        spNorm.z = abs(pidSt->refSignalDotFiltered.z) / pidSt->iRelaxRefThreshhold;
+//        errNorm.x = abs(pidSt->error.x) / pidSt->iRelaxErrThreshhold;
+//        errNorm.y = abs(pidSt->error.y) / pidSt->iRelaxErrThreshhold;
+//        errNorm.z = abs(pidSt->error.z) / pidSt->iRelaxErrThreshhold;
+//        //find max
+//        maxNorm.x = maxVal(spNorm.x, errNorm.x);
+//        maxNorm.y = maxVal(spNorm.y, errNorm.y);
+//        maxNorm.z = maxVal(spNorm.z, errNorm.z);
+//        //constraint 0-1
+//        maxNorm.x = minVal(maxNorm.x, 1);
+//        maxNorm.y = minVal(maxNorm.y, 1);
+//        maxNorm.z = minVal(maxNorm.z, 1);
+//        //maxNorm.x = maxVal(0, maxNorm.x);
+//        //maxNorm.y = maxVal(0, maxNorm.y);
+//        //maxNorm.z = maxVal(0, maxNorm.z);
+//        //factor
+//        factor->x = 1.0f - maxNorm.x;
+//        factor->y = 1.0f - maxNorm.y;
+//        factor->z = 1.0f - maxNorm.z;
+//    }
+//}
+//
+//void calcDmaxFactor(axis* dDynamic, pid_st* pidSt)
+//{
+//    axis spNorm;
+//    axis errNorm;
+//    axis factor;
+//    //normalize values
+//    spNorm.x = abs(pidSt->refSignalDotFiltered.x) / pidSt->dMaxRefThreshhold;
+//    spNorm.y = abs(pidSt->refSignalDotFiltered.y) / pidSt->dMaxRefThreshhold;
+//    spNorm.z = abs(pidSt->refSignalDotFiltered.z) / pidSt->dMaxRefThreshhold;
+//    errNorm.x = abs(pidSt->error.x) / pidSt->dMaxErrThreshhold;
+//    errNorm.y = abs(pidSt->error.y) / pidSt->dMaxErrThreshhold;
+//    errNorm.z = abs(pidSt->error.z) / pidSt->dMaxErrThreshhold;
+//    //find max
+//    factor.x = maxVal(spNorm.x, errNorm.x);
+//    factor.y = maxVal(spNorm.y, errNorm.y);
+//    factor.z = maxVal(spNorm.z, errNorm.z);
+//    //constraint 0-1
+//    factor.x = minVal(factor.x, 1);
+//    factor.y = minVal(factor.y, 1);
+//    factor.z = minVal(factor.z, 1);
+//
+//    dDynamic->x = pidSt->D.x + factor.x * (pidSt->Dmax.x - pidSt->D.x);
+//    dDynamic->y = pidSt->D.y + factor.y * (pidSt->Dmax.y - pidSt->D.y);
+//    dDynamic->z = pidSt->D.z + factor.z * (pidSt->Dmax.z - pidSt->D.z);
+//}
 
 float wobble(uint16_t pot1, uint16_t poti2)
 {

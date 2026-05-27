@@ -6,7 +6,7 @@
 
 
 //bool
-#define ID_meas_2_card_sysTime 100
+#define ID_meas_2_card_sysTick 100
 #define ID_meas_2_card_gyro_raw_X 101
 #define ID_meas_2_card_gyro_raw_Y 102
 #define ID_meas_2_card_gyro_raw_Z 103
@@ -241,6 +241,5 @@
 #define ID_pitch_KF_AccPT1_GyroPT1 3041
 #define ID_roll_KF_AccPT2_GyroPT2 3042
 #define ID_pitch_KF_AccPT2_GyroPT2 3043
-#define ID_loop_time_ms 3044
-#define ID_loop_tick 3045
+#define ID_loop_tick 3044
 

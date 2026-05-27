@@ -133,20 +133,22 @@ typedef struct SpiSDcard_st
 	uint32_t* loadingDataPointer = dataBuffer2;
 	uint16_t loadingDataCounter{ 1 };	//0th element is always 0xFE(start token)
 
-    float writeStartTime{ 0 };
+    float writeStartTick{ 0 };
     bool writingMultiFATBlock{ false };
-	float measTimePrev{ 0 };
+	uint64_t measTickPrev{ 0 };
     bool writeMeasData{ false };
 
 	date globalDateAndTime{};
-	float sysTimeAtGlobalTime{ 0 };
+    uint64_t sysTickAtGlobalTick{ 0 };
+
+    uint64_t rootOrFatWriteTick{ 0 };
 
 }SpiSDcard_st;
 
 typedef struct Meas2Card
 {
     //timestamp
-    bool measureSysTime{ true };
+    bool measureSysTick{ true };
     //gyro
     bool measureGyroRawX{ false };
     bool measureGyroRawY{ false };
@@ -157,7 +159,7 @@ typedef struct Meas2Card
     bool measureGyroPT2X{ false };
     bool measureGyroPT2Y{ false };
     bool measureGyroPT2Z{ false };
-    bool measureGyroRawX_int{ false };
+    bool measureGyroRawX_int{ true };
     bool measureGyroRawY_int{ false };
     bool measureGyroRawZ_int{ false };
     bool measureGyroPT1X_int{ false };
@@ -230,19 +232,21 @@ typedef struct Meas2Card
     bool measurePIDUX{ false };
     bool measurePIDUY{ false };
     bool measurePIDUZ{ false };
+
+  bool measurePIDDeltaTick_int{ true };
 	bool measurePIDRefsigX_int{ true };
-	bool measurePIDRefsigY_int{ true };
-	bool measurePIDRefsigZ_int{ true };
+	bool measurePIDRefsigY_int{ false };
+	bool measurePIDRefsigZ_int{ false };
 	bool measurePIDSensorX_int{ true };
-	bool measurePIDSensorY_int{ true };
-	bool measurePIDSensorZ_int{ true };
-	bool measurePIDPoutX_int{ false };
+	bool measurePIDSensorY_int{ false };
+	bool measurePIDSensorZ_int{ false };
+	bool measurePIDPoutX_int{ true };
 	bool measurePIDPoutY_int{ false };
 	bool measurePIDPoutZ_int{ false };
-	bool measurePIDIoutX_int{ false };
+	bool measurePIDIoutX_int{ true };
 	bool measurePIDIoutY_int{ false };
 	bool measurePIDIoutZ_int{ false };
-	bool measurePIDDoutX_int{ false };
+	bool measurePIDDoutX_int{ true };
 	bool measurePIDDoutY_int{ false };
 	bool measurePIDDoutZ_int{ false };
 	bool measurePIDFFoutX_int{ false };
@@ -312,10 +316,10 @@ fileInfo getFileInfo(volatile uint8_t* rawFileData);
 bool getAllFileClusters(volatile uint8_t* rawFileData, fileInfo* fileInfo);
 
 // Method to set file time in ROOT
-void setFileTime(volatile uint32_t* block, float sysTime);
+void setFileTime(volatile uint32_t* block, uint64_t sysTick);
 
 // Method to add file into to root block
-void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, float sysTime);
+void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, uint64_t sysTick);
 
 // Method to add file cluster info into FAT
 bool addFileFATInfo(volatile uint32_t* block, fileInfo* file, E_SDFATWriteStates FATState);
@@ -354,13 +358,13 @@ void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numb
 void addMeasHeader(void);
 
 // Method to write data to sd card paralel to saving
-void writeData(uint16_t measSwitch, float sysTime);
+void writeData(uint16_t measSwitch, uint64_t sysTick);
 
 // Method to write data to sd card paralel to saving
-void writeRoot(void);
+void writeRoot(uint64_t sysTick);
 
 // Method to write data to sd card paralel to saving
-void writeFAT(void);
+void writeFAT(uint64_t sysTick);
 
 // Method to get SPI SDcard struct
 SpiSDcard_st* getSPISdCard(void);
@@ -379,5 +383,5 @@ E_SDMainStates ReinitSDCard(void);
 
 // Method to set global time value
 // data is copied due to temp value and only done a few times per power cycle
-void setGlobalTime(const date newTime, const float currentSysTime);
+void setGlobalTime(const date newTime, const uint64_t currentSysTick);
 void setGlobalDate(const date newTime);

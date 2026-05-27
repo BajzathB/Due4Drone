@@ -34,20 +34,20 @@ typedef struct controllerOut_st
 
 typedef struct pid_st
 {
-    axis P, I, D, Dmax, FFr, FFdr;
-    axis error, errorSum, errorDot, errorPrev, errorDotFiltered;
-    axis Pout, Iout, Dout, FFout;
-    axis refSignal, refSignalPrev, refSignalDot, refSignalDotFiltered;
-    axis u;
-    float saturationI, saturationPID, DTermC, FFDTermC;
-    float iRelaxRefThreshhold;
-    float iRelaxErrThreshhold;
-    float dMaxRefThreshhold;
-    float dMaxErrThreshhold;
+    //axis P, I, D, Dmax, FFr, FFdr;
+    //axis error, errorSum, errorDot, errorPrev, errorDotFiltered;
+    //axis Pout, Iout, Dout, FFout;
+    //axis refSignal, refSignalPrev, refSignalDot, refSignalDotFiltered;
+    //axis u;
+    //float saturationI, saturationPID, DTermC, FFDTermC;
+    //float iRelaxRefThreshhold;
+    //float iRelaxErrThreshhold;
+    //float dMaxRefThreshhold;
+    //float dMaxErrThreshhold;
     sigOut sensor;
-    sigOut sensorPrev;
-	float deltaT{0.1f};
-    float PFactor, IFactor, DFactor, FFrFactor, FFdrFactor;
+    //sigOut sensorPrev;
+	//float deltaT{0.1f};
+    //float PFactor, IFactor, DFactor, FFrFactor, FFdrFactor;
 
     axis_i32 error_int, errorSum_int, errorDot_int, errorPrev_int, errorDotPT1_int;
     axis_i32 refSignal_int, refSignalPrev_int, refSignalDot_int, refSignalDotPT1_int;
@@ -57,6 +57,7 @@ typedef struct pid_st
     int32_t inverseDt{1};
     int32_t satI_int, satPID_int;
     axis_i32 signalPT1Prev_int;
+    uint64_t runCtrlTickPrev{ 0 };
 }pid_st;
 
 // Kalman Filter Struct
@@ -240,5 +241,6 @@ float wobble(uint16_t pot1, uint16_t poti2);
 
 // Function to clamp value inbetween bounds
 inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max);
+inline int64_t clamp_i64(int64_t x, int64_t min, int64_t max);
 
 #endif // !CONTROLLER_HEADER

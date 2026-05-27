@@ -43,15 +43,16 @@ void UpdateMotorSpeeds(const MotorInput* motorInput)
 	//set TC compare registers accordingly
 	SetTcCompareRegister(&motorCommand);
 
-	//motorCommand.sysTime = motorInput->sysTime;
-
 	//trigger TC channels, not earlier than 250 us
 	TriggerTcRegisters(&motorCommand, motorInput->sysTick);
 
-//  SerialUSB.print(motorCommand.FL);SerialUSB.print("\t");
-//  SerialUSB.print(motorCommand.FR);SerialUSB.print("\t");
-//  SerialUSB.print(motorCommand.RL);SerialUSB.print("\t");
-//  SerialUSB.println(motorCommand.RR);
+//  SerialUSB.print((float)motorInput->x_int);SerialUSB.print("\t");
+//  SerialUSB.print((float)motorInput->y_int);SerialUSB.print("\t");
+//  SerialUSB.print((float)motorInput->z_int);SerialUSB.print("\t");
+//  SerialUSB.print(motorCommand.FL_tick_int);SerialUSB.print("\t");
+//  SerialUSB.print(motorCommand.FR_tick_int);SerialUSB.print("\t");
+//  SerialUSB.print(motorCommand.RL_tick_int);SerialUSB.print("\t");
+//  SerialUSB.println(motorCommand.RR_tick_int);
 
 }
 
@@ -60,33 +61,12 @@ void CalcMotorSpeeds(const MotorInput* motorInput, MotorCommander* motorCmd)
 {
 	if (E_armState::ARMED == motorInput->armState)
 	{
-		////calculation of the four motor speed, 8 divider for oneshot protocol
-		//motorCmd->FL = motorInput->throttle/8 + motorInput->x + motorInput->y + motorInput->z;
-		//motorCmd->FR = motorInput->throttle/8 - motorInput->x + motorInput->y - motorInput->z;
-		//motorCmd->RL = motorInput->throttle/8 + motorInput->x - motorInput->y - motorInput->z;
-		//motorCmd->RR = motorInput->throttle/8 - motorInput->x - motorInput->y + motorInput->z;
+		int32_t scaledThrottle = interpolateThrottle(motorInput->throttle);
 
-		////saturation if values are out of 125-250 us band
-		//if (motorCmd->FL < 125.0) motorCmd->FL = 125.0;
-		//else if (motorCmd->FL > 250.0) motorCmd->FL = 250.0;
-		//else;//do nothing
-		//if (motorCmd->FR < 125.0) motorCmd->FR = 125.0;
-		//else if (motorCmd->FR > 250.0) motorCmd->FR = 250.0;
-		//else;//do nothing
-		//if (motorCmd->RL < 125.0) motorCmd->RL = 125.0;
-		//else if (motorCmd->RL > 250.0) motorCmd->RL = 250.0;
-		//else;//do nothing
-		//if (motorCmd->RR < 125.0) motorCmd->RR = 125.0;
-		//else if (motorCmd->RR > 250.0) motorCmd->RR = 250.0;
-		//else;//do nothing
-
-
-		uint32_t scaledThrottle = interpolateThrottle(motorInput->throttle);
-
-		motorCmd->FL_tick_int = scaledThrottle + motorInput->x_int + motorInput->y_int + motorInput->z_int;
-		motorCmd->FR_tick_int = scaledThrottle - motorInput->x_int + motorInput->y_int - motorInput->z_int;
-		motorCmd->RL_tick_int = scaledThrottle + motorInput->x_int - motorInput->y_int - motorInput->z_int;
-		motorCmd->RR_tick_int = scaledThrottle - motorInput->x_int - motorInput->y_int + motorInput->z_int;
+		motorCmd->FL_tick_int = uint32_t(scaledThrottle + motorInput->x_int + motorInput->y_int + motorInput->z_int);
+		motorCmd->FR_tick_int = uint32_t(scaledThrottle - motorInput->x_int + motorInput->y_int - motorInput->z_int);
+		motorCmd->RL_tick_int = uint32_t(scaledThrottle + motorInput->x_int - motorInput->y_int - motorInput->z_int);
+		motorCmd->RR_tick_int = uint32_t(scaledThrottle - motorInput->x_int - motorInput->y_int + motorInput->z_int);
 
 		clampMotorSpeed(&motorCmd->FL_tick_int);
 		clampMotorSpeed(&motorCmd->FR_tick_int);
@@ -95,22 +75,10 @@ void CalcMotorSpeeds(const MotorInput* motorInput, MotorCommander* motorCmd)
 	}
 	else
 	{
-       // if (motorInput->twoWaySwitch2 > 1800)
-       // {
-			    //handleBeeps(motorInput, motorCmd);
-       // }
-       // else
-       // {
-            //motorCmd->FL = 125.0;
-            //motorCmd->FR = 125.0;
-            //motorCmd->RL = 125.0;
-            //motorCmd->RR = 125.0;
-
-			motorCmd->FL_tick_int = 1312;
-			motorCmd->FR_tick_int = 1312;
-			motorCmd->RL_tick_int = 1312;
-			motorCmd->RR_tick_int = 1312;
-       // }
+		motorCmd->FL_tick_int = 1312;
+		motorCmd->FR_tick_int = 1312;
+		motorCmd->RL_tick_int = 1312;
+		motorCmd->RR_tick_int = 1312;
 	}
 }
 
@@ -121,70 +89,71 @@ uint32_t interpolateThrottle(uint16_t throttle)
 	return 1312 + dx + (dx >> 2) + (dx >> 4);
 }
 
-inline void clampMotorSpeed(uint32_t* x)
+inline void clampMotorSpeed(int32_t* x)
 {
 	if (*x > 2625) *x = 2625;
 	if (*x < 1312) *x = 1312;
 }
 
-void handleBeeps(const MotorInput* motorInput, MotorCommander* motorCmd)
-{
-	switch (motorCmd->beepState)
-	{
-		case BEEP_TRIGGER:
-		{
-			float beepTime = float(motorInput->poti1) / 1000.0f - 1.0f;
-			beepTime = (beepTime > 0.1f) ? beepTime : 0.1f;
-			if ((motorInput->sysTime - motorCmd->lastBeepTime) > beepTime)    //beep moment
-			{
-				motorCmd->FL = motorInput->poti2 / 8;
-				motorCmd->FR = motorInput->poti2 / 8;
-				motorCmd->RL = motorInput->poti2 / 8;
-				motorCmd->RR = motorInput->poti2 / 8;
-
-				motorCmd->lastBeepTime = motorInput->sysTime;
-				motorCmd->beepState = BEEP_HOLD;
-			}
-			else    //non-beep waiting
-			{
-				motorCmd->FL = 125.0;
-				motorCmd->FR = 125.0;
-				motorCmd->RL = 125.0;
-				motorCmd->RR = 125.0;
-			}
-
-			break;
-		}
-		case BEEP_HOLD:
-		{
-			if ((motorInput->sysTime - motorCmd->lastBeepTime) > (15 * MICROSEC_250))
-			{
-				motorCmd->FL = 125.0;
-				motorCmd->FR = 125.0;
-				motorCmd->RL = 125.0;
-				motorCmd->RR = 125.0;
-
-				motorCmd->beepState = BEEP_TRIGGER;
-			}
-			else
-			{
-				motorCmd->FL = motorInput->poti2 / 8;
-				motorCmd->FR = motorInput->poti2 / 8;
-				motorCmd->RL = motorInput->poti2 / 8;
-				motorCmd->RR = motorInput->poti2 / 8;
-			}
-			break;
-		}
-		default:
-			break;
-	}
-}
+//void handleBeeps(const MotorInput* motorInput, MotorCommander* motorCmd)
+//{
+//	switch (motorCmd->beepState)
+//	{
+//		case BEEP_TRIGGER:
+//		{
+//			float beepTime = float(motorInput->poti1) / 1000.0f - 1.0f;
+//			beepTime = (beepTime > 0.1f) ? beepTime : 0.1f;
+//			if ((motorInput->sysTime - motorCmd->lastBeepTime) > beepTime)    //beep moment
+//			{
+//				motorCmd->FL = motorInput->poti2 / 8;
+//				motorCmd->FR = motorInput->poti2 / 8;
+//				motorCmd->RL = motorInput->poti2 / 8;
+//				motorCmd->RR = motorInput->poti2 / 8;
+//
+//				motorCmd->lastBeepTime = motorInput->sysTime;
+//				motorCmd->beepState = BEEP_HOLD;
+//			}
+//			else    //non-beep waiting
+//			{
+//				motorCmd->FL = 125.0;
+//				motorCmd->FR = 125.0;
+//				motorCmd->RL = 125.0;
+//				motorCmd->RR = 125.0;
+//			}
+//
+//			break;
+//		}
+//		case BEEP_HOLD:
+//		{
+//			if ((motorInput->sysTime - motorCmd->lastBeepTime) > (15 * MICROSEC_250))
+//			{
+//				motorCmd->FL = 125.0;
+//				motorCmd->FR = 125.0;
+//				motorCmd->RL = 125.0;
+//				motorCmd->RR = 125.0;
+//
+//				motorCmd->beepState = BEEP_TRIGGER;
+//			}
+//			else
+//			{
+//				motorCmd->FL = motorInput->poti2 / 8;
+//				motorCmd->FR = motorInput->poti2 / 8;
+//				motorCmd->RL = motorInput->poti2 / 8;
+//				motorCmd->RR = motorInput->poti2 / 8;
+//			}
+//			break;
+//		}
+//		default:
+//			break;
+//	}
+//}
 
 void SetupMotorPins(void)
 {
     // initalize internal variables
     motorCommand.sysTime = 0;
     motorCommand.lastpulseTime = 0;
+	motorCommand.lastpulseTick = 0;
 
     //PB0-PB1 pin
     Setup_PB0_PB1_for_oneshot_pulse();

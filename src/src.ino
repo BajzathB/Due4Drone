@@ -45,14 +45,17 @@ void loop()
   SPIOutput spiOutput;
   controllerIn_st controlIn;
   controllerOut_st controlOut;
-  MotorInput motorInput;
 
   UpdateSysTime(&controlIn.droneTimes);
-  spiInput.sysTime = controlIn.droneTimes.sysTime;
   spiInput.sysTick = controlIn.droneTimes.sysTick;
 
   getRcChannels(&controlIn.rcSignals);
   getGyroAndAcc(&controlIn.gyro, &controlIn.acc);
+  
+  //SerialUSB.print(float(controlIn.gyro.signalPT1_int.x)); SerialUSB.print("\t");
+  //SerialUSB.print(float(controlIn.gyro.signal_int.x)); SerialUSB.print("\t");
+  //SerialUSB.print(float(controlIn.gyro.signalPT1_int.z)); SerialUSB.print("\t");
+  //SerialUSB.println();
    
   //testing
   // if(spiInput.sysTime > 9)
@@ -96,22 +99,6 @@ void loop()
   // }
 
   RunController(&controlIn, &controlOut);
-
-  motorInput.throttle = controlIn.rcSignals.throttle;
-  //motorInput.x = controlOut.U.x;
-  //motorInput.y = controlOut.U.y;
-  //motorInput.z = controlOut.U.z;
-  motorInput.x_int = controlOut.U_int.x;
-  motorInput.y_int = controlOut.U_int.y;
-  motorInput.z_int = controlOut.U_int.z;
-  motorInput.armState = controlOut.armState;
-  //motorInput.sysTime = controlIn.droneTimes.sysTime;
-  motorInput.sysTick = controlIn.droneTimes.sysTick;
-  motorInput.poti1 = controlIn.rcSignals.Poti1;
-  motorInput.poti2 = controlIn.rcSignals.Poti2;
-  motorInput.twoWaySwitch2 = controlIn.rcSignals.Switch2Way;
-  
-  UpdateMotorSpeeds(&motorInput);
 
   RunBT(&controlIn, &controlOut);
 

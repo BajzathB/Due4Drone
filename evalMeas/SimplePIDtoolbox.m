@@ -1,7 +1,7 @@
 clear all, clc
 
 %reading files from folder
-directory = "2026_05_10";
+directory = "2026_05_27";
 files = dir(directory);
 files = files(3:end);
 % fileList = strings(1, length(files));
@@ -14,168 +14,27 @@ files = files(3:end);
 
 %manually select files
 fileList = [
-% % % "MEAS486.txt"
-% % % "MEAS487.txt"
-% % "MEAS488.txt"
-% % %P-450
-% % % "MEAS491.txt"
-% % % "MEAS493.txt"
-% % "MEAS494.txt"
-% % % %P-45
-% % % "MEAS501.txt"
-% % % "MEAS502.txt"
-% % % "MEAS504.txt"
-% % % %P-43
-% % "MEAS512.txt"
-% % % "MEAS513.txt"
-% % % "MEAS515.txt"
-% % % P-38
-% % % "MEAS517.txt"
-% % "MEAS518.txt"
-% % % "MEAS519.txt"
-% %P-35
-% % "MEAS521.txt"
-% "MEAS522.txt"
-% % "MEAS523.txt"
-% %P-30
-% "MEAS526.txt"
-% "MEAS528.txt"
-% % "MEAS529.txt"
-% %P-28
-% % "MEAS530.txt"
-% "MEAS531.txt"
-% % "MEAS533.txt"
-% % "MEAS534.txt"
-% % %P-25
-% % % "MEAS535.txt"
-% % "MEAS536.txt"
-% % % "MEAS537.txt"
-%pitch
-% %P-50
-% "MEAS545.txt"
-% "MEAS546.txt"
-% "MEAS548.txt"
-%P-45
-% "MEAS552.txt"
-% "MEAS553.txt"
-% %P-43
-% "MEAS555.txt"
-
-% % "MEAS558.txt"
-% % "MEAS559.txt"
-% "MEAS560.txt"
-% % "MEAS561.txt"
-% % "MEAS562.txt"
-
-% % "MEAS69.txt"
-% % "MEAS70.txt"
-% % "MEAS71.txt"
-% % "MEAS72.txt"
-% % "MEAS73.txt"
-% "MEAS74.txt"
-% "MEAS75.txt"
-% "MEAS76.txt"
-% % "MEAS77.txt"
-% % "MEAS79.txt"
+% "MEAS240.txt"
+% "MEAS241.txt"
 % 
-% % "MEAS80.txt"
-% "MEAS82.txt"
-% % "MEAS83.txt"
-% % "MEAS85.txt"
-% % "MEAS86.txt"
-% % "MEAS88.txt"
-% % "MEAS89.txt"
-% % "MEAS90.txt"
-% % "MEAS91.txt"
-% % "MEAS92.txt"
-% % "MEAS93.txt"
-% "MEAS94.txt"
-% "MEAS95.txt"
-
-% "MEAS99.txt"
-% "MEAS100.txt"
-% "MEAS101.txt"
-% "MEAS102.txt"
-
-% "MEAS119.txt"
-% "MEAS120.txt"
-% % "MEAS121.txt"
-% % "MEAS123.txt"
-% "MEAS124.txt"
-% "MEAS125.txt"
-% % "MEAS126.txt"
-% % "MEAS128.txt"
-% % "MEAS129.txt"
-% "MEAS130.txt"
-% "MEAS131.txt"
-
-% % "MEAS132.txt"
-% "MEAS133.txt"
-% % "MEAS135.txt"
-% % "MEAS136.txt"
-% % "MEAS137.txt"
-% % "MEAS140.txt"
-% % "MEAS141.txt"
-% % "MEAS142.txt"
-% "MEAS143.txt"
-% "MEAS144.txt"
-
-% % "MEAS145.txt"
-% % "MEAS146.txt"
-% % "MEAS147.txt"
-% "MEAS149.txt"
-% "MEAS150.txt"
-% "MEAS151.txt"
-% % "MEAS152.txt"
-% % "MEAS153.txt"
-
-% "MEAS154.txt"
-% "MEAS155.txt"
-% % "MEAS156.txt"
-% "MEAS157.txt"
-% % "MEAS158.txt"
-% "MEAS159.txt"
-% % "MEAS160.txt"
-% % "MEAS161.txt"
-
-% "MEAS162.txt"
-% % "MEAS163.txt"
-% % "MEAS164.txt"
-% "MEAS165.txt"
-% % "MEAS166.txt"
-% "MEAS167.txt"
-% "MEAS168.txt"
-
-% % "MEAS169.txt"
-% % "MEAS170.txt"
-% % "MEAS171.txt"
-% "MEAS172.txt"
-% "MEAS173.txt"
-% % "MEAS174.txt"
-% % "MEAS175.txt"
-% % "MEAS178.txt"
-% "MEAS179.txt"
-% "MEAS180.txt"
-
-% "MEAS187.txt"
-% "MEAS188.txt"
-% "MEAS189.txt"
-% "MEAS190.txt"
-% "MEAS191.txt"
-
-% "MEAS191.txt"
-% "MEAS192.txt"
-% "MEAS195.txt"
-% "MEAS196.txt"
-% "MEAS197.txt"
-% "MEAS198.txt"
-
-"MEAS199.txt"
-
+% "MEAS264.txt"
+% "MEAS266.txt"
+% "MEAS269.txt"
+% 
+% "MEAS279.txt"
+% "MEAS281.txt"
+% "MEAS283.txt"
+% "MEAS286.txt"
+% "MEAS289.txt"
+"MEAS291.txt"
+"MEAS292.txt"
+"MEAS293.txt"
+"MEAS294.txt"
 ];
 
 
 for n = 1:length(fileList)
+    disp(fileList(n));
     file = directory + "/" + fileList(n);
     %reading meas header
     fileID = fopen(file,'r');
@@ -188,7 +47,7 @@ for n = 1:length(fileList)
     meas{n} = readtable(file, opts);
 end
 
-trim = 1200;
+trim = 1000;
 wnd = 512;
 % figure(1)
 % clf(1)
@@ -198,16 +57,27 @@ wnd = 512;
 
 measSize = size(meas);
 for s = 1:measSize(2)
-    stepResp{1,s} = calcStepResponse(meas{1,s}.PIDRefX(trim:end-trim), meas{1,s}.PIDSensX(trim:end-trim), wnd);
-    stepResp{2,s} = calcStepResponse(meas{1,s}.PIDRefY(trim:end-trim), meas{1,s}.PIDSensY(trim:end-trim), wnd);
-%     stepResp{3,s} = calcStepResponse(meas{1,s}.PIDRefZ, meas{1,s}.PIDSensZ);
+    stepResp{1,s} = calcStepResponse(meas{1,s}.PIDRefXi(trim:end-trim), meas{1,s}.PIDSensXi(trim:end-trim), wnd);
+%     stepResp{2,s} = calcStepResponse(meas{1,s}.PIDRefYi(trim:end-trim), meas{1,s}.PIDSensYi(trim:end-trim), wnd);
+    stepResp{3,s} = calcStepResponse(meas{1,s}.PIDRefZi(trim:end-trim), meas{1,s}.PIDSensZi(trim:end-trim), wnd);
 end
+
+%%
+
+% figure(1)
+% clf(1)
+% trim=1;
+% i=2;
+% fileList(i)
+% subplot(2,1,1);
+% plot(meas{1,i}.sysTickMs(trim:end-trim)/1000, [meas{1,i}.PIDRefXi(trim:end-trim) meas{1,i}.PIDSensXi(trim:end-trim)]);
+% subplot(2,1,2);
+% plot(meas{1,i}.sysTickMs(trim:end-trim)/1000, [meas{1,i}.PIDPoutXi(trim:end-trim) meas{1,i}.PIDDoutXi(trim:end-trim)]);
 
 %%
 figure(1); clf; hold on
 legend('Location','eastoutside');
 title("PID tuning ROLL");
-yline(1,'--');
 % xlim([1 wnd]);
 ylim([0 1.3]);
 
@@ -217,6 +87,7 @@ hold(ax1, 'on');
 title(ax1, "PID tuning" + newline + "ROLL");
 xlim(ax1, [1 wnd]);
 ylim(ax1, [0 1.3]);
+yline(ax1, 1, '--');
 ax2 = subplot(2,1,2);
 hold(ax2, 'on');
 title(ax2, "PITCH");
@@ -237,30 +108,38 @@ for p = 1:measSize(2)
     input('Press Enter to continue...');
     fileName = erase(fileList(p), ".txt");
     
-    labelX = sprintf('%s(%g,%g,%g)(%g,%g)', ...
+%     labelX = sprintf('%s(%g,%g,%g)(%g,%g)', ...
+    labelX = sprintf('%s(%g,%g,%g)', ...
         fileName, ...
         headers{1,p}.Px, ...
         headers{1,p}.Ix, ...
-        headers{1,p}.Dx, ...
-        headers{1,p}.IRelaxR, ...
-        headers{1,p}.IRelaxE);
-    labelY = sprintf('%s(%g,%g,%g)', ...
-        fileName, ...
-        headers{1,p}.Py, ...
-        headers{1,p}.Iy, ...
-        headers{1,p}.Dy);
+        headers{1,p}.Dx);
+%         , ...
+%         headers{1,p}.IRelaxR, ...
+%         headers{1,p}.IRelaxE);
+
+%     labelY = sprintf('%s(%g,%g,%g)', ...
+%         fileName, ...
+%         headers{1,p}.Py, ...
+%         headers{1,p}.Iy, ...
+%         headers{1,p}.Dy);
+%     labelZ = sprintf('%s(%g,%g,%g)', ...
+%         fileName, ...
+%         headers{1,p}.Pz, ...
+%         headers{1,p}.Iz);
     
     plot(ax1, stepResp{1,p}, 'DisplayName', labelX);
-    plot(ax2, stepResp{2,p}, 'DisplayName', labelY);
+%     plot(ax2, stepResp{2,p}, 'DisplayName', labelY);
+%     plot(ax2, stepResp{3,p}, 'DisplayName', labelZ);
     
     figure(2)
     clf;
     subplot(2,1,1);
-    plot(meas{1,p}.sysTime(trim:end-trim), [meas{1,p}.PIDRefX(trim:end-trim) meas{1,p}.PIDSensX(trim:end-trim)]);
+    plot(meas{1,p}.sysTickMs(trim:end-trim), [meas{1,p}.PIDRefXi(trim:end-trim) meas{1,p}.PIDSensXi(trim:end-trim)]);
     title("gyro" + newline + "ROLL");
     legend('Ref', 'Sens');
     subplot(2,1,2);
-    plot(meas{1,p}.sysTime(trim:end-trim), [meas{1,p}.PIDRefY(trim:end-trim) meas{1,p}.PIDSensY(trim:end-trim)]);
+%     plot(meas{1,p}.sysTickMs(trim:end-trim), [meas{1,p}.PIDRefYi(trim:end-trim) meas{1,p}.PIDSensYi(trim:end-trim)]);
     title("PITCH");
     legend('Ref', 'Sens');
 end

@@ -26,7 +26,6 @@ sysTime sysTimer;
 void SetupSysTimer(void)
 {
     // initalize internal variable
-	sysTimer.loopTime = 0.001f;
 
 	pmc_enable_periph_clk(ID_TC2);  //enable peripheral clock for TC0-channel 2
 
@@ -45,16 +44,14 @@ void UpdateSysTime(droneTimes_st* times)
 	//software trigger to restart counter
 	TC0->TC_CHANNEL[2].TC_CCR |= TC_CCR_SWTRG;
 	//calculation of real value
-	sysTimer.loopTime = (float)sysTimer.raw * sysTimer.const_raw2real;
-	sysTimer.sysTime += sysTimer.loopTime;
+	sysTimer.sysTime += (float)sysTimer.raw * sysTimer.const_raw2real;
 
 	sysTimer.sysTick += (uint64_t)sysTimer.raw;
 
-	times->loopTime = sysTimer.loopTime;
 	times->sysTime = sysTimer.sysTime;
 	times->loopTick = sysTimer.raw;
 	times->sysTick = sysTimer.sysTick;
-	times->divider = 10500000;
+	//times->divider = 10500000;
 
 //	Serial.print(sysTimer.const_raw2real,9); Serial.print("\t");
 //	SerialUSB.print(sysTimer.raw);  SerialUSB.print("\t");
@@ -66,7 +63,6 @@ void UpdateSysTime(droneTimes_st* times)
 
 void getDroneTimes(droneTimes_st* times)
 {
-	times->loopTime = sysTimer.loopTime;
 	times->sysTime = sysTimer.sysTime;
 	times->loopTick = sysTimer.raw;
 }
@@ -86,7 +82,12 @@ float getSysTime(void)
   return sysTimer.sysTime;
 }
 
-float getSysLoopTime(void)
+uint64_t getSysTick(void)
 {
-  return sysTimer.loopTime;
+    return sysTimer.sysTick;
+}
+
+float getLoopTick(void)
+{
+    return sysTimer.raw;
 }

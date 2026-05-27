@@ -58,6 +58,7 @@ struct bt{
 	txframe_st txFrame;
 
     float txDeltaT{ 0 };
+    uint32_t txDeltaTick{ 0 };
 };
 
 // Method to set initial values for controller variable

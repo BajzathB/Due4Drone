@@ -25,7 +25,7 @@ typedef struct MotorCommander
     float lastBeepTime{ 0 };
     E_BeepState beepState{ BEEP_TRIGGER };
 
-	uint32_t FL_tick_int, FR_tick_int, RL_tick_int, RR_tick_int;
+	int32_t FL_tick_int, FR_tick_int, RL_tick_int, RR_tick_int;
 	uint64_t lastpulseTick;
 }motorCommander;
 
@@ -34,11 +34,11 @@ typedef struct MotorInput
   // throttle stick value
   uint16_t throttle;
   // angular rotation values of each axis
-  float x,y,z;
+  //float x,y,z;
   int32_t x_int,y_int,z_int;
   E_armState armState{DISARMED};
   // current sys time
-  float sysTime;
+  //float sysTime;
   uint64_t sysTick;
 
   // controll signals for beep sound
@@ -85,6 +85,6 @@ void handleBeeps(const MotorInput* motorInput, MotorCommander* motorCmd);
 uint32_t interpolateThrottle(uint16_t throttle);
 
 // Function to clamp motor speed into 1312...2625
-inline void clampMotorSpeed(uint32_t* x);
+inline void clampMotorSpeed(int32_t* x);
 
 #endif // !MOTOR_CONTROL_HEADER

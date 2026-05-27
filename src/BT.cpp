@@ -56,6 +56,11 @@ extern spi_st SPI;
 
 #endif
 
+#define TRANSMIT_DELAY 115500 // 11ms in ticks
+
+//#define DEBUG_BT
+//#define DEBUG_BT_INTERRUPT
+
 bt BT;
 
 void SetupBT(void)
@@ -136,7 +141,9 @@ void RunBT(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
 void USART1_Handler(void)
 {
 	uint32_t usart_status = USART1->US_CSR;
-	//SerialUSB.println(usart_status);
+#ifdef DEBUG_BT_INTERRUPT
+	SerialUSB.println(usart_status);
+#endif
 
 	if (usart_status & US_CSR_ENDRX)
 	{
@@ -148,6 +155,10 @@ void USART1_Handler(void)
 			USART1->US_PTCR |= US_PTCR_RXTEN; //start pdc receive
 
 			BT.rxDataState = RECEVING_DATA_BYTES;
+			
+#ifdef DEBUG_BT_INTERRUPT
+		SerialUSB.println("c");
+#endif
 		}
 		else if (RECEVING_DATA_BYTES == BT.rxDataState)
 		{
@@ -155,6 +166,10 @@ void USART1_Handler(void)
 			USART1->US_CR |= US_CR_RXDIS;
 			BT.rxDataState = FRAME_RECEIVED;
 			USART1->US_RCR = 1; //counter set to 1 to unset interrupt flag
+			
+#ifdef DEBUG_BT_INTERRUPT
+		SerialUSB.println("d");
+#endif
 		}
 		
 	}
@@ -177,14 +192,14 @@ void BTReceive(const controllerIn_st* ctrlIn)
 //		{
 //			SerialUSB.print(BT.input.vector[i]);
 //		}
-//
-//		SerialUSB.print("rxFrame: cmd - "); SerialUSB.print(BT.rxFrame.cmd);
-//		SerialUSB.print(" ,id - "); SerialUSB.print(BT.rxFrame.id);
-//		//SerialUSB.print(" ,pidRatePx - "); SerialUSB.print(getPIDrates()->P.x);
-//		SerialUSB.print(" ,paramData - "); SerialUSB.print(BT.txFrame.paramData);
-//		SerialUSB.print(" ,sendParam - "); SerialUSB.print(BT.txFrame.sendParam);
-//
-//		SerialUSB.println();
+
+#ifdef DEBUG_BT
+		SerialUSB.print("BTReceive: cmd - "); SerialUSB.print(BT.rxFrame.cmd);
+		SerialUSB.print(" ,id - "); SerialUSB.print(BT.rxFrame.id);
+		SerialUSB.print(" ,paramData - "); SerialUSB.print(BT.txFrame.paramData);
+		SerialUSB.print(" ,sendParam - "); SerialUSB.print(BT.txFrame.sendParam);
+		SerialUSB.println();
+#endif
 
 	}
 }
@@ -195,7 +210,7 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
 	BT.output.ctr = 2;
 
     //only enter if at least 10ms elapsed since previous data send
-    if (BT.txDeltaT > 0.011f)
+    if (BT.txDeltaTick > TRANSMIT_DELAY)
     {
         //if there is data to stream
         if (BT.txFrame.streamDataFlags > 0 || BT.txFrame.streamDataFlags2 > 0)
@@ -258,8 +273,7 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT1_GyroPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT1_GyroPT1, accData->angleKFPT11.pitch.angle);
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF_AccPT2_GyroPT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF_AccPT2_GyroPT2, accData->angleKFPT22.roll.angle);
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT2_GyroPT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT2_GyroPT2, accData->angleKFPT22.pitch.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_loop_time_ms - ID_bitshift_substracter2))) > 0) SetStreamData(ID_loop_time_ms, ctrlIn->droneTimes.loopTime*1000.0f);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_loop_tick - ID_bitshift_substracter2))) > 0) SetStreamData(ID_loop_tick, ctrlIn->droneTimes.loopTick);
+			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_loop_tick - ID_bitshift_substracter2))) > 0) SetStreamData(ID_loop_tick, (float)ctrlIn->droneTimes.loopTick/10.5);
 
             //trigger tx
             triggerTx = true;
@@ -276,6 +290,10 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
             triggerTx = true;
             //reset param send
             BT.txFrame.sendParam = false;
+						
+#ifdef DEBUG_BT
+		SerialUSB.println("BTTransmit - parameter: "); SerialUSB.print(BT.txFrame.paramData);
+#endif
         }
 
         //fill number of bytes and trigger transmit
@@ -303,7 +321,7 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
     }
     else
     {
-        BT.txDeltaT += getSysLoopTime();
+        BT.txDeltaTick += getLoopTick();
     }
 }
 
@@ -325,30 +343,30 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 
 			switch (BT.rxFrame.id)
 			{
-				case ID_control_PID_rate_P_X: pidRateSet->P.x = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_I_X: pidRateSet->I.x = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_X: pidRateSet->D.x = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_P_Y: pidRateSet->P.y = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_I_Y: pidRateSet->I.y = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_Y: pidRateSet->D.y = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_P_Z: pidRateSet->P.z = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_I_Z: pidRateSet->I.z = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_Z: pidRateSet->D.z = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_FF_X: pidRateSet->FFr.x = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_FF_Y: pidRateSet->FFr.y = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_FF_DX: pidRateSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_FF_DY: pidRateSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_saturation_I: pidRateSet->saturationI = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_saturation_PID: pidRateSet->saturationPID = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_Dterm_C: pidRateSet->DTermC = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_FF_Dterm_C: pidRateSet->FFDTermC = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_I_relax_ref_threshhold: pidRateSet->iRelaxRefThreshhold = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_I_relax_error_threshhold: pidRateSet->iRelaxErrThreshhold = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_max_ref_threshhold: pidRateSet->dMaxRefThreshhold = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_max_error_threshhold: pidRateSet->dMaxErrThreshhold = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_max_X: pidRateSet->Dmax.x = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_max_Y: pidRateSet->Dmax.y = ConvertStrToDouble(&BT.input); break;
-				case ID_control_PID_rate_D_max_Z: pidRateSet->Dmax.z = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_P_X: pidRateSet->P.x = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_I_X: pidRateSet->I.x = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_X: pidRateSet->D.x = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_P_Y: pidRateSet->P.y = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_I_Y: pidRateSet->I.y = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_Y: pidRateSet->D.y = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_P_Z: pidRateSet->P.z = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_I_Z: pidRateSet->I.z = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_Z: pidRateSet->D.z = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_FF_X: pidRateSet->FFr.x = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_FF_Y: pidRateSet->FFr.y = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_FF_DX: pidRateSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_FF_DY: pidRateSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_saturation_I: pidRateSet->saturationI = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_saturation_PID: pidRateSet->saturationPID = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_Dterm_C: pidRateSet->DTermC = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_FF_Dterm_C: pidRateSet->FFDTermC = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_I_relax_ref_threshhold: pidRateSet->iRelaxRefThreshhold = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_I_relax_error_threshhold: pidRateSet->iRelaxErrThreshhold = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_max_ref_threshhold: pidRateSet->dMaxRefThreshhold = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_max_error_threshhold: pidRateSet->dMaxErrThreshhold = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_max_X: pidRateSet->Dmax.x = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_max_Y: pidRateSet->Dmax.y = ConvertStrToDouble(&BT.input); break;
+				//case ID_control_PID_rate_D_max_Z: pidRateSet->Dmax.z = ConvertStrToDouble(&BT.input); break;
 				case ID_gyro_filter_paramC: gyroDataSet->paramC = ConvertStrToDouble(&BT.input); break;
 				case ID_gyro_kalman_filter_q: gyroDataSet->KF.q = ConvertStrToDouble(&BT.input);	break;
 				case ID_gyro_kalman_filter_r: gyroDataSet->KF.r = ConvertStrToDouble(&BT.input);	break;
@@ -360,22 +378,22 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_spi_acc_offset_x: spi->acc.offset.x = ConvertStrToDouble(&BT.input);	break;
 				case ID_spi_acc_offset_y: spi->acc.offset.y = ConvertStrToDouble(&BT.input);	break;
 				case ID_spi_acc_offset_z: spi->acc.offset.z = ConvertStrToDouble(&BT.input);	break;
-                case ID_control_PID_cascade_P_X: pidCascadseSet->P.x = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_I_X: pidCascadseSet->I.x = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_D_X: pidCascadseSet->D.x = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_P_Y: pidCascadseSet->P.y = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_I_Y: pidCascadseSet->I.y = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_D_Y: pidCascadseSet->D.y = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_P_Z: pidCascadseSet->P.z = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_I_Z: pidCascadseSet->I.z = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_D_Z: pidCascadseSet->D.z = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_saturation_I: pidCascadseSet->saturationI = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_saturation_PID: pidCascadseSet->saturationPID = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_Dterm_C: pidCascadseSet->DTermC = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_FF_X: pidCascadseSet->FFr.x = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_FF_Y: pidCascadseSet->FFr.y = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_FF_DX: pidCascadseSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
-                case ID_control_PID_cascade_FF_DY: pidCascadseSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_P_X: pidCascadseSet->P.x = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_I_X: pidCascadseSet->I.x = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_D_X: pidCascadseSet->D.x = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_P_Y: pidCascadseSet->P.y = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_I_Y: pidCascadseSet->I.y = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_D_Y: pidCascadseSet->D.y = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_P_Z: pidCascadseSet->P.z = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_I_Z: pidCascadseSet->I.z = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_D_Z: pidCascadseSet->D.z = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_saturation_I: pidCascadseSet->saturationI = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_saturation_PID: pidCascadseSet->saturationPID = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_Dterm_C: pidCascadseSet->DTermC = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_FF_X: pidCascadseSet->FFr.x = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_FF_Y: pidCascadseSet->FFr.y = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_FF_DX: pidCascadseSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
+                //case ID_control_PID_cascade_FF_DY: pidCascadseSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
 				case ID_spi_acc_offset_int_x: spi->acc.offset_int.x = ConvertStrToInt32(&BT.input);	break;
 				case ID_spi_acc_offset_int_y: spi->acc.offset_int.y = ConvertStrToInt32(&BT.input);	break;
 				case ID_spi_acc_offset_int_z: spi->acc.offset_int.z = ConvertStrToInt32(&BT.input);	break;
@@ -397,11 +415,11 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 
 
 				//
-				case ID_update_global_time: setGlobalTime(ConvertStrToGlobalTime(&BT.input), ctrlIn->droneTimes.sysTime); break;
+				case ID_update_global_time: setGlobalTime(ConvertStrToGlobalTime(&BT.input), ctrlIn->droneTimes.sysTick); break;
 				case ID_update_global_date: setGlobalDate(ConvertStrToGlobalDate(&BT.input)); break;
 
 				// meas 2 sdcard
-				case ID_meas_2_card_sysTime: meas2card->measureSysTime = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_sysTick: meas2card->measureSysTick = ConvertStrToBool(&BT.input); break;
                 //gyro
 				case ID_meas_2_card_gyro_raw_X: meas2card->measureGyroRawX = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_gyro_raw_Y: meas2card->measureGyroRawY = ConvertStrToBool(&BT.input); break;
@@ -524,30 +542,30 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 
 			switch (BT.rxFrame.id)
 			{
-				case ID_control_PID_rate_P_X: BT.txFrame.paramData = pidRateGet->P.x; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_I_X: BT.txFrame.paramData = pidRateGet->I.x; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_X: BT.txFrame.paramData = pidRateGet->D.x; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_P_Y: BT.txFrame.paramData = pidRateGet->P.y; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_I_Y: BT.txFrame.paramData = pidRateGet->I.y; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_Y: BT.txFrame.paramData = pidRateGet->D.y; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_P_Z: BT.txFrame.paramData = pidRateGet->P.z; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_I_Z: BT.txFrame.paramData = pidRateGet->I.z; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_Z: BT.txFrame.paramData = pidRateGet->D.z; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_FF_X: BT.txFrame.paramData = pidRateGet->FFr.x; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_FF_Y: BT.txFrame.paramData = pidRateGet->FFr.y; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_FF_DX: BT.txFrame.paramData = pidRateGet->FFdr.x; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_FF_DY: BT.txFrame.paramData = pidRateGet->FFdr.y; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_saturation_I: BT.txFrame.paramData = pidRateGet->saturationI; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_saturation_PID: BT.txFrame.paramData = pidRateGet->saturationPID; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_Dterm_C: BT.txFrame.paramData = pidRateGet->DTermC; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_FF_Dterm_C: BT.txFrame.paramData = pidRateGet->FFDTermC; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_I_relax_ref_threshhold: BT.txFrame.paramData = pidRateGet->iRelaxRefThreshhold; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_I_relax_error_threshhold: BT.txFrame.paramData = pidRateGet->iRelaxErrThreshhold; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_max_ref_threshhold: BT.txFrame.paramData = pidRateGet->dMaxRefThreshhold; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_max_error_threshhold: BT.txFrame.paramData = pidRateGet->dMaxErrThreshhold; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_max_X: BT.txFrame.paramData = pidRateGet->Dmax.x; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_max_Y: BT.txFrame.paramData = pidRateGet->Dmax.y; BT.txFrame.numberOfFrac = 1; break;
-				case ID_control_PID_rate_D_max_Z: BT.txFrame.paramData = pidRateGet->Dmax.z; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_P_X: BT.txFrame.paramData = pidRateGet->P.x; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_I_X: BT.txFrame.paramData = pidRateGet->I.x; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_X: BT.txFrame.paramData = pidRateGet->D.x; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_P_Y: BT.txFrame.paramData = pidRateGet->P.y; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_I_Y: BT.txFrame.paramData = pidRateGet->I.y; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_Y: BT.txFrame.paramData = pidRateGet->D.y; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_P_Z: BT.txFrame.paramData = pidRateGet->P.z; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_I_Z: BT.txFrame.paramData = pidRateGet->I.z; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_Z: BT.txFrame.paramData = pidRateGet->D.z; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_FF_X: BT.txFrame.paramData = pidRateGet->FFr.x; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_FF_Y: BT.txFrame.paramData = pidRateGet->FFr.y; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_FF_DX: BT.txFrame.paramData = pidRateGet->FFdr.x; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_FF_DY: BT.txFrame.paramData = pidRateGet->FFdr.y; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_saturation_I: BT.txFrame.paramData = pidRateGet->saturationI; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_saturation_PID: BT.txFrame.paramData = pidRateGet->saturationPID; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_Dterm_C: BT.txFrame.paramData = pidRateGet->DTermC; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_FF_Dterm_C: BT.txFrame.paramData = pidRateGet->FFDTermC; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_I_relax_ref_threshhold: BT.txFrame.paramData = pidRateGet->iRelaxRefThreshhold; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_I_relax_error_threshhold: BT.txFrame.paramData = pidRateGet->iRelaxErrThreshhold; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_max_ref_threshhold: BT.txFrame.paramData = pidRateGet->dMaxRefThreshhold; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_max_error_threshhold: BT.txFrame.paramData = pidRateGet->dMaxErrThreshhold; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_max_X: BT.txFrame.paramData = pidRateGet->Dmax.x; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_max_Y: BT.txFrame.paramData = pidRateGet->Dmax.y; BT.txFrame.numberOfFrac = 1; break;
+				//case ID_control_PID_rate_D_max_Z: BT.txFrame.paramData = pidRateGet->Dmax.z; BT.txFrame.numberOfFrac = 1; break;
 				case ID_gyro_filter_paramC: BT.txFrame.paramData = gyroDataGet->paramC; BT.txFrame.numberOfFrac = 1; break;
 				case ID_gyro_kalman_filter_q: BT.txFrame.paramData = gyroDataGet->KF.q; BT.txFrame.numberOfFrac = 3; break;
 				case ID_gyro_kalman_filter_r: BT.txFrame.paramData = gyroDataGet->KF.r; BT.txFrame.numberOfFrac = 1; break;
@@ -559,22 +577,22 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_spi_acc_offset_x: BT.txFrame.paramData = spi->acc.offset.x; BT.txFrame.numberOfFrac = 2; break;
 				case ID_spi_acc_offset_y: BT.txFrame.paramData = spi->acc.offset.y; BT.txFrame.numberOfFrac = 2; break;
 				case ID_spi_acc_offset_z: BT.txFrame.paramData = spi->acc.offset.z; BT.txFrame.numberOfFrac = 2; break;
-                case ID_control_PID_cascade_P_X: BT.txFrame.paramData = pidCascadseSet->P.x; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_I_X: BT.txFrame.paramData = pidCascadseSet->I.x; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_D_X: BT.txFrame.paramData = pidCascadseSet->D.x; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_P_Y: BT.txFrame.paramData = pidCascadseSet->P.y; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_I_Y: BT.txFrame.paramData = pidCascadseSet->I.y; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_D_Y: BT.txFrame.paramData = pidCascadseSet->D.y; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_P_Z: BT.txFrame.paramData = pidCascadseSet->P.z; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_I_Z: BT.txFrame.paramData = pidCascadseSet->I.z; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_D_Z: BT.txFrame.paramData = pidCascadseSet->D.z; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_saturation_I: BT.txFrame.paramData = pidCascadseSet->saturationI; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_saturation_PID: BT.txFrame.paramData = pidCascadseSet->saturationPID; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_Dterm_C: BT.txFrame.paramData = pidCascadseSet->DTermC; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_FF_X: BT.txFrame.paramData = pidCascadseSet->FFr.x; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_FF_Y: BT.txFrame.paramData = pidCascadseSet->FFr.y; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_FF_DX: BT.txFrame.paramData = pidCascadseSet->FFdr.x; BT.txFrame.numberOfFrac = 1; break;
-                case ID_control_PID_cascade_FF_DY: BT.txFrame.paramData = pidCascadseSet->FFdr.y; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_P_X: BT.txFrame.paramData = pidCascadseSet->P.x; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_I_X: BT.txFrame.paramData = pidCascadseSet->I.x; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_D_X: BT.txFrame.paramData = pidCascadseSet->D.x; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_P_Y: BT.txFrame.paramData = pidCascadseSet->P.y; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_I_Y: BT.txFrame.paramData = pidCascadseSet->I.y; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_D_Y: BT.txFrame.paramData = pidCascadseSet->D.y; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_P_Z: BT.txFrame.paramData = pidCascadseSet->P.z; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_I_Z: BT.txFrame.paramData = pidCascadseSet->I.z; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_D_Z: BT.txFrame.paramData = pidCascadseSet->D.z; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_saturation_I: BT.txFrame.paramData = pidCascadseSet->saturationI; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_saturation_PID: BT.txFrame.paramData = pidCascadseSet->saturationPID; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_Dterm_C: BT.txFrame.paramData = pidCascadseSet->DTermC; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_FF_X: BT.txFrame.paramData = pidCascadseSet->FFr.x; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_FF_Y: BT.txFrame.paramData = pidCascadseSet->FFr.y; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_FF_DX: BT.txFrame.paramData = pidCascadseSet->FFdr.x; BT.txFrame.numberOfFrac = 1; break;
+                //case ID_control_PID_cascade_FF_DY: BT.txFrame.paramData = pidCascadseSet->FFdr.y; BT.txFrame.numberOfFrac = 1; break;
 
                 case ID_SDCARD_MAINSTATE: BT.txFrame.paramData = sdcard->MainState; BT.txFrame.numberOfFrac = 0; break;
                 case ID_SDCARD_RESET_MEASRUEMENT: BT.txFrame.paramData = ResetMeasurement(); BT.txFrame.numberOfFrac = 0; break;
@@ -603,7 +621,7 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_update_global_date: BT.txFrame.paramData = ConvertGlobalDate(&sdcard->globalDateAndTime); BT.txFrame.numberOfFrac = 0; break;
 
 				//MEAS2SDCARD
-				case ID_meas_2_card_sysTime: BT.txFrame.paramData = meas2card->measureSysTime; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_sysTick: BT.txFrame.paramData = meas2card->measureSysTick; BT.txFrame.numberOfFrac = 0; break;
                 //gyro
 				case ID_meas_2_card_gyro_raw_X: BT.txFrame.paramData = meas2card->measureGyroRawX; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_gyro_raw_Y: BT.txFrame.paramData = meas2card->measureGyroRawY; BT.txFrame.numberOfFrac = 0; break;
@@ -764,7 +782,6 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_pitch_KF_AccPT1_GyroPT1: SetSteamFlag2(ID_pitch_KF_AccPT1_GyroPT1); break;
 				case ID_roll_KF_AccPT2_GyroPT2: SetSteamFlag2(ID_roll_KF_AccPT2_GyroPT2); break;
 				case ID_pitch_KF_AccPT2_GyroPT2: SetSteamFlag2(ID_pitch_KF_AccPT2_GyroPT2); break;
-				case ID_loop_time_ms: SetSteamFlag2(ID_loop_time_ms); break;
 				case ID_loop_tick: SetSteamFlag2(ID_loop_tick); break;
 
 			}

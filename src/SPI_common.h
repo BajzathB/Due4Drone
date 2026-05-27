@@ -63,7 +63,7 @@ typedef struct SpiInput
 	sigOut gyro, acc;
 	rcSignals_st rcSignals;
 	float sysTime{0};
-  uint64_t sysTick{0};
+    uint64_t sysTick{0};
 	E_armState armState{ DISARMED };
 }SPIInput;
 
@@ -140,6 +140,7 @@ int32_t PT1_25Hz(int32_t y, const int32_t x);
 
 // Function to calc float value from raw int
 float calcRealFromInt(volatile signal* sig, direction dir, bool isPT1);
+float calcRealFromInt(int32_t value);
 
 // Function to calc moving average of 3 axis data
 void calcMovingAverage(MovingAverage* ma, axis* value);

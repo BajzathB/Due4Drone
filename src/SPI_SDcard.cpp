@@ -38,9 +38,9 @@
 //		4th line: C for cacade
 //		...
 //		...
-//		xth line: header for measured signals, example: sysTime,Graw,Gpt1,Gpt2,Accraw,Accpt1,Accpt2,Akf,Akfaccpt1\n
+//		xth line: header for measured signals, example: sysTick,Graw,Gpt1,Gpt2,Accraw,Accpt1,Accpt2,Akf,Akfaccpt1\n
 // 
-//	1st meas is systime
+//	1st meas is systick
 //	every other measured value is separeted by comma(",")
 //	after last measured value is a "\n"
 //		x+th lines are the measurement values
@@ -77,8 +77,9 @@ extern Dmac* DMAC;
 #define POSITION_SECTOR_PER_FAT    0X024
 #define POSITION_FIRST_SECTOR      0x1C6
 
-#define WRITE_BLOCK_TIMEOUT 0.3f
-#define DATA_SAVE_DELAY 0.005f	//delay in seconds, 5ms
+#define WRITE_BLOCK_TIMEOUT 3150000 //0.3sec
+#define DATA_SAVE_DELAY 52500u //5ms
+#define ROOT_FAT_WRITE_DELAY 525000u //50ms
 
 //#define LOG_SD_INIT
 //#define LOG_SD_WRITE
@@ -132,29 +133,29 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		case SD_MEASUREMENT_ONGOING:
 		{
 			//save data every x ms
-			if (spiInput->sysTime - SDcard.measTimePrev >= DATA_SAVE_DELAY)
+			if (spiInput->sysTick - SDcard.measTickPrev >= DATA_SAVE_DELAY)
 			{
+				SDcard.measTickPrev = spiInput->sysTick;
+				
 				saveMeasData(spiInput, spiOutput);
-
-				SDcard.measTimePrev = spiInput->sysTime;
 			}
 
 			if (SDcard.writeMeasData)
 			{
-				writeData(spiInput->rcSignals.measurementSwitch, spiInput->sysTime);
+				writeData(spiInput->rcSignals.measurementSwitch, spiInput->sysTick);
 			}
 
 			break;
 		}
 		case SD_WRITE_ROOT:
 		{
-			writeRoot();
+			writeRoot(spiInput->sysTick);
 
 			break;
 		}
 		case SD_WRITE_FAT:
 		{
-			writeFAT();
+			writeFAT(spiInput->sysTick);
 
 			break;
 		}
@@ -938,7 +939,10 @@ void SDWriteWaitResponse(void)
 		triggerSDRxTx(SDcard.nextTxBuffer4Data, SDcard.SdRx, SDcard.SdCtr);
 		SDcard.SDWriteState = SDWRITE_WAIT_DATA;
 
-        SDcard.writeStartTime = getSysTime();
+        SDcard.writeStartTick = getSysTick();
+#ifdef LOG_SD_WRITE 
+        SerialUSB.println("a");
+#endif
 	}
 	else
 	{
@@ -953,16 +957,19 @@ void SDWriteWaitData(void)
 {
     if (0b0100 == (SDcard.SdRx[SDcard.SdCtr - 1] & 0b1110))
     {
-        SDcard.writeStartTime = getSysTime();
+        SDcard.writeStartTick = getSysTick();
 
         SDcard.SdTx[0] = 0xFF | SPI_TDR_PCS(CS_SDCARD);
         triggerSDRxTx(SDcard.SdTx, SDcard.SdRx, 1);
         SDcard.SDWriteState = SDWRITE_WAIT_WRITE_FINISH;
+#ifdef LOG_SD_WRITE 
+        SerialUSB.println("b");
+#endif
     }
     else
     {
         //timeout check
-        if (getSysTime() - SDcard.writeStartTime > WRITE_BLOCK_TIMEOUT)
+        if (getSysTick() - SDcard.writeStartTick > WRITE_BLOCK_TIMEOUT)
         {
             SDcard.SDWriteState = SDWRITE_FAILED;
 #ifdef LOG_SD_WRITE
@@ -991,6 +998,10 @@ E_SDWriteStates writeBlock(uint32_t blockOffset, volatile uint32_t* txBuf)
 			return SDWRITE_FAILED;
 		}
 
+#ifdef LOG_SD_WRITE 
+        SerialUSB.print("writeBlock to offset: "); SerialUSB.println(blockOffset);
+#endif
+
 		SDcard.SdCtr = 0;
 		//CMD24
 		SDcard.SdTx[SDcard.SdCtr++] = 0x58 | SPI_TDR_PCS(CS_SDCARD); //CMD24
@@ -1012,10 +1023,6 @@ E_SDWriteStates writeBlock(uint32_t blockOffset, volatile uint32_t* txBuf)
 		//send write command
 		intSafeTriggerSDRxTx(SDcard.SdTx, SDcard.SdRx, SDcard.SdCtr);
 
-#ifdef LOG_SD_WRITE 
-			SerialUSB.print("writeBlock to offset: "); SerialUSB.println(blockOffset);
-#endif
-
 		break;
 	}
 //	case SDWRITE_WAIT_RESPONSE: -> HANDLED IN DMAC_Handler with SDWriteWaitResponse
@@ -1034,7 +1041,7 @@ E_SDWriteStates writeBlock(uint32_t blockOffset, volatile uint32_t* txBuf)
 			else
 			{
 				//timeout check
-				if (getSysTime() - SDcard.writeStartTime > WRITE_BLOCK_TIMEOUT)
+				if (getSysTick() - SDcard.writeStartTick > WRITE_BLOCK_TIMEOUT)
 				{
 					SDcard.SDWriteState = SDWRITE_FAILED;
 #ifdef LOG_SD_WRITE 
@@ -1212,7 +1219,7 @@ bool getAllFileClusters(volatile uint8_t* rawFileData, fileInfo* fileInfo)
 	return allClusterFound;
 }
 
-void setFileTime(volatile uint32_t* block, float sysTime)
+void setFileTime(volatile uint32_t* block, uint64_t sysTick)
 {
 
 	////set dummy creat time, 15-11 hours, 10-5 minute, 4-0 second, 12-00-00 = 01100-000000-00000 = 01100000-00000000
@@ -1233,7 +1240,7 @@ void setFileTime(volatile uint32_t* block, float sysTime)
 	//block[SDcard.rootDirEmptySlotNumber * 32 + 25] = 0b01010010;
 
 
-	uint16_t elapsedTimeSinceSync = uint16_t(sysTime - SDcard.sysTimeAtGlobalTime);
+	uint64_t elapsedTimeSinceSync = (sysTick - SDcard.sysTickAtGlobalTick) / 10500000;
 	date currentGlobalTime{};
 	uint8_t intermidiateVal{ 0 };
 
@@ -1278,7 +1285,7 @@ void setFileTime(volatile uint32_t* block, float sysTime)
 	block[SDcard.rootDirEmptySlotNumber * 32 + 25] = block[SDcard.rootDirEmptySlotNumber * 32 + 17];
 }
 
-void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, float sysTime)
+void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, uint64_t sysTick)
 {
 	//return if something is null pointer
 	if (NULL == block || NULL == file) return;
@@ -1346,7 +1353,7 @@ void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, float sysTime
 	block[SDcard.rootDirEmptySlotNumber * 32 + 13] = 0x4E;    //?
 
 	//set time
-	setFileTime(block, sysTime);
+	setFileTime(block, sysTick);
 
 	//low byte set
 	//size set
@@ -1427,10 +1434,11 @@ bool addFileFATInfo(volatile uint32_t* block, fileInfo* file, E_SDFATWriteStates
 				}
 			}
 
-			//SerialUSB.print("firstBlock: "); SerialUSB.println(firstBlock);
-			//SerialUSB.print("lastBlock: "); SerialUSB.println(lastBlock);
-			//SerialUSB.print("iterBeg: "); SerialUSB.println(iterBeg);
-
+#ifdef LOG_SD_WRITE 
+			SerialUSB.print("addFileFATInfo - firstCluster: "); SerialUSB.print(firstBlock);
+			SerialUSB.print(", lastCluster: "); SerialUSB.print(lastBlock);
+			SerialUSB.print(", iterBeg: "); SerialUSB.println(iterBeg);
+#endif
 			//set return value to signal potencial multi call
 			returnVal = true;
 
@@ -1484,11 +1492,13 @@ bool addFileFATInfo(volatile uint32_t* block, fileInfo* file, E_SDFATWriteStates
 		block[4 * i + 2] = (file->clusters[iterCluster] & 0x00FF0000) >> 16;
 		block[4 * i + 3] = (file->clusters[iterCluster] & 0xFF000000) >> 24;
 		iterCluster++;
-
-		/*SerialUSB.print(block[4 * i + 0]); SerialUSB.print(" ");
+#ifdef LOG_SD_WRITE 
+        SerialUSB.print("addFileFATInfo - "); SerialUSB.print(4 * i + 0); SerialUSB.print(" slot: ");
+		SerialUSB.print(block[4 * i + 0]); SerialUSB.print(" ");
 		SerialUSB.print(block[4 * i + 1]); SerialUSB.print(" ");
 		SerialUSB.print(block[4 * i + 2]); SerialUSB.print(" ");
-		SerialUSB.println(block[4 * i + 3]);*/
+		SerialUSB.println(block[4 * i + 3]);
+#endif
 	}
 
 	if (128 > blockDiff && iterEnd < 128)
@@ -1573,14 +1583,12 @@ void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFr
 
 void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
 {
-    pid_st* pidRate{ getPIDrates() };
     gyroData_st* gyroData{ getGyroData() };
     accData_st* accData{ getAccData() };
     pid_st* pidData{ getPIDrates() };
     
     //timestamp
-	//todo: handle case if systime is not measured
-    measureData(meas2Card.measureSysTime, false, spiInput->sysTime, 3, false, "timestamp: ");
+    measureData(meas2Card.measureSysTick, false, spiInput->sysTick/10500, 0, false, "tickMs: ");
     //gyro
     measureData(meas2Card.measureGyroRawX, true, spiInput->gyro.signal.x, 3, false, "gyroRawX: ");
     measureData(meas2Card.measureGyroRawY, true, spiInput->gyro.signal.y, 3, false, "gyroRawY: ");
@@ -1644,33 +1652,35 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
 	measureData(meas2Card.measureAngleCFWeightedPT01Pitch, true, accData->pitchAngleCFw01, 3, false, "angleCFWeightedPT01 Pitch: ");
 
     //PID control
-    measureData(meas2Card.measurePIDRefsigX, true, pidData->refSignal.x, 3, false, "PIDRefSigX: ");
-    measureData(meas2Card.measurePIDRefsigY, true, pidData->refSignal.y, 3, false, "PIDRefSigY: ");
-    measureData(meas2Card.measurePIDRefsigZ, true, pidData->refSignal.z, 3, false, "PIDRefSigZ: ");
-    measureData(meas2Card.measurePIDSensorX, true, pidData->sensor.signal.x, 3, false, "PIDSensorX: ");
-    measureData(meas2Card.measurePIDSensorY, true, pidData->sensor.signal.y, 3, false, "PIDSensorY: ");
-    measureData(meas2Card.measurePIDSensorZ, true, pidData->sensor.signal.z, 3, false, "PIDSensorZ: ");
-    measureData(meas2Card.measurePIDPoutX, true, pidData->Pout.x, 3, false, "PIDPoutX: ");
-    measureData(meas2Card.measurePIDPoutY, true, pidData->Pout.y, 3, false, "PIDPoutY: ");
-    measureData(meas2Card.measurePIDPoutZ, true, pidData->Pout.z, 3, false, "PIDPoutZ: ");
-    measureData(meas2Card.measurePIDIoutX, true, pidData->Iout.x, 3, false, "PIDIoutX: ");
-    measureData(meas2Card.measurePIDIoutY, true, pidData->Iout.y, 3, false, "PIDIoutY: ");
-    measureData(meas2Card.measurePIDIoutZ, true, pidData->Iout.z, 3, false, "PIDIoutZ: ");
-    measureData(meas2Card.measurePIDDoutX, true, pidData->Dout.x, 3, false, "PIDDoutX: ");
-    measureData(meas2Card.measurePIDDoutY, true, pidData->Dout.y, 3, false, "PIDDoutY: ");
-    measureData(meas2Card.measurePIDDoutZ, true, pidData->Dout.z, 3, false, "PIDDoutZ: ");
-    measureData(meas2Card.measurePIDFFoutX, true, pidData->FFout.x, 3, false, "PIDFFoutX: ");
-    measureData(meas2Card.measurePIDFFoutY, true, pidData->FFout.y, 3, false, "PIDFFoutY: ");
-    measureData(meas2Card.measurePIDFFoutZ, true, pidData->FFout.z, 3, false, "PIDFFoutZ: ");
-    measureData(meas2Card.measurePIDUX, true, pidData->u.x, 3, false, "PIDUX: ");
-    measureData(meas2Card.measurePIDUY, true, pidData->u.y, 3, false, "PIDUY: ");
-    measureData(meas2Card.measurePIDUZ, true, pidData->u.z, 3, false, "PIDUZ: ");
-	measureData(meas2Card.measurePIDRefsigX_int, true, pidData->refSignal_int.x, 0, false, "PIDRefSigXi: ");
-	measureData(meas2Card.measurePIDRefsigY_int, true, pidData->refSignal_int.y, 0, false, "PIDRefSigYi: ");
-	measureData(meas2Card.measurePIDRefsigZ_int, true, pidData->refSignal_int.z, 0, false, "PIDRefSigZi: ");
-	measureData(meas2Card.measurePIDSensorX_int, true, pidData->sensor.signalPT1_int.x, 0, false, "PIDSensorXi: ");
-	measureData(meas2Card.measurePIDSensorY_int, true, pidData->sensor.signalPT1_int.y, 0, false, "PIDSensorYi: ");
-	measureData(meas2Card.measurePIDSensorZ_int, true, pidData->sensor.signalPT1_int.z, 0, false, "PIDSensorZi: ");
+    //measureData(meas2Card.measurePIDRefsigX, true, pidData->refSignal.x, 3, false, "PIDRefSigX: ");
+    //measureData(meas2Card.measurePIDRefsigY, true, pidData->refSignal.y, 3, false, "PIDRefSigY: ");
+    //measureData(meas2Card.measurePIDRefsigZ, true, pidData->refSignal.z, 3, false, "PIDRefSigZ: ");
+    //measureData(meas2Card.measurePIDSensorX, true, pidData->sensor.signal.x, 3, false, "PIDSensorX: ");
+    //measureData(meas2Card.measurePIDSensorY, true, pidData->sensor.signal.y, 3, false, "PIDSensorY: ");
+    //measureData(meas2Card.measurePIDSensorZ, true, pidData->sensor.signal.z, 3, false, "PIDSensorZ: ");
+    //measureData(meas2Card.measurePIDPoutX, true, pidData->Pout.x, 3, false, "PIDPoutX: ");
+    //measureData(meas2Card.measurePIDPoutY, true, pidData->Pout.y, 3, false, "PIDPoutY: ");
+    //measureData(meas2Card.measurePIDPoutZ, true, pidData->Pout.z, 3, false, "PIDPoutZ: ");
+    //measureData(meas2Card.measurePIDIoutX, true, pidData->Iout.x, 3, false, "PIDIoutX: ");
+    //measureData(meas2Card.measurePIDIoutY, true, pidData->Iout.y, 3, false, "PIDIoutY: ");
+    //measureData(meas2Card.measurePIDIoutZ, true, pidData->Iout.z, 3, false, "PIDIoutZ: ");
+    //measureData(meas2Card.measurePIDDoutX, true, pidData->Dout.x, 3, false, "PIDDoutX: ");
+    //measureData(meas2Card.measurePIDDoutY, true, pidData->Dout.y, 3, false, "PIDDoutY: ");
+    //measureData(meas2Card.measurePIDDoutZ, true, pidData->Dout.z, 3, false, "PIDDoutZ: ");
+    //measureData(meas2Card.measurePIDFFoutX, true, pidData->FFout.x, 3, false, "PIDFFoutX: ");
+    //measureData(meas2Card.measurePIDFFoutY, true, pidData->FFout.y, 3, false, "PIDFFoutY: ");
+    //measureData(meas2Card.measurePIDFFoutZ, true, pidData->FFout.z, 3, false, "PIDFFoutZ: ");
+    //measureData(meas2Card.measurePIDUX, true, pidData->u.x, 3, false, "PIDUX: ");
+    //measureData(meas2Card.measurePIDUY, true, pidData->u.y, 3, false, "PIDUY: ");
+    //measureData(meas2Card.measurePIDUZ, true, pidData->u.z, 3, false, "PIDUZ: ");
+
+	measureData(meas2Card.measurePIDDeltaTick_int, true, float(pidData->deltaTicks), 0, false, "PIDDeltaTicks: ");
+	measureData(meas2Card.measurePIDRefsigX_int, true, float(pidData->refSignal_int.x), 0, false, "PIDRefSigXi: ");	
+	measureData(meas2Card.measurePIDRefsigY_int, true, float(pidData->refSignal_int.y), 0, false, "PIDRefSigYi: ");
+	measureData(meas2Card.measurePIDRefsigZ_int, true, float(pidData->refSignal_int.z), 0, false, "PIDRefSigZi: ");
+	measureData(meas2Card.measurePIDSensorX_int, true, float(pidData->sensor.signalPT1_int.x), 0, false, "PIDSensorXi: ");
+	measureData(meas2Card.measurePIDSensorY_int, true, float(pidData->sensor.signalPT1_int.y), 0, false, "PIDSensorYi: ");
+	measureData(meas2Card.measurePIDSensorZ_int, true, float(pidData->sensor.signalPT1_int.z), 0, false, "PIDSensorZi: ");
 	measureData(meas2Card.measurePIDPoutX_int, true, pidData->Pout_int.x, 0, false, "PIDPoutXi: ");
 	measureData(meas2Card.measurePIDPoutY_int, true, pidData->Pout_int.y, 0, false, "PIDPoutYi: ");
 	measureData(meas2Card.measurePIDPoutZ_int, true, pidData->Pout_int.z, 0, false, "PIDPoutZi: ");
@@ -1824,7 +1834,7 @@ void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numb
 //4th line: C for cacade
 //...
 //...
-//xth line: header for measured signals, example: sysTime,Grawx,Gpt1x,Gpt2x,Accrawx,Accpt1x,Accpt2x,Akfx,Akfaccpt1x\n
+//xth line: header for measured signals, example: sysTick,Grawx,Gpt1x,Gpt2x,Accrawx,Accpt1x,Accpt2x,Akfx,Akfaccpt1x\n
 void addMeasHeader(void)
 {
 	//1st line
@@ -1833,42 +1843,42 @@ void addMeasHeader(void)
 	SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
 	//2nd line
 	{
-        addMeasNameHeader(true, false,"Px", 2);
-        addMeasNameHeader(true, true, "Ix", 2);
-        addMeasNameHeader(true, true, "Dx", 2);
-        addMeasNameHeader(true, true, "Py", 2);
-        addMeasNameHeader(true, true, "Iy", 2);
-        addMeasNameHeader(true, true, "Dy", 2);
-        addMeasNameHeader(true, true, "Pz", 2);
-        addMeasNameHeader(true, true, "Iz", 2);
-        addMeasNameHeader(true, true, "FFrx", 4);
-        addMeasNameHeader(true, true, "FFry", 4);
-        addMeasNameHeader(true, true, "FFdrx", 5);
-        addMeasNameHeader(true, true, "FFdry", 5);
-        addMeasNameHeader(true, true, "satI", 4);
-        addMeasNameHeader(true, true, "satPID", 6);
-        addMeasNameHeader(true, true, "DTermC", 6);
+        addMeasNameHeader(true, false,"Pxi", 2);
+        addMeasNameHeader(true, true, "Ixi", 2);
+        addMeasNameHeader(true, true, "Dxi", 2);
+        addMeasNameHeader(true, true, "Pyi", 2);
+        addMeasNameHeader(true, true, "Iyi", 2);
+        addMeasNameHeader(true, true, "Dyi", 2);
+        addMeasNameHeader(true, true, "Pzi", 2);
+        addMeasNameHeader(true, true, "Izi", 2);
+        addMeasNameHeader(true, true, "FFrxi", 4);
+        addMeasNameHeader(true, true, "FFryi", 4);
+        addMeasNameHeader(true, true, "FFdrxi", 5);
+        addMeasNameHeader(true, true, "FFdryi", 5);
+        addMeasNameHeader(true, true, "satIi", 4);
+        addMeasNameHeader(true, true, "satPIDi", 6);
+        //addMeasNameHeader(true, true, "DTermC", 6);
         addMeasNameHeader(true, true, "GparamC", 7);
         addMeasNameHeader(true, true, "AparamC", 7);
         addMeasNameHeader(true, true, "KFQAng", 6);
         addMeasNameHeader(true, true, "KFQbias", 7);
         addMeasNameHeader(true, true, "KFRmeas", 7);
-        addMeasNameHeader(true, true, "CPx", 3);
-        addMeasNameHeader(true, true, "CIx", 3);
-		addMeasNameHeader(true, true, "CPy", 3);
-		addMeasNameHeader(true, true, "CIy", 3);
-		addMeasNameHeader(true, true, "CsatI", 5);
-		addMeasNameHeader(true, true, "CsatPID", 7);
-		addMeasNameHeader(true, true, "CFFdrx", 6);
-		addMeasNameHeader(true, true, "CFFdry", 6);
-		addMeasNameHeader(true, true, "CFalpha", 7);
-		addMeasNameHeader(true, true, "FFDTermC", 8);
-		addMeasNameHeader(true, true, "IRelaxR", 7);
-		addMeasNameHeader(true, true, "IRelaxE", 7);
-		addMeasNameHeader(true, true, "DmaxR", 5);
-		addMeasNameHeader(true, true, "DmaxE", 5);
-		addMeasNameHeader(true, true, "DMx", 3);
-		addMeasNameHeader(true, true, "DMy", 3);
+  //      addMeasNameHeader(true, true, "CPx", 3);
+  //      addMeasNameHeader(true, true, "CIx", 3);
+		//addMeasNameHeader(true, true, "CPy", 3);
+		//addMeasNameHeader(true, true, "CIy", 3);
+		//addMeasNameHeader(true, true, "CsatI", 5);
+		//addMeasNameHeader(true, true, "CsatPID", 7);
+		//addMeasNameHeader(true, true, "CFFdrx", 6);
+		//addMeasNameHeader(true, true, "CFFdry", 6);
+		//addMeasNameHeader(true, true, "CFalpha", 7);
+		//addMeasNameHeader(true, true, "FFDTermC", 8);
+		//addMeasNameHeader(true, true, "IRelaxR", 7);
+		//addMeasNameHeader(true, true, "IRelaxE", 7);
+		//addMeasNameHeader(true, true, "DmaxR", 5);
+		//addMeasNameHeader(true, true, "DmaxE", 5);
+		//addMeasNameHeader(true, true, "DMx", 3);
+		//addMeasNameHeader(true, true, "DMy", 3);
 		SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
 #ifdef LOG_SAVED_DATA
 		SerialUSB.print("End of 2nd line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
@@ -1883,35 +1893,35 @@ void addMeasHeader(void)
         gyroData_st* gyro{ getGyroData() };
         accData_st* acc{ getAccData() };
 
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_int.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_int.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->D.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_int.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_int.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_int.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->D.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_int.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P.z, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_int.z, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I.z, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_int.z, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_int.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_int.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_int.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_int.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->saturationI, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->satI_int, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->saturationPID, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->DTermC, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->satPID_int, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->DTermC, 0, false);
         tempBuffer[numberOfCharacters++] = ',';
         convert2String(tempBuffer, &numberOfCharacters, gyro->paramC, 1, false);
         tempBuffer[numberOfCharacters++] = ',';
@@ -1923,37 +1933,39 @@ void addMeasHeader(void)
         tempBuffer[numberOfCharacters++] = ',';
         convert2String(tempBuffer, &numberOfCharacters, acc->r_measure, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->P.x, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->I.x, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->P.y, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->I.y, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->saturationI, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->saturationPID, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.x, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.y, 0, false);
-        tempBuffer[numberOfCharacters++] = ',';
-        convert2String(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFDTermC, 3, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxRefThreshhold, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxErrThreshhold, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxRefThreshhold, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxErrThreshhold, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.x, 0, false);
-		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.y, 0, false);
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->P.x, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->I.x, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->P.y, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->I.y, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->saturationI, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->saturationPID, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.x, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.y, 0, false);
+  //      tempBuffer[numberOfCharacters++] = ',';
+  //      convert2String(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->FFDTermC, 3, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxRefThreshhold, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxErrThreshhold, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxRefThreshhold, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxErrThreshhold, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.x, 0, false);
+		//tempBuffer[numberOfCharacters++] = ',';
+		//convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.y, 0, false);
+
+        //newline
 		tempBuffer[numberOfCharacters++] = '\n';
 
 		loadData2Buffer(tempBuffer, numberOfCharacters);
@@ -1963,8 +1975,8 @@ void addMeasHeader(void)
 	}
 	//4th line: measured values
 	{
-        //systime
-        addMeasNameHeader(meas2Card.measureSysTime, false, "sysTime", 7);
+        //systick
+        addMeasNameHeader(meas2Card.measureSysTick, false, "sysTickMs", 9);
         //gyro
         addMeasNameHeader(meas2Card.measureGyroRawX, true, "GRawX", 5);
         addMeasNameHeader(meas2Card.measureGyroRawY, true, "GRawY", 5);
@@ -1978,9 +1990,9 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureGyroRawX_int, true, "GRawXi", 6);
         addMeasNameHeader(meas2Card.measureGyroRawY_int, true, "GRawYi", 6);
         addMeasNameHeader(meas2Card.measureGyroRawZ_int, true, "GRawZi", 6);
-        addMeasNameHeader(meas2Card.measureGyroPT1X_int, true, "GPT1Xi", 9);
-        addMeasNameHeader(meas2Card.measureGyroPT1Y_int, true, "GPT1Yi", 9);
-        addMeasNameHeader(meas2Card.measureGyroPT1Z_int, true, "GPT1Zi", 9);
+        addMeasNameHeader(meas2Card.measureGyroPT1X_int, true, "GPT1Xi", 6);
+        addMeasNameHeader(meas2Card.measureGyroPT1Y_int, true, "GPT1Yi", 6);
+        addMeasNameHeader(meas2Card.measureGyroPT1Z_int, true, "GPT1Zi", 6);
         //acc
         addMeasNameHeader(meas2Card.measureAccRawX, true, "ARawX", 5);
         addMeasNameHeader(meas2Card.measureAccRawY, true, "ARawY", 5);
@@ -2048,6 +2060,8 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measurePIDUX, true, "PIDUX", 5);
         addMeasNameHeader(meas2Card.measurePIDUY, true, "PIDUY", 5);
         addMeasNameHeader(meas2Card.measurePIDUZ, true, "PIDUZ", 5);
+
+		addMeasNameHeader(meas2Card.measurePIDDeltaTick_int, true, "PIDdtick", 8);
 		addMeasNameHeader(meas2Card.measurePIDRefsigX_int, true, "PIDRefXi", 8);
 		addMeasNameHeader(meas2Card.measurePIDRefsigY_int, true, "PIDRefYi", 8);
 		addMeasNameHeader(meas2Card.measurePIDRefsigZ_int, true, "PIDRefZi", 8);
@@ -2078,7 +2092,7 @@ void addMeasHeader(void)
 	}
 }
 
-void writeData(uint16_t measSwitch, float sysTime)
+void writeData(uint16_t measSwitch, uint64_t sysTick)
 {
 	//desired block? = 0x4000 + cluster*64 + blockcount
 	//6th block is set in root, found data in 4th pos, a hardcoded -2 offset is here --------------------------------------------->|<-
@@ -2104,11 +2118,13 @@ void writeData(uint16_t measSwitch, float sysTime)
 			SDcard.SDWriteState = SDWRITE_START;
 
 			//add newfile to rootdir
-			addFileInfo2RootDir(&SDcard.rootDirInfo[1], &SDcard.newFile, sysTime);
-#ifdef LOG_SD_WRITE 
-			SerialUSB.println("writeData done, write ROOT");
-			SerialUSB.print("newfile: "); printFileInfo(&SDcard.newFile);
-#endif
+			addFileInfo2RootDir(&SDcard.rootDirInfo[1], &SDcard.newFile, sysTick);
+            SDcard.rootOrFatWriteTick = sysTick;
+
+            SerialUSB.println("writeData done, write ROOT");
+//#ifdef LOG_SD_WRITE 
+			//SerialUSB.print("newfile: "); printFileInfo(&SDcard.newFile);
+//#endif
 
 			//testing
 			//SDcard.MainState = SD_DO_NOTHING;
@@ -2139,106 +2155,114 @@ void writeData(uint16_t measSwitch, float sysTime)
 	}
 }
 
-void writeRoot(void)
+void writeRoot(uint64_t sysTick)
 {
-	E_SDWriteStates l_writeState = writeBlock(SDcard.rootDirAddr + SDcard.rootDirEmptyBlockNumber, SDcard.rootDirInfo);
+    if (sysTick - SDcard.rootOrFatWriteTick > ROOT_FAT_WRITE_DELAY)
+    {
+        E_SDWriteStates l_writeState = writeBlock(SDcard.rootDirAddr + SDcard.rootDirEmptyBlockNumber, SDcard.rootDirInfo);
 
-	if (SDWRITE_FINISHED == l_writeState)
-	{
-		SDcard.MainState = SD_WRITE_FAT;
-		SDcard.SDWriteState = SDWRITE_START;
+        if (SDWRITE_FINISHED == l_writeState)
+        {
+            SDcard.MainState = SD_WRITE_FAT;
+                SDcard.SDWriteState = SDWRITE_START;
 
-		//testing
+                //testing
 #if 1==SD_DELETE_FAT_ON_WRITE
-		for (uint16_t i = 0 * 4; i < 10 * 4; i++)
-		{
-			FAT1Info[i+1] = 0 | SPI_TDR_PCS(CS_SDCARD);
-		}
+                for (uint16_t i = 0 * 4; i < 10 * 4; i++)
+                {
+                    FAT1Info[i + 1] = 0 | SPI_TDR_PCS(CS_SDCARD);
+        }
 #endif
 
-		//add newfile to FAT
-		SDcard.writingMultiFATBlock = addFileFATInfo(&SDcard.FAT1Info[1], &SDcard.newFile, E_SDFATWRITE_FIRST_CALL);
+            //add newfile to FAT
+            SDcard.writingMultiFATBlock = addFileFATInfo(&SDcard.FAT1Info[1], &SDcard.newFile, E_SDFATWRITE_FIRST_CALL);
+            SDcard.rootOrFatWriteTick = sysTick;
+
+            SerialUSB.println("writeRoot done, write FAT");
+            //#ifdef LOG_SD_WRITE 
+            //#endif
+}
+        else if (SDWRITE_FAILED == l_writeState)
+        {
+            SDcard.MainState = SD_DO_NOTHING;
+            LEDSDBlink();
 #ifdef LOG_SD_WRITE 
-		SerialUSB.println("writeRoot done, write FAT");
+            SerialUSB.println("writeRoot failed");
 #endif
-	}
-	else if (SDWRITE_FAILED == l_writeState)
-	{
-		SDcard.MainState = SD_DO_NOTHING;
-        LEDSDBlink();
-#ifdef LOG_SD_WRITE 
-		SerialUSB.println("writeRoot failed");
-#endif
-	}
-	else
-	{
-		//do nothing?
-	}
+        }
+        else
+        {
+            //do nothing
+        }
+    }
 }
 
-void writeFAT(void)
+void writeFAT(uint64_t sysTick)
 {
-	E_SDWriteStates l_writeState = writeBlock(SDcard.FAT1Addr + SDcard.FATBlockOffset, SDcard.FAT1Info);
+    if (sysTick - SDcard.rootOrFatWriteTick > ROOT_FAT_WRITE_DELAY)
+    {
+        E_SDWriteStates l_writeState = writeBlock(SDcard.FAT1Addr + SDcard.FATBlockOffset, SDcard.FAT1Info);
 
-	if (SDWRITE_FINISHED == l_writeState)
-	{
-		if (true == SDcard.writingMultiFATBlock)
-		{
-			//add newfile to FAT
-			SDcard.writingMultiFATBlock = addFileFATInfo(&SDcard.FAT1Info[1], &SDcard.newFile, E_SDFATWRITE_CONSECUTIVE_CALL);
+        if (SDWRITE_FINISHED == l_writeState)
+        {
+            if (true == SDcard.writingMultiFATBlock)
+            {
+                //add newfile to FAT
+                SDcard.writingMultiFATBlock = addFileFATInfo(&SDcard.FAT1Info[1], &SDcard.newFile, E_SDFATWRITE_CONSECUTIVE_CALL);
 
-			//testing
-			//SerialUSB.print("FATBlockOffset after: "); SerialUSB.println(FATBlockOffset);
+                //testing
+                //SerialUSB.print("FATBlockOffset after: "); SerialUSB.println(FATBlockOffset);
 
-			SDcard.SDWriteState = SDWRITE_START;
+                SDcard.SDWriteState = SDWRITE_START;
+                //#ifdef LOG_SD_WRITE
+                SerialUSB.println("writeFAT done, write next block");
+                //#endif
+            }
+            else
+            {
 #ifdef LOG_SD_WRITE
-			SerialUSB.println("writeFAT done, write next block");
+                SerialUSB.print("newfile info before reset: "); printFileInfo(&SDcard.newFile);
 #endif
-		}
-		else
-		{  
-#ifdef LOG_SD_WRITE
-			SerialUSB.print("newfile info before reset: "); printFileInfo(&SDcard.newFile);
-#endif
-			//finished writing everything of newfile, set up a new newFile
-			SDcard.newFile.numberInName++;
-			SDcard.newFile.clusters[0] = SDcard.newFile.clusters[SDcard.newFile.numberOfClusters - 1] + 1;
-			SDcard.newFile.numberOfClusters = 1;
-			SDcard.newFile.blockCount = 0;
-			SDcard.newFile.size = 0;
-			//go back to wait meas
-			SDcard.MainState = SD_WAIT_4_MEASUREMENT;
-			//reset variables for safety
-			SDcard.loadingDataCounter = 1;
-			for (uint16_t i = 1; i < 517; i++)
-			{
-				SDcard.loadingDataPointer[i] = 0xFF;
-				SDcard.sendingDataPointer[i] = 0xFF;
-			}
+                //finished writing everything of newfile, set up a new newFile
+                SDcard.newFile.numberInName++;
+                SDcard.newFile.clusters[0] = SDcard.newFile.clusters[SDcard.newFile.numberOfClusters - 1] + 1;
+                SDcard.newFile.numberOfClusters = 1;
+                SDcard.newFile.blockCount = 0;
+                SDcard.newFile.size = 0;
+                //go back to wait meas
+                SDcard.MainState = SD_WAIT_4_MEASUREMENT;
+                //reset variables for safety
+                SDcard.loadingDataCounter = 1;
+                for (uint16_t i = 1; i < 517; i++)
+                {
+                    SDcard.loadingDataPointer[i] = 0xFF;
+                    SDcard.sendingDataPointer[i] = 0xFF;
+                }
 
 #ifdef LOG_SD_WRITE
-			SerialUSB.print("newfile info after reset: "); printFileInfo(&SDcard.newFile);
-			SerialUSB.println("writeFAT done, go wait4Meas");
+                SerialUSB.print("newfile info after reset: "); printFileInfo(&SDcard.newFile);
+                SerialUSB.println("writeFAT done, go wait4Meas");
 #endif
 
-			LEDSDOff();
+                LEDSDOff();
 
-			//testing
-			//SDcard.MainState = SD_DO_NOTHING;
-		}
-	}
-	else if (SDWRITE_FAILED == l_writeState)
-	{
-		SDcard.MainState = SD_DO_NOTHING;
-        LEDSDBlink();
+                //testing
+                //SDcard.MainState = SD_DO_NOTHING;
+            }
+        }
+        else if (SDWRITE_FAILED == l_writeState)
+        {
+            SDcard.MainState = SD_DO_NOTHING;
+            LEDSDBlink();
 #ifdef LOG_SD_WRITE
-			SerialUSB.println("writeFAT failed");
+            SerialUSB.println("writeFAT failed");
 #endif
-	}
-	else
-	{
-		//do nothing?
-	}
+        }
+        else
+        {
+            //do nothing?
+        }
+    }
 }
 
 SpiSDcard_st* getSPISdCard(void)
@@ -2277,13 +2301,13 @@ E_SDMainStates ReinitSDCard(void)
     return SDcard.MainState;
 }
 
-void setGlobalTime(const date newTime, const float currentSysTime)
+void setGlobalTime(const date newTime, const uint64_t currentSysTick)
 {
 	SDcard.globalDateAndTime.hour = newTime.hour;
 	SDcard.globalDateAndTime.min = newTime.min;
 	SDcard.globalDateAndTime.sec = newTime.sec;
 
-	SDcard.sysTimeAtGlobalTime = currentSysTime;
+	SDcard.sysTickAtGlobalTick = currentSysTick;
 }
 
 void setGlobalDate(const date newTime)

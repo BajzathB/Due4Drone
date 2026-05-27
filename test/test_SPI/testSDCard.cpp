@@ -115,7 +115,7 @@ uint8_t FAT1Base2[514] = { 0xF8,0xFF,0xFF,0x0F, 0xFF,0xFF,0xFF,0x7F,  0xFF,0xFF,
 
 void ResetMeasDataFlags(void)
 {
-    meas2Card.measureSysTime = true;
+    meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = false;
     meas2Card.measureGyroRawY = false;
     meas2Card.measureGyroRawZ = false;
@@ -195,6 +195,27 @@ void ResetMeasDataFlags(void)
     meas2Card.measurePIDUX = false;
     meas2Card.measurePIDUY = false;
     meas2Card.measurePIDUZ = false;
+    meas2Card.measurePIDRefsigX_int = false;
+    meas2Card.measurePIDRefsigY_int = false;
+    meas2Card.measurePIDRefsigZ_int = false;
+    meas2Card.measurePIDSensorX_int = false;
+    meas2Card.measurePIDSensorY_int = false;
+    meas2Card.measurePIDSensorZ_int = false;
+    meas2Card.measurePIDPoutX_int = false;
+    meas2Card.measurePIDPoutY_int = false;
+    meas2Card.measurePIDPoutZ_int = false;
+    meas2Card.measurePIDIoutX_int = false;
+    meas2Card.measurePIDIoutY_int = false;
+    meas2Card.measurePIDIoutZ_int = false;
+    meas2Card.measurePIDDoutX_int = false;
+    meas2Card.measurePIDDoutY_int = false;
+    meas2Card.measurePIDDoutZ_int = false;
+    meas2Card.measurePIDFFoutX_int = false;
+    meas2Card.measurePIDFFoutY_int = false;
+    meas2Card.measurePIDFFoutZ_int = false;
+    meas2Card.measurePIDUX_int = false;
+    meas2Card.measurePIDUY_int = false;
+    meas2Card.measurePIDUZ_int = false;
 }
 
 TEST(test_BT_SDcard, SDcard_Call)
@@ -243,8 +264,8 @@ TEST(test_BT_SDcard, SDcard_Call)
     addMeasNameHeader(false, false, "test", 4);
     addMeasHeader();
     writeData(1000, testTime);
-    writeRoot();
-    writeFAT();
+    writeRoot(testTime);
+    writeFAT(testTime);
     RunSdCard(&testinput, &testoutput);
     InitSDCard();
     SetupSdCard();
@@ -1631,11 +1652,11 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     ResetMeasDataFlags();
 
     // systime measured
-    meas2Card.measureSysTime = true;
+    meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = false;
     meas2Card.measureGyroRawY = false;
     meas2Card.measureGyroRawZ = false;
-    testIn.sysTime = 1.234;
+    testIn.sysTick = 1.234 * 10500000;
     testIn.gyro.signal.x = 2.345;
     testIn.gyro.signal.y = 0.456;
     testIn.gyro.signal.z = -7.896;
@@ -1643,18 +1664,17 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     saveMeasData(&testIn, &testOut);
     EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
     EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 7);
+    EXPECT_EQ(SDcard.loadingDataPointer[2], '2');
+    EXPECT_EQ(SDcard.loadingDataPointer[3], '3');
+    EXPECT_EQ(SDcard.loadingDataPointer[4], '4');
+    EXPECT_EQ(SDcard.loadingDataPointer[5], '\n');
+    EXPECT_EQ(SDcard.loadingDataCounter, 6);
     // systime+gyroX measured
-    meas2Card.measureSysTime = true;
+    meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = true;
     meas2Card.measureGyroRawY = false;
     meas2Card.measureGyroRawZ = false;
-    testIn.sysTime = 5.678;
+    testIn.sysTick = 5.678 * 10500000;
     testIn.gyro.signal.x = 2.345;
     testIn.gyro.signal.y = 0.456;
     testIn.gyro.signal.z = -7.896;
@@ -1662,48 +1682,60 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     saveMeasData(&testIn, &testOut);
     EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
     EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[7], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[8], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[9], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[10], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[11], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[12], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 13);
+    EXPECT_EQ(SDcard.loadingDataPointer[2], '6');
+    EXPECT_EQ(SDcard.loadingDataPointer[3], '7');
+    EXPECT_EQ(SDcard.loadingDataPointer[4], '8');
+    EXPECT_EQ(SDcard.loadingDataPointer[5], ',');
+    EXPECT_EQ(SDcard.loadingDataPointer[6], '2');
+    EXPECT_EQ(SDcard.loadingDataPointer[7], '.');
+    EXPECT_EQ(SDcard.loadingDataPointer[8], '3');
+    EXPECT_EQ(SDcard.loadingDataPointer[9], '4');
+    EXPECT_EQ(SDcard.loadingDataPointer[10], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[11], '\n');
+    EXPECT_EQ(SDcard.loadingDataCounter, 12);
     // systime+gyroY+gyroZ measured
-    meas2Card.measureSysTime = true;
+    meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = false;
     meas2Card.measureGyroRawY = true;
     meas2Card.measureGyroRawZ = true;
-    testIn.sysTime = 8.271;
+    testIn.sysTick = 8.271 * 10500000;
     testIn.gyro.signal.x = 2.345;
     testIn.gyro.signal.y = 0.456;
     testIn.gyro.signal.z = -7.896;
     saveMeasData(&testIn, &testOut);
-    EXPECT_EQ(SDcard.loadingDataPointer[13], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[14], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[15], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[16], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[17], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[18], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[19], '0');
-    EXPECT_EQ(SDcard.loadingDataPointer[20], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[21], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[22], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[23], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[24], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[25], '-');
-    EXPECT_EQ(SDcard.loadingDataPointer[26], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[27], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[28], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[29], '9');
-    EXPECT_EQ(SDcard.loadingDataPointer[30], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[31], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 32);
+    EXPECT_EQ(SDcard.loadingDataPointer[12], '8');
+    EXPECT_EQ(SDcard.loadingDataPointer[13], '2');
+    EXPECT_EQ(SDcard.loadingDataPointer[14], '7');
+    EXPECT_EQ(SDcard.loadingDataPointer[15], '1');
+    EXPECT_EQ(SDcard.loadingDataPointer[16], ',');
+    EXPECT_EQ(SDcard.loadingDataPointer[17], '0');
+    EXPECT_EQ(SDcard.loadingDataPointer[18], '.');
+    EXPECT_EQ(SDcard.loadingDataPointer[19], '4');
+    EXPECT_EQ(SDcard.loadingDataPointer[20], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[21], '6');
+    EXPECT_EQ(SDcard.loadingDataPointer[22], ',');
+    EXPECT_EQ(SDcard.loadingDataPointer[23], '-');
+    EXPECT_EQ(SDcard.loadingDataPointer[24], '7');
+    EXPECT_EQ(SDcard.loadingDataPointer[25], '.');
+    EXPECT_EQ(SDcard.loadingDataPointer[26], '8');
+    EXPECT_EQ(SDcard.loadingDataPointer[27], '9');
+    EXPECT_EQ(SDcard.loadingDataPointer[28], '6');
+    EXPECT_EQ(SDcard.loadingDataPointer[29], '\n');
+    EXPECT_EQ(SDcard.loadingDataCounter, 30);
+}
+
+TEST(test_BT_SDcard, saveMeasData_Getpid_Test)
+{
+    SpiInput testIn;
+    SPIOutput testOut;
+    auto pid = getPIDrates();
+
+    ResetMeasDataFlags();
+
+    //
+    pid->refSignal_int.x = -10000;
+    meas2Card.measurePIDRefsigX_int = true;
+    saveMeasData(&testIn, &testOut);
 }
 
 TEST(test_BT_SDcard, writeBlock_Test)
@@ -1735,19 +1767,19 @@ TEST(test_BT_SDcard, writeBlock_Test)
     //wait response, finished, ok
     SDcard.SDWriteState = SDWRITE_WAIT_RESPONSE;
     SDcard.SdRx[7] = 0;
-    sysTimer.sysTime = 1.234;
+    sysTimer.sysTick = 1.234 * 10500000;
     SDWriteWaitResponse();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_DATA);
     EXPECT_EQ(SDcard.SdCtr, 516);
-    EXPECT_NEAR(SDcard.writeStartTime, 1.234, 0.01);
+    EXPECT_NEAR(SDcard.writeStartTick, 1.234 * 10500000, 0.01);
 
     //wait data write, send 1 byte
     SDcard.spiActivitySDCard = ACTIVE;
     SDcard.SDWriteState = SDWRITE_WAIT_DATA;
     SDcard.SdRx[515] = 0;
     SDcard.SdCtr = 516;
-    SDcard.writeStartTime = 1.500;
-    sysTimer.sysTime = 1.543;
+    SDcard.writeStartTick = 1.500 * 10500000;
+    sysTimer.sysTick = 1.543 * 10500000;
     SDWriteWaitData();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_DATA);
     EXPECT_EQ(SDcard.SdCtr, 1);
@@ -1756,8 +1788,8 @@ TEST(test_BT_SDcard, writeBlock_Test)
     SDcard.SDWriteState = SDWRITE_WAIT_DATA;
     SDcard.SdRx[515] = 0;
     SDcard.SdCtr = 516;
-    SDcard.writeStartTime = 1.500;
-    sysTimer.sysTime = 1.801;
+    SDcard.writeStartTick = 1.500 * 10500000;
+    sysTimer.sysTick = 1.801 * 10500000;
     SDWriteWaitData();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_FAILED);
     //wait data write, ok
@@ -1776,16 +1808,16 @@ TEST(test_BT_SDcard, writeBlock_Test)
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SDWriteState = SDWRITE_WAIT_WRITE_FINISH;
     SDcard.SdRx[0] = 0;
-    SDcard.writeStartTime = 1.500;
-    sysTimer.sysTime = 1.510;
+    SDcard.writeStartTick = 1.500 * 10500000;
+    sysTimer.sysTick = 1.510 * 10500000;
     EXPECT_EQ(writeBlock(testblockaddr, testrxbuff), SDWRITE_WAIT_WRITE_FINISH);
     EXPECT_EQ(SDcard.spiActivitySDCard, PENDING);
     //wait write finish, inactive, timeed out
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SDWriteState = SDWRITE_WAIT_WRITE_FINISH;
     SDcard.SdRx[0] = 0;
-    SDcard.writeStartTime = 1.500;
-    sysTimer.sysTime = 1.801;
+    SDcard.writeStartTick = 1.500 * 10500000;
+    sysTimer.sysTick = 1.801 * 10500000;
     EXPECT_EQ(writeBlock(testblockaddr, testrxbuff), SDWRITE_FAILED);
     EXPECT_EQ(writeBlock(testblockaddr, testrxbuff), SDWRITE_FAILED);
     //wait write finish, inactive, timeed out
@@ -1799,10 +1831,10 @@ TEST(test_BT_SDcard, writeBlock_Test)
 TEST(test_BT_SDcard, setFileTime_Test)
 {
     volatile uint32_t testBuffer[516];
-    float testTime{ 0 };
+    uint64_t testTime{ 0 };
 
     // time delay is between 0-60 sec
-    testTime = 30;
+    testTime = 30 * 10500000;
     SDcard.globalDateAndTime.sec = 0;
     SDcard.globalDateAndTime.min = 0;
     SDcard.globalDateAndTime.hour = 0;
@@ -1814,7 +1846,7 @@ TEST(test_BT_SDcard, setFileTime_Test)
     EXPECT_EQ(testBuffer[14], 0b1111);
 
     // time delay is between 0-59 min
-    testTime = 15 + 60 * 7;
+    testTime = uint64_t(15 + 60 * 7) * 10500000;
     SDcard.globalDateAndTime.sec = 0;
     SDcard.globalDateAndTime.min = 0;
     SDcard.globalDateAndTime.hour = 0;
@@ -1827,7 +1859,7 @@ TEST(test_BT_SDcard, setFileTime_Test)
     EXPECT_EQ(testBuffer[15], 0b0);
 
     // time delay is between 1-24 hour
-    testTime = 45 + 60 * 9 + 3600 * 3;
+    testTime = uint64_t(45 + 60 * 9 + 3600 * 3) * 10500000;
     SDcard.globalDateAndTime.sec = 0;
     SDcard.globalDateAndTime.min = 0;
     SDcard.globalDateAndTime.hour = 0;
@@ -1840,7 +1872,7 @@ TEST(test_BT_SDcard, setFileTime_Test)
     EXPECT_EQ(testBuffer[15], 0b00011001);
 
     // time delay is between 1-24 hour
-    testTime = 45 + 60 * 9 + 3600 * 3;
+    testTime = uint64_t(45 + 60 * 9 + 3600 * 3) * 10500000;
     SDcard.globalDateAndTime.sec = 0;
     SDcard.globalDateAndTime.min = 0;
     SDcard.globalDateAndTime.hour = 0;
@@ -1848,13 +1880,13 @@ TEST(test_BT_SDcard, setFileTime_Test)
     SDcard.globalDateAndTime.month = 0;
     SDcard.globalDateAndTime.year = 0;
     SDcard.rootDirEmptySlotNumber = 0;
-    SDcard.sysTimeAtGlobalTime = 40;
+    SDcard.sysTickAtGlobalTick = 40 * 10500000;
     setFileTime(testBuffer, testTime);
     EXPECT_EQ(testBuffer[14], 0b00100010);
     EXPECT_EQ(testBuffer[15], 0b00011001);
 
     // time with year
-    testTime = 21 + 60 * 49 + 3600 * 15;
+    testTime = uint64_t(21 + 60 * 49 + 3600 * 15) * 10500000;
     SDcard.globalDateAndTime.sec = 0;
     SDcard.globalDateAndTime.min = 0;
     SDcard.globalDateAndTime.hour = 0;
@@ -1862,7 +1894,7 @@ TEST(test_BT_SDcard, setFileTime_Test)
     SDcard.globalDateAndTime.month = 5;
     SDcard.globalDateAndTime.year = 25;
     SDcard.rootDirEmptySlotNumber = 0;
-    SDcard.sysTimeAtGlobalTime = 0;
+    SDcard.sysTickAtGlobalTick = 0;
     setFileTime(testBuffer, testTime);
     EXPECT_EQ(testBuffer[14], 0b00101010);
     EXPECT_EQ(testBuffer[15], 0b01111110);
@@ -1870,7 +1902,7 @@ TEST(test_BT_SDcard, setFileTime_Test)
     EXPECT_EQ(testBuffer[17], 0b01011010);
 
     //overflow sec
-    testTime = 15;
+    testTime = (uint64_t)15 * 10500000;
     SDcard.globalDateAndTime.sec = 51;
     SDcard.globalDateAndTime.min = 0;
     SDcard.globalDateAndTime.hour = 0;
@@ -1885,7 +1917,7 @@ TEST(test_BT_SDcard, setFileTime_Test)
     EXPECT_EQ(testBuffer[17], 0b00101000);
 
     //overflow min
-    testTime = 15 + 60 * 8;
+    testTime = uint64_t(15 + 60 * 8) * 10500000;
     SDcard.globalDateAndTime.sec = 51;
     SDcard.globalDateAndTime.min = 54;
     SDcard.globalDateAndTime.hour = 0;
@@ -1904,7 +1936,7 @@ TEST(test_BT_SDcard, addFileInfo2RootDir_Test)
 {
     volatile uint32_t testBuffer[516];
     fileInfo testFile;
-    float testTime{ 30 };
+    uint64_t testTime{ 30*10500000 };
 
     //
     SDcard.rootDirEmptySlotNumber = 0;
@@ -2438,12 +2470,12 @@ TEST(test_BT_SDcard, addMeasNameHeader_Test)
 
 TEST(test_BT_SDcard, addMeasHeader_Test)
 {
-    pidRate.P.x = 150;
-    pidRate.I.x = 40;
-    pidRate.D.x = 1600;
-    pidRate.FFr.x = 100;
-    pidRate.DTermC = 12;
-    meas2Card.measureSysTime = true;
+    //pidRate.P.x = 150;
+    //pidRate.I.x = 40;
+    //pidRate.D.x = 1600;
+    //pidRate.FFr.x = 100;
+    //pidRate.DTermC = 12;
+    meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = true;
     meas2Card.measureGyroRawZ = true;
     addMeasHeader();
@@ -2554,31 +2586,31 @@ TEST(test_BT_SDcard, writeRoot_Test)
     //wait
     SDcard.SDWriteState = SDWRITE_START;
     SDcard.MainState = SD_WRITE_ROOT;
-    writeRoot();
+    writeRoot(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
     SDcard.SDWriteState = SDWRITE_WAIT_RESPONSE;
     SDcard.MainState = SD_WRITE_ROOT;
-    writeRoot();
+    writeRoot(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
     SDcard.SDWriteState = SDWRITE_WAIT_DATA;
     SDcard.MainState = SD_WRITE_ROOT;
-    writeRoot();
+    writeRoot(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
     SDcard.SDWriteState = SDWRITE_WAIT_WRITE_FINISH;
     SDcard.MainState = SD_WRITE_ROOT;
-    writeRoot();
+    writeRoot(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
 
     //failed
     SDcard.SDWriteState = SDWRITE_FAILED;
     SDcard.MainState = SD_WRITE_ROOT;
-    writeRoot();
+    writeRoot(1000);
     EXPECT_EQ(SDcard.MainState, SD_DO_NOTHING);
 
     //finished
     SDcard.SDWriteState = SDWRITE_FINISHED;
     SDcard.MainState = SD_WRITE_ROOT;
-    writeRoot();
+    writeRoot(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_FAT);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
 }
@@ -2588,25 +2620,25 @@ TEST(test_BT_SDcard, writeFAT_Test)
     //wait
     SDcard.SDWriteState = SDWRITE_START;
     SDcard.MainState = SD_WRITE_FAT;
-    writeFAT();
+    writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_FAT);
     SDcard.SDWriteState = SDWRITE_WAIT_RESPONSE;
     SDcard.MainState = SD_WRITE_FAT;
-    writeFAT();
+    writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_FAT);
     SDcard.SDWriteState = SDWRITE_WAIT_DATA;
     SDcard.MainState = SD_WRITE_FAT;
-    writeFAT();
+    writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_FAT);
     SDcard.SDWriteState = SDWRITE_WAIT_WRITE_FINISH;
     SDcard.MainState = SD_WRITE_FAT;
-    writeFAT();
+    writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_FAT);
 
     //failed
     SDcard.SDWriteState = SDWRITE_FAILED;
     SDcard.MainState = SD_WRITE_FAT;
-    writeFAT();
+    writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_DO_NOTHING);
 
     //finished
@@ -2614,7 +2646,7 @@ TEST(test_BT_SDcard, writeFAT_Test)
     SDcard.SDWriteState = SDWRITE_FINISHED;
     SDcard.MainState = SD_WRITE_FAT;
     SDcard.writingMultiFATBlock = true;
-    writeFAT();
+    writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_FAT);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
     //no new block
@@ -2627,7 +2659,7 @@ TEST(test_BT_SDcard, writeFAT_Test)
     SDcard.newFile.blockCount = 1;
     SDcard.newFile.size = 235;
     SDcard.loadingDataCounter = 3;
-    writeFAT();
+    writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_WAIT_4_MEASUREMENT);
     EXPECT_EQ(SDcard.newFile.numberInName, 4);
     EXPECT_EQ(SDcard.newFile.numberOfClusters, 1);
@@ -2684,8 +2716,8 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     EXPECT_EQ(SDcard.loadingDataPointer[1], 'R');
     EXPECT_EQ(SDcard.loadingDataPointer[2], '\n');
     //meas ongoing
-    SDcard.measTimePrev = 1.500;
-    testIn.sysTime = 1.501;
+    SDcard.measTickPrev = 1.500 * 10500000;
+    testIn.sysTick = 1.501 * 10500000;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
     SDcard.writeMeasData = false;
     SDcard.loadingDataCounter = 1;
@@ -2694,10 +2726,10 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     SDcard.loadingDataPointer[3] = ' ';
     RunSdCard(&testIn, &testOut);
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
-    EXPECT_NEAR(SDcard.measTimePrev, 1.500, 0.01);
+    EXPECT_NEAR(SDcard.measTickPrev, 1.500 * 10500000, 0.01);
     //
-    SDcard.measTimePrev = 1.500;
-    testIn.sysTime = 1.511;
+    SDcard.measTickPrev = 1.500 * 10500000;
+    testIn.sysTick = 1.511 * 10500000;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
     SDcard.writeMeasData = false;
     SDcard.loadingDataCounter = 1;
@@ -2706,15 +2738,14 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     SDcard.loadingDataPointer[3] = ' ';
     RunSdCard(&testIn, &testOut);
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
-    EXPECT_NEAR(SDcard.measTimePrev, 1.510, 0.01);
+    EXPECT_NEAR(SDcard.measTickPrev, 1.511 * 10500000, 1);
     EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
     EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[2], '5');
     EXPECT_EQ(SDcard.writeMeasData, false);
     //
-    SDcard.measTimePrev = 1.510;
-    testIn.sysTime = 1.521;
+    SDcard.measTickPrev = 1.510 * 10500000;
+    testIn.sysTick = 1.521 * 10500000;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
     SDcard.writeMeasData = false;
     SDcard.loadingDataCounter = 512;
@@ -2725,15 +2756,14 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     SDcard.SDWriteState = SDWRITE_START;
     RunSdCard(&testIn, &testOut);
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
-    EXPECT_NEAR(SDcard.measTimePrev, 1.520, 0.01);
+    EXPECT_NEAR(SDcard.measTickPrev, 1.521 * 10500000, 1);
     EXPECT_EQ(SDcard.sendingDataPointer[512] & 0xFF, '1');
     EXPECT_EQ(SDcard.loadingDataPointer[0] & 0xFF, 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
     EXPECT_EQ(SDcard.writeMeasData, true);
     //
-    SDcard.measTimePrev = 1.520;
-    testIn.sysTime = 1.531;
+    SDcard.measTickPrev = 1.520 * 10500000;
+    testIn.sysTick = 1.531;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
     SDcard.writeMeasData = false;
     SDcard.loadingDataCounter = 512;
@@ -2745,11 +2775,10 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     SDcard.SDWriteState = SDWRITE_FINISHED;
     RunSdCard(&testIn, &testOut);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
-    EXPECT_NEAR(SDcard.measTimePrev, 1.530, 0.01);
+    EXPECT_NEAR(SDcard.measTickPrev, 1.531 * 10500000, 1);
     EXPECT_EQ(SDcard.sendingDataPointer[512] & 0xFF, '1');
     EXPECT_EQ(SDcard.loadingDataPointer[0] & 0xFF, 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
     EXPECT_EQ(SDcard.writeMeasData, false);
     //write root
     SDcard.MainState = SD_WRITE_ROOT;
@@ -2826,23 +2855,23 @@ TEST(test_BT_SDcard, WriteFlow_Test)
     RunSdCard(&testIn, &testOut);
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
     //measuring
-    SDcard.measTimePrev = 2.000f;
-    testIn.sysTime = 2.101;
+    SDcard.measTickPrev = 2.000 * 10500000;
+    testIn.sysTick = 2.101 * 10500000;
     testIn.rcSignals.measurementSwitch = 1000;
     do
     {
-        testIn.sysTime += 0.101;
+        testIn.sysTick += 0.101 * 10500000;
         RunSdCard(&testIn, &testOut);
 
     } while (false == SDcard.writeMeasData);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_RESPONSE);
     //write measured data
     SDcard.SdRx[7] = 0;
-    testIn.sysTime = 4.000;
+    testIn.sysTick = 4.000 * 10500000;
     DMAC_Handler();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_DATA);
     SDcard.SdRx[515] = 0b0100;
-    testIn.sysTime = 4.020;
+    testIn.sysTick = 4.020 * 10500000;
     SPI.spiActivityGyro = PENDING;
     DMAC_Handler();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_WRITE_FINISH);
@@ -2867,11 +2896,11 @@ TEST(test_BT_SDcard, WriteFlow_Test)
     RunSdCard(&testIn, &testOut);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_RESPONSE);
     SDcard.SdRx[7] = 0;
-    testIn.sysTime = 4.200;
+    testIn.sysTick = 4.200 * 10500000;
     SDWriteWaitResponse();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_DATA);
     SDcard.SdRx[515] = 0b0100;
-    testIn.sysTime = 4.250;
+    testIn.sysTick = 4.250 * 10500000;
     DMAC_Handler();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_WRITE_FINISH);
     SDcard.spiActivitySDCard = INACTIVE;
@@ -2892,11 +2921,11 @@ TEST(test_BT_SDcard, WriteFlow_Test)
     RunSdCard(&testIn, &testOut);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_RESPONSE);
     SDcard.SdRx[7] = 0;
-    testIn.sysTime = 4.300;
+    testIn.sysTick = 4.300 * 10500000;
     SDWriteWaitResponse();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_DATA);
     SDcard.SdRx[515] = 0b0100;
-    testIn.sysTime = 4.350;
+    testIn.sysTick = 4.350 * 10500000;
     DMAC_Handler();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_WRITE_FINISH);
     SDcard.spiActivitySDCard = INACTIVE;
@@ -2930,7 +2959,7 @@ TEST(test_BT_SDcard, setGlobalTime_Test)
     EXPECT_EQ(SDcard.globalDateAndTime.hour, 0);
     EXPECT_EQ(SDcard.globalDateAndTime.min, 0);
     EXPECT_EQ(SDcard.globalDateAndTime.sec, 0);
-    EXPECT_EQ(SDcard.sysTimeAtGlobalTime, 0);
+    EXPECT_EQ(SDcard.sysTickAtGlobalTick, 0);
 
     //
     testDate.hour = 12;
@@ -2941,7 +2970,7 @@ TEST(test_BT_SDcard, setGlobalTime_Test)
     EXPECT_EQ(SDcard.globalDateAndTime.hour, 12);
     EXPECT_EQ(SDcard.globalDateAndTime.min, 34);
     EXPECT_EQ(SDcard.globalDateAndTime.sec, 26);
-    EXPECT_EQ(SDcard.sysTimeAtGlobalTime, 1235);
+    EXPECT_EQ(SDcard.sysTickAtGlobalTick, 1235);
 }
 
 TEST(test_BT_SDcard, setGlobalDate_Test)
@@ -2972,3 +3001,25 @@ TEST(test_BT_SDcard, setGlobalDate_Test)
     EXPECT_EQ(SDcard.globalDateAndTime.month, 2);
     EXPECT_EQ(SDcard.globalDateAndTime.day, 15);
 }
+
+TEST(test_BT_SDcard, measureData_i32)
+{
+    pid_st testPID;
+
+    SDcard.loadingDataPointer[0] = 0xFE;
+    SDcard.loadingDataCounter = 1;
+    testPID.refSignal_int.x = 13421568;
+    measureData(true, true, testPID.refSignal_int.x, 0, false, "test: ");
+    EXPECT_EQ(SDcard.loadingDataCounter, 10);
+    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
+    EXPECT_EQ(SDcard.loadingDataPointer[1], ',');
+    EXPECT_EQ(SDcard.loadingDataPointer[2], '1');
+    EXPECT_EQ(SDcard.loadingDataPointer[3], '3');
+    EXPECT_EQ(SDcard.loadingDataPointer[4], '4');
+    EXPECT_EQ(SDcard.loadingDataPointer[5], '2');
+    EXPECT_EQ(SDcard.loadingDataPointer[6], '1');
+    EXPECT_EQ(SDcard.loadingDataPointer[7], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[8], '6');
+    EXPECT_EQ(SDcard.loadingDataPointer[9], '8');
+}
+

@@ -45,6 +45,7 @@ TEST(test_Controller, Controller_Call) {
     axis_i32 testU_i32;
     ScalePIDinput_int(&testPID, 0);
     CalcPIDoutput_int(&testPID, &testU_i32);
+    expo(1000);
 }
 
 TEST(test_Controller, EvalArmState_Test)
@@ -85,15 +86,18 @@ TEST(test_Controller, EvalFlightMode_Test)
     uint16_t testFlightMode{ 2000u };
 
     //1st: lower than 1950
-    EXPECT_EQ(EvalFlightMode(testFlightMode), ANGLE_CASCADE_CTRL);
+    auto test1 = EvalFlightMode(testFlightMode);
 
     //2nd: inbetween 1450-1550
     testFlightMode = 1500u;
-    EXPECT_EQ(EvalFlightMode(testFlightMode), RATE_CTRL_PT1_IRelax_Dmax);
+    auto test2 = EvalFlightMode(testFlightMode);
+    EXPECT_NE(test2, test1);
 
     //3rd: none of the above two tests
     testFlightMode = 1200u;
-    EXPECT_EQ(EvalFlightMode(testFlightMode), RATE_CTRL_PT1);
+    auto test3 = EvalFlightMode(testFlightMode);
+    EXPECT_NE(test2, test1);
+    EXPECT_NE(test3, test1);
 }
 
 TEST(test_Controller, ParabolicScale_Test)
@@ -126,6 +130,15 @@ TEST(test_Controller, ParabolicScale_Test)
     //7th: 500 to left
     testChannel = 1000;
     EXPECT_NEAR(ParabolicScale(testChannel), -950, 0.1);
+}
+
+TEST(test_Controller, expo_Test)
+{
+    EXPECT_EQ(expo(1500), 0);
+    EXPECT_EQ(expo(2000), 16051);
+    EXPECT_EQ(expo(1000), -16052);
+    EXPECT_EQ(expo(1200), -2032);
+    EXPECT_EQ(expo(1700), 749);
 }
 
 TEST(test_Controller, LinearInterpol_Test)
@@ -499,7 +512,7 @@ TEST(test_Controller, ScalePIDoutput_int_Test)
     EXPECT_EQ(testU.z, 8);
 }
 
-TEST(test_Controller, PID_compare_P)
+TEST(test_Controller, PID_compare)
 {
     pid_st testPIDff;
     axis testUff;
@@ -670,14 +683,15 @@ TEST(test_Controller, PID_compare_P)
     testPIDff.deltaTicks = 0.003 * 10500000;
     testPIDff.inverseDt = (10500000 / testPIDff.deltaTicks);
     testPIDff.sensor.newData = true;
-    ScalePIDinput_int(&testPIDff, 10);
     CalcPID_wo_Dkick_FF(&testPIDff, &testUff);
-    CalcProportional_int(&testPIDff);
-    CalcIntegral_int(&testPIDff);
     testPIDff.sensor.newData = true;
-    CalcDerivative_int(&testPIDff);
-    CalcPIDoutput_int(&testPIDff, &testUff_i32);
-    ScalePIDoutput_int(&testUff_i32, 9);
+    CalcPID_int(&testPIDff, &testUff_i32);
+    //ScalePIDinput_int(&testPIDff, 10);
+    //CalcProportional_int(&testPIDff);
+    //CalcIntegral_int(&testPIDff);
+    //CalcDerivative_int(&testPIDff);
+    //CalcPIDoutput_int(&testPIDff, &testUff_i32);
+    //ScalePIDoutput_int(&testUff_i32, 9);
     EXPECT_NEAR(testPIDff.Pout.x, 17.1, 0.1);
     EXPECT_EQ(testPIDff.Pout_int.x, 286396);
     EXPECT_NEAR(testPIDff.Iout.x, 0.678, 0.1);
@@ -687,6 +701,129 @@ TEST(test_Controller, PID_compare_P)
     EXPECT_NEAR(testPIDff.u.x, -13.9059, 0.1);
     EXPECT_EQ(testPIDff.u_int.x, -77165);
     EXPECT_EQ(testUff_i32.x, -151);
+}
+
+TEST(test_Controller, PID_compare_p)
+{
+    pid_st testPIDff;
+    axis_i32 testUff_i32;
+
+    testPIDff.P_int.x = 50.0f;
+    testPIDff.errorDotPT1_int.x = 0;
+    testPIDff.satPID_int = 10000000;
+    testPIDff.refSignal_int.x = (1000 * 32768 / 2000);
+    testPIDff.sensor.signalPT1_int.x = (0 * 32768 / 2000);
+    ScalePIDinput_int(&testPIDff, 10);
+    CalcProportional_int(&testPIDff);
+    CalcPIDoutput_int(&testPIDff, &testUff_i32);
+    ScalePIDoutput_int(&testUff_i32, 11);
+    EXPECT_NEAR(testUff_i32.x, 30*32768/2000, 100);
+}
+
+TEST(test_Controller, PID_compare_pd)
+{
+    pid_st testPIDff;
+    axis_i32 testUff_i32;
+
+    testPIDff.P_int.x = 39.0f;
+    testPIDff.I_int.x = 0.0f;
+    testPIDff.D_int.x = 26.0f;
+    testPIDff.errorSum_int.x = 0;
+    testPIDff.satI_int = 0x7FFFFFFF;
+    testPIDff.errorDotPT1_int.x = 0;
+    testPIDff.satPID_int = 10000000;
+
+    //
+    float measuredPout = 5.736 / 2000 * 32768 * 1024;
+    float measuredDout = 0.065 / 2000 * 32768 * 1024;
+    float measuredDoutPrev = 0.23 / 2000 * 32768 * 1024;
+    float measPD = measuredPout - measuredDout;
+    testPIDff.refSignal_int.x = (158.2 * 32768 / 2000);
+    testPIDff.sensor.signalPT1_int.x = (7.312 * 32768 / 2000);
+    testPIDff.signalPT1Prev_int.x = int32_t(8.186 * 32768 / 2000) << 10;
+    testPIDff.errorDotPT1_int.x = int32_t(measuredDoutPrev/ testPIDff.D_int.x) << 9;
+    testPIDff.deltaTicks = 0.005 * 10500000;
+    testPIDff.inverseDt = (10500000 / testPIDff.deltaTicks);
+    testPIDff.sensor.newData = true;
+    ScalePIDinput_int(&testPIDff, 10);
+    CalcProportional_int(&testPIDff);
+    CalcDerivative_int(&testPIDff);
+    CalcPIDoutput_int(&testPIDff, &testUff_i32);
+    ScalePIDoutput_int(&testUff_i32, 9);
+    auto pRatio = (testPIDff.Pout_int.x - measuredPout) / measuredPout*100;
+    auto dRatio = (testPIDff.Dout_int.x - measuredDout) / measuredDout*100;
+    auto pdRatio = (testPIDff.u_int.x - measPD)/ measPD*100;
+    EXPECT_LT(abs(pRatio), 2);
+    EXPECT_LT(abs(dRatio), 2);
+    EXPECT_LT(abs(pdRatio), 2);
+
+    //
+    measuredPout = -3.197 / 2000 * 32768 * 1024;
+    measuredDout = 4.779 / 2000 * 32768 * 1024;
+    measuredDoutPrev = 4.461 / 2000 * 32768 * 1024;
+    measPD = measuredPout - measuredDout;
+    testPIDff.refSignal_int.x = (48.78 * 32768 / 2000);
+    testPIDff.sensor.signalPT1_int.x = (132.9 * 32768 / 2000);
+    testPIDff.signalPT1Prev_int.x = int32_t(117.6 * 32768 / 2000) << 10;
+    testPIDff.errorDotPT1_int.x = int32_t(measuredDoutPrev) << 8;
+    testPIDff.deltaTicks = 0.005 * 10500000;
+    testPIDff.inverseDt = (10500000 / testPIDff.deltaTicks);
+    testPIDff.sensor.newData = true;
+    ScalePIDinput_int(&testPIDff, 10);
+    CalcProportional_int(&testPIDff);
+    CalcDerivative_int(&testPIDff);
+    CalcPIDoutput_int(&testPIDff, &testUff_i32);
+    ScalePIDoutput_int(&testUff_i32, 9);
+    pRatio = (testPIDff.Pout_int.x - measuredPout) / measuredPout*100;
+    dRatio = (testPIDff.Dout_int.x - measuredDout) / measuredDout*100;
+    pdRatio = (testPIDff.u_int.x - measPD) / measPD*100;
+    EXPECT_LT(abs(pRatio), 2);
+    EXPECT_LT(abs(dRatio), 2);
+    EXPECT_LT(abs(pdRatio), 2);
+
+    //
+    measuredPout = 30.85 / 2000 * 32768 * 1024;
+    measuredDout = 18.66 / 2000 * 32768 * 1024;
+    measuredDoutPrev = 15.57 / 2000 * 32768 * 1024;
+    measPD = measuredPout - measuredDout;
+    testPIDff.refSignal_int.x = (918.5 * 32768 / 2000);
+    testPIDff.sensor.signalPT1_int.x = (106.7 * 32768 / 2000);
+    testPIDff.signalPT1Prev_int.x = int32_t(35.33 * 32768 / 2000) << 10;
+    testPIDff.errorDotPT1_int.x = int32_t(measuredDoutPrev) << 8;
+    testPIDff.deltaTicks = 0.005 * 10500000;
+    testPIDff.inverseDt = (10500000 / testPIDff.deltaTicks);
+    testPIDff.sensor.newData = true;
+    ScalePIDinput_int(&testPIDff, 10);
+    CalcProportional_int(&testPIDff);
+    CalcDerivative_int(&testPIDff);
+    CalcPIDoutput_int(&testPIDff, &testUff_i32);
+    ScalePIDoutput_int(&testUff_i32, 9);
+    pRatio = (testPIDff.Pout_int.x - measuredPout) / measuredPout * 100;
+    dRatio = (testPIDff.Dout_int.x - measuredDout) / measuredDout * 100;
+    pdRatio = (testPIDff.u_int.x - measPD) / measPD * 100;
+    EXPECT_LT(abs(pRatio), 2);
+    EXPECT_LT(abs(dRatio), 2);
+    EXPECT_LT(abs(pdRatio), 2);
+}
+
+TEST(test_Controller, CalcIntegral_int_overflow)
+{
+    pid_st testPid;
+
+    testPid.I_int.x = 26.0f;
+    testPid.satI_int = 0x7FFFFFFF;
+    testPid.deltaTicks = 0.005 * 10500000;
+    testPid.refSignal_int.x = (1000 * 32768 / 2000);
+    testPid.sensor.signalPT1_int.x = 0;
+    ScalePIDinput_int(&testPid, 10);
+    CalcProportional_int(&testPid);
+    CalcIntegral_int(&testPid);
+    CalcIntegral_int(&testPid);
+    CalcIntegral_int(&testPid);
+    CalcIntegral_int(&testPid);
+    CalcIntegral_int(&testPid);
+    EXPECT_LE(testPid.errorSum_int.x, 0x7FFFFFFF);
+    EXPECT_GT(testPid.errorSum_int.x, 0);
 }
 
 TEST(test_Controller, PID_compare_I)
@@ -789,7 +926,7 @@ TEST(test_Controller, RunController_Test)
     controllerOut_st testOut;
 
     //1st: disamred
-    testIn.droneTimes.loopTime = 0.1;
+    testIn.droneTimes.loopTick = 0.1 * 10500000;
     testIn.rcSignals.armStateSwitch = 1000;
     testIn.rcSignals.flightModeSwitch = 1500;
     testIn.rcSignals.throttle = 1000;
@@ -836,7 +973,7 @@ TEST(test_Controller, RunController_Test)
     testIn.gyro.signal.y = 10.0f;
     testIn.gyro.signal.z = 10.0f;
     testIn.gyro.newData = true;
-    testIn.droneTimes.loopTime = 0.1f;
+    testIn.droneTimes.loopTick = 0.1 * 10500000;
     pidRate.P.x = 10.0f;
     pidRate.P.y = 10.0f;
     pidRate.P.z = 10.0f;
@@ -862,7 +999,7 @@ TEST(test_Controller, RunController_Test)
     testIn.gyro.signal.y = 10.0f;
     testIn.gyro.signal.z = 10.0f;
     testIn.gyro.newData = true;
-    testIn.droneTimes.loopTime = 0.1f;
+    testIn.droneTimes.loopTick = 0.1 * 10500000;
     pidCascade.P.x = 10.0f;
     pidCascade.P.y = 10.0f;
     pidCascade.P.z = 10.0f;

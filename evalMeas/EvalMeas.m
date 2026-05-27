@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_05_10";
-fileNumber = 4; %1 is ., 2 is ..
+directory = "2026_05_26";
+fileNumber = 11; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -375,9 +375,9 @@ meas = readtable(file, opts);
 
 %% 
 
-ref_int = meas.PIDRefX*17.5;
-gyro_int = meas.PIDSensX/ (2000.0 / 32767.0);
-error = meas.PIDRefX - meas.PIDSensX;
+ref_int = meas.PIDRefXi*17.5;
+gyro_int = meas.PIDSensXi/ (2000.0 / 32767.0);
+error = meas.PIDRefXi - meas.PIDSensXi;
 error_int = ref_int - gyro_int;
 
 P = header.Px/1000;
@@ -385,12 +385,19 @@ Pout = P*error;
 
 figure(12);
 clf(12);
-subplot(2,1,1);
-plot(meas.sysTime, [meas.PIDRefX meas.PIDSensX]);
+usedParams = "PIDtoolbox" + newline ...
+    + sprintf("rate: %.f", header.Px) ...
+    + sprintf(", %.f", header.Ix) ...
+    + sprintf(", %.f", header.Dx);
+h(1) = subplot(2,1,1);
+plot(meas.sysTickMs, [meas.PIDRefXi meas.PIDSensXi]);
+title(usedParams, 'Interpreter', 'none');
+legend("ref", "gyro")
 % plot(meas.sysTime, [ref_int gyro_int error_int]);
-subplot(2,1,2);
-plot(meas.sysTime, [Pout]);
-
+h(2) = subplot(2,1,2);
+plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
+legend("Pout", "Iout", "Pout")
+linkaxes(h, 'x');
 
 
 
