@@ -122,30 +122,12 @@ void ResetMeasDataFlags(void)
     meas2Card.measureGyroPT1X = false;
     meas2Card.measureGyroPT1Y = false;
     meas2Card.measureGyroPT1Z = false;
-    meas2Card.measureGyroPT2X = false;
-    meas2Card.measureGyroPT2Y = false;
-    meas2Card.measureGyroPT2Z = false;
-    meas2Card.measureGyroRawX_int = false;
-    meas2Card.measureGyroRawY_int = false;
-    meas2Card.measureGyroRawZ_int = false;
-    meas2Card.measureGyroPT1X_int = false;
-    meas2Card.measureGyroPT1Y_int = false;
-    meas2Card.measureGyroPT1Z_int = false;
     meas2Card.measureAccRawX = false;
     meas2Card.measureAccRawY = false;
     meas2Card.measureAccRawZ = false;
     meas2Card.measureAccPT1X = false;
     meas2Card.measureAccPT1Y = false;
     meas2Card.measureAccPT1Z = false;
-    meas2Card.measureAccPT2X = false;
-    meas2Card.measureAccPT2Y = false;
-    meas2Card.measureAccPT2Z = false;
-    meas2Card.measureAccRawX_int = false;
-    meas2Card.measureAccRawY_int = false;
-    meas2Card.measureAccRawZ_int = false;
-    meas2Card.measureAccPT1X_int = false;
-    meas2Card.measureAccPT1Y_int = false;
-    meas2Card.measureAccPT1Z_int = false;
     meas2Card.measureAngleRawRoll = false;
     meas2Card.measureAngleRawPitch = false;
     meas2Card.measureAnglePT1Roll = false;
@@ -156,14 +138,6 @@ void ResetMeasDataFlags(void)
     meas2Card.measureAngleKFRawPitch = false;
     meas2Card.measureAngleKFPT10Roll = false;
     meas2Card.measureAngleKFPT10Pitch = false;
-    meas2Card.measureAngleKFPT20Roll = false;
-    meas2Card.measureAngleKFPT20Pitch = false;
-    meas2Card.measureAngleKFPT11Roll = false;
-    meas2Card.measureAngleKFPT11Pitch = false;
-    meas2Card.measureAngleKFPT21Roll = false;
-    meas2Card.measureAngleKFPT21Pitch = false;
-    meas2Card.measureAngleKFPT22Roll = false;
-    meas2Card.measureAngleKFPT22Pitch = false;
     meas2Card.measureAngleCFRawRoll = false;
     meas2Card.measureAngleCFRawPitch = false;
     meas2Card.measureAngleCFPT10Roll = false;
@@ -174,48 +148,27 @@ void ResetMeasDataFlags(void)
     meas2Card.measureAngleCFWeightedRawPitch = false;
     meas2Card.measureAngleCFWeightedPT01Roll = false;
     meas2Card.measureAngleCFWeightedPT01Pitch = false;
-    meas2Card.measurePIDRefsigX = false;
-    meas2Card.measurePIDRefsigY = false;
-    meas2Card.measurePIDRefsigZ = false;
-    meas2Card.measurePIDSensorX = false;
-    meas2Card.measurePIDSensorY = false;
-    meas2Card.measurePIDSensorZ = false;
-    meas2Card.measurePIDPoutX = false;
-    meas2Card.measurePIDPoutY = false;
-    meas2Card.measurePIDPoutZ = false;
-    meas2Card.measurePIDIoutX = false;
-    meas2Card.measurePIDIoutY = false;
-    meas2Card.measurePIDIoutZ = false;
-    meas2Card.measurePIDDoutX = false;
-    meas2Card.measurePIDDoutY = false;
-    meas2Card.measurePIDDoutZ = false;
-    meas2Card.measurePIDFFoutX = false;
-    meas2Card.measurePIDFFoutY = false;
-    meas2Card.measurePIDFFoutZ = false;
-    meas2Card.measurePIDUX = false;
-    meas2Card.measurePIDUY = false;
-    meas2Card.measurePIDUZ = false;
-    meas2Card.measurePIDRefsigX_int = false;
-    meas2Card.measurePIDRefsigY_int = false;
-    meas2Card.measurePIDRefsigZ_int = false;
-    meas2Card.measurePIDSensorX_int = false;
-    meas2Card.measurePIDSensorY_int = false;
-    meas2Card.measurePIDSensorZ_int = false;
-    meas2Card.measurePIDPoutX_int = false;
-    meas2Card.measurePIDPoutY_int = false;
-    meas2Card.measurePIDPoutZ_int = false;
-    meas2Card.measurePIDIoutX_int = false;
-    meas2Card.measurePIDIoutY_int = false;
-    meas2Card.measurePIDIoutZ_int = false;
-    meas2Card.measurePIDDoutX_int = false;
-    meas2Card.measurePIDDoutY_int = false;
-    meas2Card.measurePIDDoutZ_int = false;
-    meas2Card.measurePIDFFoutX_int = false;
-    meas2Card.measurePIDFFoutY_int = false;
-    meas2Card.measurePIDFFoutZ_int = false;
-    meas2Card.measurePIDUX_int = false;
-    meas2Card.measurePIDUY_int = false;
-    meas2Card.measurePIDUZ_int = false;
+    meas2Card.measurePIDRefsigX_i = false;
+    meas2Card.measurePIDRefsigY_i = false;
+    meas2Card.measurePIDRefsigZ_i = false;
+    meas2Card.measurePIDSensorX_i = false;
+    meas2Card.measurePIDSensorY_i = false;
+    meas2Card.measurePIDSensorZ_i = false;
+    meas2Card.measurePIDPoutX_i = false;
+    meas2Card.measurePIDPoutY_i = false;
+    meas2Card.measurePIDPoutZ_i = false;
+    meas2Card.measurePIDIoutX_i = false;
+    meas2Card.measurePIDIoutY_i = false;
+    meas2Card.measurePIDIoutZ_i = false;
+    meas2Card.measurePIDDoutX_i = false;
+    meas2Card.measurePIDDoutY_i = false;
+    meas2Card.measurePIDDoutZ_i = false;
+    meas2Card.measurePIDFFoutX_i = false;
+    meas2Card.measurePIDFFoutY_i = false;
+    meas2Card.measurePIDFFoutZ_i = false;
+    meas2Card.measurePIDUX_i = false;
+    meas2Card.measurePIDUY_i = false;
+    meas2Card.measurePIDUZ_i = false;
 }
 
 TEST(test_BT_SDcard, SDcard_Call)
@@ -1657,9 +1610,9 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     meas2Card.measureGyroRawY = false;
     meas2Card.measureGyroRawZ = false;
     testIn.sysTick = 1.234 * 10500000;
-    testIn.gyro.signal.x = 2.345;
-    testIn.gyro.signal.y = 0.456;
-    testIn.gyro.signal.z = -7.896;
+    testIn.gyro.signalPT1.x = 2345;
+    testIn.gyro.signalPT1.y = 456;
+    testIn.gyro.signalPT1.z = -7896;
     SDcard.loadingDataCounter = 1;
     saveMeasData(&testIn, &testOut);
     EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
@@ -1675,9 +1628,6 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     meas2Card.measureGyroRawY = false;
     meas2Card.measureGyroRawZ = false;
     testIn.sysTick = 5.678 * 10500000;
-    testIn.gyro.signal.x = 2.345;
-    testIn.gyro.signal.y = 0.456;
-    testIn.gyro.signal.z = -7.896;
     SDcard.loadingDataCounter = 1;
     saveMeasData(&testIn, &testOut);
     EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
@@ -1687,41 +1637,34 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     EXPECT_EQ(SDcard.loadingDataPointer[4], '8');
     EXPECT_EQ(SDcard.loadingDataPointer[5], ',');
     EXPECT_EQ(SDcard.loadingDataPointer[6], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[7], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[8], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[9], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[10], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[11], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 12);
+    EXPECT_EQ(SDcard.loadingDataPointer[7], '3');
+    EXPECT_EQ(SDcard.loadingDataPointer[8], '4');
+    EXPECT_EQ(SDcard.loadingDataPointer[9], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[10], '\n');
+    EXPECT_EQ(SDcard.loadingDataCounter, 11);
     // systime+gyroY+gyroZ measured
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = false;
     meas2Card.measureGyroRawY = true;
     meas2Card.measureGyroRawZ = true;
     testIn.sysTick = 8.271 * 10500000;
-    testIn.gyro.signal.x = 2.345;
-    testIn.gyro.signal.y = 0.456;
-    testIn.gyro.signal.z = -7.896;
     saveMeasData(&testIn, &testOut);
     EXPECT_EQ(SDcard.loadingDataPointer[12], '8');
     EXPECT_EQ(SDcard.loadingDataPointer[13], '2');
     EXPECT_EQ(SDcard.loadingDataPointer[14], '7');
     EXPECT_EQ(SDcard.loadingDataPointer[15], '1');
     EXPECT_EQ(SDcard.loadingDataPointer[16], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[17], '0');
-    EXPECT_EQ(SDcard.loadingDataPointer[18], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[19], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[20], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[21], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[22], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[23], '-');
-    EXPECT_EQ(SDcard.loadingDataPointer[24], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[25], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[26], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[27], '9');
-    EXPECT_EQ(SDcard.loadingDataPointer[28], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[29], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 30);
+    EXPECT_EQ(SDcard.loadingDataPointer[17], '4');
+    EXPECT_EQ(SDcard.loadingDataPointer[18], '5');
+    EXPECT_EQ(SDcard.loadingDataPointer[19], '6');
+    EXPECT_EQ(SDcard.loadingDataPointer[20], ',');
+    EXPECT_EQ(SDcard.loadingDataPointer[21], '-');
+    EXPECT_EQ(SDcard.loadingDataPointer[22], '7');
+    EXPECT_EQ(SDcard.loadingDataPointer[23], '8');
+    EXPECT_EQ(SDcard.loadingDataPointer[24], '9');
+    EXPECT_EQ(SDcard.loadingDataPointer[25], '6');
+    EXPECT_EQ(SDcard.loadingDataPointer[26], '\n');
+    EXPECT_EQ(SDcard.loadingDataCounter, 27);
 }
 
 TEST(test_BT_SDcard, saveMeasData_Getpid_Test)
@@ -1733,8 +1676,8 @@ TEST(test_BT_SDcard, saveMeasData_Getpid_Test)
     ResetMeasDataFlags();
 
     //
-    pid->refSignal_int.x = -10000;
-    meas2Card.measurePIDRefsigX_int = true;
+    pid->refSig_i.x = -10000;
+    meas2Card.measurePIDRefsigX_i = true;
     saveMeasData(&testIn, &testOut);
 }
 
@@ -2470,11 +2413,10 @@ TEST(test_BT_SDcard, addMeasNameHeader_Test)
 
 TEST(test_BT_SDcard, addMeasHeader_Test)
 {
-    //pidRate.P.x = 150;
-    //pidRate.I.x = 40;
-    //pidRate.D.x = 1600;
-    //pidRate.FFr.x = 100;
-    //pidRate.DTermC = 12;
+    pidRate.P_i.x = 150;
+    pidRate.I_i.x = 40;
+    pidRate.D_i.x = 1600;
+    pidRate.FFr_i.x = 100;
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = true;
     meas2Card.measureGyroRawZ = true;
@@ -3008,8 +2950,8 @@ TEST(test_BT_SDcard, measureData_i32)
 
     SDcard.loadingDataPointer[0] = 0xFE;
     SDcard.loadingDataCounter = 1;
-    testPID.refSignal_int.x = 13421568;
-    measureData(true, true, testPID.refSignal_int.x, 0, false, "test: ");
+    testPID.refSig_i.x = 13421568;
+    measureData(true, true, testPID.refSig_i.x, 0, false, "test: ");
     EXPECT_EQ(SDcard.loadingDataCounter, 10);
     EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
     EXPECT_EQ(SDcard.loadingDataPointer[1], ',');

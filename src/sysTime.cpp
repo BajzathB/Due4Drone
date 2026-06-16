@@ -25,8 +25,6 @@ sysTime sysTimer;
 
 void SetupSysTimer(void)
 {
-    // initalize internal variable
-
 	pmc_enable_periph_clk(ID_TC2);  //enable peripheral clock for TC0-channel 2
 
 	TC0->TC_WPMR = 0x504D4300;  //disable write protection mode
@@ -43,15 +41,11 @@ void UpdateSysTime(droneTimes_st* times)
 	sysTimer.raw = TC0->TC_CHANNEL[2].TC_CV;
 	//software trigger to restart counter
 	TC0->TC_CHANNEL[2].TC_CCR |= TC_CCR_SWTRG;
-	//calculation of real value
-	sysTimer.sysTime += (float)sysTimer.raw * sysTimer.const_raw2real;
 
 	sysTimer.sysTick += (uint64_t)sysTimer.raw;
 
-	times->sysTime = sysTimer.sysTime;
 	times->loopTick = sysTimer.raw;
 	times->sysTick = sysTimer.sysTick;
-	//times->divider = 10500000;
 
 //	Serial.print(sysTimer.const_raw2real,9); Serial.print("\t");
 //	SerialUSB.print(sysTimer.raw);  SerialUSB.print("\t");
@@ -61,10 +55,9 @@ void UpdateSysTime(droneTimes_st* times)
 
 }
 
-void getDroneTimes(droneTimes_st* times)
+uint64_t getSysTick(void)
 {
-	times->sysTime = sysTimer.sysTime;
-	times->loopTick = sysTimer.raw;
+	return sysTimer.sysTick;
 }
 
 float getTimeSinceReset(void)
@@ -79,15 +72,5 @@ float calcDeltaTime(float t1, float t2)
 
 float getSysTime(void)
 {
-  return sysTimer.sysTime;
-}
-
-uint64_t getSysTick(void)
-{
-    return sysTimer.sysTick;
-}
-
-float getLoopTick(void)
-{
-    return sysTimer.raw;
+  return float(sysTimer.sysTick) / float(sysTimer.divider);
 }

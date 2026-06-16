@@ -107,7 +107,7 @@ void SetupBT(void)
 
 }
 
-void RunBT(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
+void RunBT()
 {
 
 	// uint8_t diff = ID_pitch_PT2 - ID_bitshift_substracter;
@@ -121,9 +121,9 @@ void RunBT(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
 	// SerialUSB.print(uint32_t(strFlags >> 32));
 	// SerialUSB.println(uint32_t(flag >> 32));
 
-	BTReceive(ctrlIn);
+	BTReceive();
 	
-	BTTransmit(ctrlIn,ctrlOut);
+	BTTransmit();
 
 
 	// if (SerialUSB.available() > 0)
@@ -175,11 +175,11 @@ void USART1_Handler(void)
 	}
 }
 
-void BTReceive(const controllerIn_st* ctrlIn)
+void BTReceive()
 {
 	if (FRAME_RECEIVED == BT.rxDataState)
 	{
-		ProcessRxFrame(ctrlIn);
+		ProcessRxFrame();
 
 		//setup new receive
 		USART1->US_RPR = (uint32_t)BT.input.vector;
@@ -204,14 +204,16 @@ void BTReceive(const controllerIn_st* ctrlIn)
 	}
 }
 
-void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
+void BTTransmit()
 {
 	bool triggerTx{ false };
 	BT.output.ctr = 2;
 
     //only enter if at least 10ms elapsed since previous data send
-    if (BT.txDeltaTick > TRANSMIT_DELAY)
+    if (getSysTick() - BT.lastTimeTx > TRANSMIT_DELAY)
     {
+		BT.lastTimeTx = getSysTick();
+
         //if there is data to stream
         if (BT.txFrame.streamDataFlags > 0 || BT.txFrame.streamDataFlags2 > 0)
         {
@@ -224,37 +226,25 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
             BT.output.vector[BT.output.ctr++] = 'S';
 
 			//flagset1
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_pidRate_sensor_signal_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_pidRate_sensor_signal_X, pidRate->sensor.signal.x);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_pidRate_sensor_signal_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_pidRate_sensor_signal_Y, pidRate->sensor.signal.y);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_pidRate_sensor_signal_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_pidRate_sensor_signal_Z, pidRate->sensor.signal.z);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_signal_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_signal_X, ctrlIn->gyro.signal.x);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_signal_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_signal_Y, ctrlIn->gyro.signal.y);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_signal_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_signal_Z, ctrlIn->gyro.signal.z);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_pidRate_sensor_signal_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_pidRate_sensor_signal_X, pidRate->sensor.signalPT1.x);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_pidRate_sensor_signal_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_pidRate_sensor_signal_Y, pidRate->sensor.signalPT1.y);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_pidRate_sensor_signal_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_pidRate_sensor_signal_Z, pidRate->sensor.signalPT1.z);
 
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_FL - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_FL, motorSpeeds.FL);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_FR - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_FR, motorSpeeds.FR);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_RL - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_RL, motorSpeeds.RL);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_RR - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_RR, motorSpeeds.RR);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_FL - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_FL, motorSpeeds.FL_tick);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_FR - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_FR, motorSpeeds.FR_tick);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_RL - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_RL, motorSpeeds.RL_tick);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_RR - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_RR, motorSpeeds.RR_tick);
 
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_X, gyroData->PT1.signal.x);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Y, gyroData->PT1.signal.y);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Z, gyroData->PT1.signal.z);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT2_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT2_X, gyroData->PT2.signal.x);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT2_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT2_Y, gyroData->PT2.signal.y);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT2_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT2_Z, gyroData->PT2.signal.z);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_KALMAN_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_KALMAN_X, gyroData->KF.x.value);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_KALMAN_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_KALMAN_Y, gyroData->KF.y.value);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_KALMAN_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_KALMAN_Z, gyroData->KF.z.value);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_X, gyroData->PT1.signalPT1.x);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Y, gyroData->PT1.signalPT1.y);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Z, gyroData->PT1.signalPT1.z);
 
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_signal_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_signal_X, ctrlIn->acc.signal.x);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_signal_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_signal_Y, ctrlIn->acc.signal.y);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_signal_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_signal_Z, ctrlIn->acc.signal.z);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_X, accData->PT1.signal.x);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Y, accData->PT1.signal.y);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Z, accData->PT1.signal.z);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT2_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT2_X, accData->PT2.signal.x);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT2_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT2_Y, accData->PT2.signal.y);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT2_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT2_Z, accData->PT2.signal.z);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_X, accData->PT1.signalPT1.x);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Y, accData->PT1.signalPT1.y);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Z, accData->PT1.signalPT1.z);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT2_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT2_X, accData->PT2.signalPT1.x);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT2_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT2_Y, accData->PT2.signalPT1.y);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT2_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT2_Z, accData->PT2.signalPT1.z);
 
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_roll - ID_bitshift_substracter))) > 0) SetStreamData(ID_roll, accData->rollAngle);
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_pitch - ID_bitshift_substracter))) > 0) SetStreamData(ID_pitch, accData->pitchAngle);
@@ -267,13 +257,7 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF, accData->angleKF.pitch.angle);
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF_AccPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF_AccPT1, accData->angleKFPT10.roll.angle);
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT1, accData->angleKFPT10.pitch.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF_AccPT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF_AccPT2, accData->angleKFPT20.roll.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT2, accData->angleKFPT20.pitch.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF_AccPT1_GyroPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF_AccPT1_GyroPT1, accData->angleKFPT11.roll.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT1_GyroPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT1_GyroPT1, accData->angleKFPT11.pitch.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF_AccPT2_GyroPT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF_AccPT2_GyroPT2, accData->angleKFPT22.roll.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT2_GyroPT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT2_GyroPT2, accData->angleKFPT22.pitch.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_loop_tick - ID_bitshift_substracter2))) > 0) SetStreamData(ID_loop_tick, (float)ctrlIn->droneTimes.loopTick/10.5);
+			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_loop_tick - ID_bitshift_substracter2))) > 0) SetStreamData(ID_loop_tick, (float)getSysTick()/10.5);
 
             //trigger tx
             triggerTx = true;
@@ -315,17 +299,11 @@ void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut)
             USART1->US_PTCR |= US_PTCR_TXTEN;
             //reset trigger
             triggerTx = false;
-            //reset deltaT
-            BT.txDeltaT = 0.0f;
         }
-    }
-    else
-    {
-        BT.txDeltaTick += getLoopTick();
     }
 }
 
-void ProcessRxFrame(const controllerIn_st* ctrlIn)
+void ProcessRxFrame()
 {
 	if (isFrameEndReceived())
 	{
@@ -367,55 +345,32 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				//case ID_control_PID_rate_D_max_X: pidRateSet->Dmax.x = ConvertStrToDouble(&BT.input); break;
 				//case ID_control_PID_rate_D_max_Y: pidRateSet->Dmax.y = ConvertStrToDouble(&BT.input); break;
 				//case ID_control_PID_rate_D_max_Z: pidRateSet->Dmax.z = ConvertStrToDouble(&BT.input); break;
-				case ID_gyro_filter_paramC: gyroDataSet->paramC = ConvertStrToDouble(&BT.input); break;
-				case ID_gyro_kalman_filter_q: gyroDataSet->KF.q = ConvertStrToDouble(&BT.input);	break;
-				case ID_gyro_kalman_filter_r: gyroDataSet->KF.r = ConvertStrToDouble(&BT.input);	break;
-				case ID_acc_filter_paramC: accDataSet->paramC = ConvertStrToDouble(&BT.input); break;
 				case ID_complementary_filter_alpha: accDataSet->alpha = ConvertStrToDouble(&BT.input); break;
 				case ID_acc_kalman_filter_q_angle: accDataSet->q_angle = ConvertStrToDouble(&BT.input);	break;
 				case ID_acc_kalman_filter_q_bias: accDataSet->q_bias = ConvertStrToDouble(&BT.input);	break;
 				case ID_acc_kalman_filter_r: accDataSet->r_measure = ConvertStrToDouble(&BT.input);	break;
-				case ID_spi_acc_offset_x: spi->acc.offset.x = ConvertStrToDouble(&BT.input);	break;
-				case ID_spi_acc_offset_y: spi->acc.offset.y = ConvertStrToDouble(&BT.input);	break;
-				case ID_spi_acc_offset_z: spi->acc.offset.z = ConvertStrToDouble(&BT.input);	break;
-                //case ID_control_PID_cascade_P_X: pidCascadseSet->P.x = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_I_X: pidCascadseSet->I.x = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_D_X: pidCascadseSet->D.x = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_P_Y: pidCascadseSet->P.y = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_I_Y: pidCascadseSet->I.y = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_D_Y: pidCascadseSet->D.y = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_P_Z: pidCascadseSet->P.z = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_I_Z: pidCascadseSet->I.z = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_D_Z: pidCascadseSet->D.z = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_saturation_I: pidCascadseSet->saturationI = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_saturation_PID: pidCascadseSet->saturationPID = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_Dterm_C: pidCascadseSet->DTermC = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_FF_X: pidCascadseSet->FFr.x = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_FF_Y: pidCascadseSet->FFr.y = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_FF_DX: pidCascadseSet->FFdr.x = ConvertStrToDouble(&BT.input); break;
-                //case ID_control_PID_cascade_FF_DY: pidCascadseSet->FFdr.y = ConvertStrToDouble(&BT.input); break;
-				case ID_spi_acc_offset_int_x: spi->acc.offset_int.x = ConvertStrToInt32(&BT.input);	break;
-				case ID_spi_acc_offset_int_y: spi->acc.offset_int.y = ConvertStrToInt32(&BT.input);	break;
-				case ID_spi_acc_offset_int_z: spi->acc.offset_int.z = ConvertStrToInt32(&BT.input);	break;
-				case ID_control_PID_rate_P_X_int: pidRateSet->P_int.x = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_I_X_int: pidRateSet->I_int.x = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_D_X_int: pidRateSet->D_int.x = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_P_Y_int: pidRateSet->P_int.y = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_I_Y_int: pidRateSet->I_int.y = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_D_Y_int: pidRateSet->D_int.y = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_P_Z_int: pidRateSet->P_int.z = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_I_Z_int: pidRateSet->I_int.z = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_D_Z_int: pidRateSet->D_int.z = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_FF_X_int: pidRateSet->FFr_int.x = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_FF_Y_int: pidRateSet->FFr_int.y = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_FF_DX_int: pidRateSet->FFdr_int.x = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_FF_DY_int: pidRateSet->FFdr_int.y = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_sat_I_int: pidRateSet->satI_int = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_sat_PID_int: pidRateSet->satPID_int = ConvertStrToInt32(&BT.input); break;
+				case ID_spi_acc_offset_int_x: spi->acc.offset.x = ConvertStrToInt32(&BT.input);	break;
+				case ID_spi_acc_offset_int_y: spi->acc.offset.y = ConvertStrToInt32(&BT.input);	break;
+				case ID_spi_acc_offset_int_z: spi->acc.offset.z = ConvertStrToInt32(&BT.input);	break;
+				case ID_control_PID_rate_P_X_int: pidRateSet->P_i.x = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_I_X_int: pidRateSet->I_i.x = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_D_X_int: pidRateSet->D_i.x = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_P_Y_int: pidRateSet->P_i.y = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_I_Y_int: pidRateSet->I_i.y = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_D_Y_int: pidRateSet->D_i.y = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_P_Z_int: pidRateSet->P_i.z = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_I_Z_int: pidRateSet->I_i.z = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_D_Z_int: pidRateSet->D_i.z = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_FF_X_int: pidRateSet->FFr_i.x = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_FF_Y_int: pidRateSet->FFr_i.y = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_FF_DX_int: pidRateSet->FFdr_i.x = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_FF_DY_int: pidRateSet->FFdr_i.y = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_sat_I_int: pidRateSet->satI_i = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_sat_PID_int: pidRateSet->satPID_i = ConvertStrToInt32(&BT.input); break;
 
 
 				//
-				case ID_update_global_time: setGlobalTime(ConvertStrToGlobalTime(&BT.input), ctrlIn->droneTimes.sysTick); break;
+				case ID_update_global_time: setGlobalTime(ConvertStrToGlobalTime(&BT.input), getSysTick()); break;
 				case ID_update_global_date: setGlobalDate(ConvertStrToGlobalDate(&BT.input)); break;
 
 				// meas 2 sdcard
@@ -427,15 +382,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_gyro_PT1_X: meas2card->measureGyroPT1X = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_gyro_PT1_Y: meas2card->measureGyroPT1Y = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_gyro_PT1_Z: meas2card->measureGyroPT1Z = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_PT2_X: meas2card->measureGyroPT2X = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_PT2_Y: meas2card->measureGyroPT2Y = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_PT2_Z: meas2card->measureGyroPT2Z = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_raw_X_int: meas2card->measureGyroRawX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_raw_Y_int: meas2card->measureGyroRawY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_raw_Z_int: meas2card->measureGyroRawZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_PT1_X_int: meas2card->measureGyroPT1X_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_PT1_Y_int: meas2card->measureGyroPT1Y_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_PT1_Z_int: meas2card->measureGyroPT1Z_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_raw_X_int: meas2card->measureGyroRealX = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_raw_Y_int: meas2card->measureGyroRealY = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_raw_Z_int: meas2card->measureGyroRealZ = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_PT1_X_int: meas2card->measureGyroRealPT1X = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_PT1_Y_int: meas2card->measureGyroRealPT1Y = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_gyro_PT1_Z_int: meas2card->measureGyroRealPT1Z = ConvertStrToBool(&BT.input); break;
                 //acc
 				case ID_meas_2_card_acc_raw_X: meas2card->measureAccRawX = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_raw_Y: meas2card->measureAccRawY = ConvertStrToBool(&BT.input); break;
@@ -443,15 +395,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_acc_PT1_X: meas2card->measureAccPT1X = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_PT1_Y: meas2card->measureAccPT1Y = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_PT1_Z: meas2card->measureAccPT1Z = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_PT2_X: meas2card->measureAccPT2X = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_PT2_Y: meas2card->measureAccPT2Y = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_PT2_Z: meas2card->measureAccPT2Z = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_raw_X_int: meas2card->measureAccRawX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_raw_Y_int: meas2card->measureAccRawY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_raw_Z_int: meas2card->measureAccRawZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_PT1_X_int: meas2card->measureAccPT1X_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_PT1_Y_int: meas2card->measureAccPT1Y_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_PT1_Z_int: meas2card->measureAccPT1Z_int = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_raw_X_int: meas2card->measureAccRealX = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_raw_Y_int: meas2card->measureAccRealY = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_raw_Z_int: meas2card->measureAccRealZ = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_PT1_X_int: meas2card->measureAccRealPT1X = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_PT1_Y_int: meas2card->measureAccRealPT1Y = ConvertStrToBool(&BT.input); break;
+				case ID_meas_2_card_acc_PT1_Z_int: meas2card->measureAccRealPT1Z = ConvertStrToBool(&BT.input); break;
                 //angle
 				case ID_meas_2_card_angle_raw_roll: meas2card->measureAngleRawRoll = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_raw_pitch: meas2card->measureAngleRawPitch = ConvertStrToBool(&BT.input); break;
@@ -463,14 +412,6 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_angle_KF_raw_pitch: meas2card->measureAngleKFRawPitch = ConvertStrToBool(&BT.input); break;
                 case ID_meas_2_card_angle_KF_PT10_roll: meas2card->measureAngleKFPT10Roll = ConvertStrToBool(&BT.input); break;
                 case ID_meas_2_card_angle_KF_PT10_pitch: meas2card->measureAngleKFPT10Pitch = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT20_roll: meas2card->measureAngleKFPT20Roll = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT20_pitch: meas2card->measureAngleKFPT20Pitch = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT11_roll: meas2card->measureAngleKFPT11Roll = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT11_pitch: meas2card->measureAngleKFPT11Pitch = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT21_roll: meas2card->measureAngleKFPT21Roll = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT21_pitch: meas2card->measureAngleKFPT21Pitch = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT22_roll: meas2card->measureAngleKFPT22Roll = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT22_pitch: meas2card->measureAngleKFPT22Pitch = ConvertStrToBool(&BT.input); break;
                 case ID_meas_2_card_angle_CF_raw_roll: meas2card->measureAngleCFRawRoll = ConvertStrToBool(&BT.input); break;
                 case ID_meas_2_card_angle_CF_raw_pitch: meas2card->measureAngleCFRawPitch = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_CF_PT10_roll: meas2card->measureAngleCFPT10Roll = ConvertStrToBool(&BT.input); break;
@@ -482,48 +423,27 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_angle_CF_weighted_PT01_roll: meas2card->measureAngleCFWeightedPT01Roll = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_CF_weighted_PT01_pitch: meas2card->measureAngleCFWeightedPT01Pitch = ConvertStrToBool(&BT.input); break;
                 //PID control
-                case ID_meas_2_card_PID_refsig_X: meas2card->measurePIDRefsigX = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_refsig_Y: meas2card->measurePIDRefsigY = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_refsig_Z: meas2card->measurePIDRefsigZ = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_sensor_X: meas2card->measurePIDSensorX = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_sensor_Y: meas2card->measurePIDSensorY = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_sensor_Z: meas2card->measurePIDSensorZ = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Pout_X: meas2card->measurePIDPoutX = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Pout_Y: meas2card->measurePIDPoutY = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Pout_Z: meas2card->measurePIDPoutZ = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Iout_X: meas2card->measurePIDIoutX = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Iout_Y: meas2card->measurePIDIoutY = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Iout_Z: meas2card->measurePIDIoutZ = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Dout_X: meas2card->measurePIDDoutX = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Dout_Y: meas2card->measurePIDDoutY = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_Dout_Z: meas2card->measurePIDDoutZ = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_FFout_X: meas2card->measurePIDFFoutX = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_FFout_Y: meas2card->measurePIDFFoutY = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_FFout_Z: meas2card->measurePIDFFoutZ = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_U_X: meas2card->measurePIDUX = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_U_Y: meas2card->measurePIDUY = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_PID_U_Z: meas2card->measurePIDUZ = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_refsig_X_int: meas2card->measurePIDRefsigX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_refsig_Y_int: meas2card->measurePIDRefsigY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_refsig_Z_int: meas2card->measurePIDRefsigZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_sensor_X_int: meas2card->measurePIDSensorX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_sensor_Y_int: meas2card->measurePIDSensorY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_sensor_Z_int: meas2card->measurePIDSensorZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Pout_X_int: meas2card->measurePIDPoutX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Pout_Y_int: meas2card->measurePIDPoutY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Pout_Z_int: meas2card->measurePIDPoutZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Iout_X_int: meas2card->measurePIDIoutX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Iout_Y_int: meas2card->measurePIDIoutY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Iout_Z_int: meas2card->measurePIDIoutZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Dout_X_int: meas2card->measurePIDDoutX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Dout_Y_int: meas2card->measurePIDDoutY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_Dout_Z_int: meas2card->measurePIDDoutZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_FFout_X_int: meas2card->measurePIDFFoutX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_FFout_Y_int: meas2card->measurePIDFFoutY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_FFout_Z_int: meas2card->measurePIDFFoutZ_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_U_X_int: meas2card->measurePIDUX_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_U_Y_int: meas2card->measurePIDUY_int = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_PID_U_Z_int: meas2card->measurePIDUZ_int = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_refsig_X: meas2card->measurePIDRefsigX_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_refsig_Y: meas2card->measurePIDRefsigY_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_refsig_Z: meas2card->measurePIDRefsigZ_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_sensor_X: meas2card->measurePIDSensorX_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_sensor_Y: meas2card->measurePIDSensorY_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_sensor_Z: meas2card->measurePIDSensorZ_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Pout_X: meas2card->measurePIDPoutX_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Pout_Y: meas2card->measurePIDPoutY_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Pout_Z: meas2card->measurePIDPoutZ_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Iout_X: meas2card->measurePIDIoutX_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Iout_Y: meas2card->measurePIDIoutY_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Iout_Z: meas2card->measurePIDIoutZ_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Dout_X: meas2card->measurePIDDoutX_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Dout_Y: meas2card->measurePIDDoutY_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_Dout_Z: meas2card->measurePIDDoutZ_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_FFout_X: meas2card->measurePIDFFoutX_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_FFout_Y: meas2card->measurePIDFFoutY_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_FFout_Z: meas2card->measurePIDFFoutZ_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_U_X: meas2card->measurePIDUX_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_U_Y: meas2card->measurePIDUY_i = ConvertStrToBool(&BT.input); break;
+                case ID_meas_2_card_PID_U_Z: meas2card->measurePIDUZ_i = ConvertStrToBool(&BT.input); break;
 
 				default:/*nothing*/;
 			}
@@ -566,55 +486,32 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				//case ID_control_PID_rate_D_max_X: BT.txFrame.paramData = pidRateGet->Dmax.x; BT.txFrame.numberOfFrac = 1; break;
 				//case ID_control_PID_rate_D_max_Y: BT.txFrame.paramData = pidRateGet->Dmax.y; BT.txFrame.numberOfFrac = 1; break;
 				//case ID_control_PID_rate_D_max_Z: BT.txFrame.paramData = pidRateGet->Dmax.z; BT.txFrame.numberOfFrac = 1; break;
-				case ID_gyro_filter_paramC: BT.txFrame.paramData = gyroDataGet->paramC; BT.txFrame.numberOfFrac = 1; break;
-				case ID_gyro_kalman_filter_q: BT.txFrame.paramData = gyroDataGet->KF.q; BT.txFrame.numberOfFrac = 3; break;
-				case ID_gyro_kalman_filter_r: BT.txFrame.paramData = gyroDataGet->KF.r; BT.txFrame.numberOfFrac = 1; break;
-				case ID_acc_filter_paramC: BT.txFrame.paramData = accDataSet->paramC; BT.txFrame.numberOfFrac = 1; break;
 				case ID_complementary_filter_alpha: BT.txFrame.paramData = accDataSet->alpha; BT.txFrame.numberOfFrac = 3; break;
 				case ID_acc_kalman_filter_q_angle: BT.txFrame.paramData = accDataSet->q_angle; BT.txFrame.numberOfFrac = 6; break;
 				case ID_acc_kalman_filter_q_bias: BT.txFrame.paramData = accDataSet->q_bias; BT.txFrame.numberOfFrac = 6; break;
-				case ID_acc_kalman_filter_r: BT.txFrame.paramData = accDataSet->r_measure; BT.txFrame.numberOfFrac = 2; break;        
-				case ID_spi_acc_offset_x: BT.txFrame.paramData = spi->acc.offset.x; BT.txFrame.numberOfFrac = 2; break;
-				case ID_spi_acc_offset_y: BT.txFrame.paramData = spi->acc.offset.y; BT.txFrame.numberOfFrac = 2; break;
-				case ID_spi_acc_offset_z: BT.txFrame.paramData = spi->acc.offset.z; BT.txFrame.numberOfFrac = 2; break;
-                //case ID_control_PID_cascade_P_X: BT.txFrame.paramData = pidCascadseSet->P.x; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_I_X: BT.txFrame.paramData = pidCascadseSet->I.x; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_D_X: BT.txFrame.paramData = pidCascadseSet->D.x; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_P_Y: BT.txFrame.paramData = pidCascadseSet->P.y; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_I_Y: BT.txFrame.paramData = pidCascadseSet->I.y; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_D_Y: BT.txFrame.paramData = pidCascadseSet->D.y; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_P_Z: BT.txFrame.paramData = pidCascadseSet->P.z; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_I_Z: BT.txFrame.paramData = pidCascadseSet->I.z; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_D_Z: BT.txFrame.paramData = pidCascadseSet->D.z; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_saturation_I: BT.txFrame.paramData = pidCascadseSet->saturationI; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_saturation_PID: BT.txFrame.paramData = pidCascadseSet->saturationPID; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_Dterm_C: BT.txFrame.paramData = pidCascadseSet->DTermC; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_FF_X: BT.txFrame.paramData = pidCascadseSet->FFr.x; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_FF_Y: BT.txFrame.paramData = pidCascadseSet->FFr.y; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_FF_DX: BT.txFrame.paramData = pidCascadseSet->FFdr.x; BT.txFrame.numberOfFrac = 1; break;
-                //case ID_control_PID_cascade_FF_DY: BT.txFrame.paramData = pidCascadseSet->FFdr.y; BT.txFrame.numberOfFrac = 1; break;
+				case ID_acc_kalman_filter_r: BT.txFrame.paramData = accDataSet->r_measure; BT.txFrame.numberOfFrac = 2; break;
 
                 case ID_SDCARD_MAINSTATE: BT.txFrame.paramData = sdcard->MainState; BT.txFrame.numberOfFrac = 0; break;
                 case ID_SDCARD_RESET_MEASRUEMENT: BT.txFrame.paramData = ResetMeasurement(); BT.txFrame.numberOfFrac = 0; break;
                 case ID_SDCARD_REINIT_SDCARD: BT.txFrame.paramData = ReinitSDCard(); BT.txFrame.numberOfFrac = 0; break;
-                case ID_spi_acc_offset_int_x: BT.txFrame.paramData = spi->acc.offset_int.x; BT.txFrame.numberOfFrac = 0; break;
-                case ID_spi_acc_offset_int_y: BT.txFrame.paramData = spi->acc.offset_int.y; BT.txFrame.numberOfFrac = 0; break;
-                case ID_spi_acc_offset_int_z: BT.txFrame.paramData = spi->acc.offset_int.z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_P_X_int: BT.txFrame.paramData = pidRateGet->P_int.x; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_I_X_int: BT.txFrame.paramData = pidRateGet->I_int.x; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_D_X_int: BT.txFrame.paramData = pidRateGet->D_int.x; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_P_Y_int: BT.txFrame.paramData = pidRateGet->P_int.y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_I_Y_int: BT.txFrame.paramData = pidRateGet->I_int.y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_D_Y_int: BT.txFrame.paramData = pidRateGet->D_int.y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_P_Z_int: BT.txFrame.paramData = pidRateGet->P_int.z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_I_Z_int: BT.txFrame.paramData = pidRateGet->I_int.z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_D_Z_int: BT.txFrame.paramData = pidRateGet->D_int.z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_FF_X_int: BT.txFrame.paramData = pidRateGet->FFr_int.x; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_FF_Y_int: BT.txFrame.paramData = pidRateGet->FFr_int.y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_FF_DX_int: BT.txFrame.paramData = pidRateGet->FFdr_int.x; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_FF_DY_int: BT.txFrame.paramData = pidRateGet->FFdr_int.y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_sat_I_int: BT.txFrame.paramData = pidRateGet->satI_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_control_PID_rate_sat_PID_int: BT.txFrame.paramData = pidRateGet->satPID_int; BT.txFrame.numberOfFrac = 0; break;
+                case ID_spi_acc_offset_int_x: BT.txFrame.paramData = spi->acc.offset.x; BT.txFrame.numberOfFrac = 0; break;
+                case ID_spi_acc_offset_int_y: BT.txFrame.paramData = spi->acc.offset.y; BT.txFrame.numberOfFrac = 0; break;
+                case ID_spi_acc_offset_int_z: BT.txFrame.paramData = spi->acc.offset.z; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_P_X_int: BT.txFrame.paramData = pidRateGet->P_i.x; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_I_X_int: BT.txFrame.paramData = pidRateGet->I_i.x; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_D_X_int: BT.txFrame.paramData = pidRateGet->D_i.x; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_P_Y_int: BT.txFrame.paramData = pidRateGet->P_i.y; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_I_Y_int: BT.txFrame.paramData = pidRateGet->I_i.y; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_D_Y_int: BT.txFrame.paramData = pidRateGet->D_i.y; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_P_Z_int: BT.txFrame.paramData = pidRateGet->P_i.z; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_I_Z_int: BT.txFrame.paramData = pidRateGet->I_i.z; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_D_Z_int: BT.txFrame.paramData = pidRateGet->D_i.z; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_FF_X_int: BT.txFrame.paramData = pidRateGet->FFr_i.x; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_FF_Y_int: BT.txFrame.paramData = pidRateGet->FFr_i.y; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_FF_DX_int: BT.txFrame.paramData = pidRateGet->FFdr_i.x; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_FF_DY_int: BT.txFrame.paramData = pidRateGet->FFdr_i.y; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_sat_I_int: BT.txFrame.paramData = pidRateGet->satI_i; BT.txFrame.numberOfFrac = 0; break;
+				case ID_control_PID_rate_sat_PID_int: BT.txFrame.paramData = pidRateGet->satPID_i; BT.txFrame.numberOfFrac = 0; break;
 
 				//
 				case ID_update_global_time: BT.txFrame.paramData = ConvertGlobalTime(&sdcard->globalDateAndTime); BT.txFrame.numberOfFrac = 0; break;
@@ -629,15 +526,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_gyro_PT1_X: BT.txFrame.paramData = meas2card->measureGyroPT1X; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_gyro_PT1_Y: BT.txFrame.paramData = meas2card->measureGyroPT1Y; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_gyro_PT1_Z: BT.txFrame.paramData = meas2card->measureGyroPT1Z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_PT2_X: BT.txFrame.paramData = meas2card->measureGyroPT2X; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_PT2_Y: BT.txFrame.paramData = meas2card->measureGyroPT2Y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_PT2_Z: BT.txFrame.paramData = meas2card->measureGyroPT2Z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_raw_X_int: BT.txFrame.paramData = meas2card->measureGyroRawX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_raw_Y_int: BT.txFrame.paramData = meas2card->measureGyroRawY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_raw_Z_int: BT.txFrame.paramData = meas2card->measureGyroRawZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_PT1_X_int: BT.txFrame.paramData = meas2card->measureGyroPT1X_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_PT1_Y_int: BT.txFrame.paramData = meas2card->measureGyroPT1Y_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_PT1_Z_int: BT.txFrame.paramData = meas2card->measureGyroPT1Z_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_raw_X_int: BT.txFrame.paramData = meas2card->measureGyroRealX; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_raw_Y_int: BT.txFrame.paramData = meas2card->measureGyroRealY; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_raw_Z_int: BT.txFrame.paramData = meas2card->measureGyroRealZ; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_PT1_X_int: BT.txFrame.paramData = meas2card->measureGyroRealPT1X; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_PT1_Y_int: BT.txFrame.paramData = meas2card->measureGyroRealPT1Y; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_gyro_PT1_Z_int: BT.txFrame.paramData = meas2card->measureGyroRealPT1Z; BT.txFrame.numberOfFrac = 0; break;
                 //acc
 				case ID_meas_2_card_acc_raw_X: BT.txFrame.paramData = meas2card->measureAccRawX; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_raw_Y: BT.txFrame.paramData = meas2card->measureAccRawY; BT.txFrame.numberOfFrac = 0; break;
@@ -645,15 +539,12 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_acc_PT1_X: BT.txFrame.paramData = meas2card->measureAccPT1X; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_PT1_Y: BT.txFrame.paramData = meas2card->measureAccPT1Y; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_PT1_Z: BT.txFrame.paramData = meas2card->measureAccPT1Z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_PT2_X: BT.txFrame.paramData = meas2card->measureAccPT2X; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_PT2_Y: BT.txFrame.paramData = meas2card->measureAccPT2Y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_PT2_Z: BT.txFrame.paramData = meas2card->measureAccPT2Z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_raw_X_int: BT.txFrame.paramData = meas2card->measureAccRawX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_raw_Y_int: BT.txFrame.paramData = meas2card->measureAccRawY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_raw_Z_int: BT.txFrame.paramData = meas2card->measureAccRawZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_PT1_X_int: BT.txFrame.paramData = meas2card->measureAccPT1X_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_PT1_Y_int: BT.txFrame.paramData = meas2card->measureAccPT1Y_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_PT1_Z_int: BT.txFrame.paramData = meas2card->measureAccPT1Z_int; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_raw_X_int: BT.txFrame.paramData = meas2card->measureAccRealX; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_raw_Y_int: BT.txFrame.paramData = meas2card->measureAccRealY; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_raw_Z_int: BT.txFrame.paramData = meas2card->measureAccRealZ; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_PT1_X_int: BT.txFrame.paramData = meas2card->measureAccRealPT1X; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_PT1_Y_int: BT.txFrame.paramData = meas2card->measureAccRealPT1Y; BT.txFrame.numberOfFrac = 0; break;
+				case ID_meas_2_card_acc_PT1_Z_int: BT.txFrame.paramData = meas2card->measureAccRealPT1Z; BT.txFrame.numberOfFrac = 0; break;
                 //angle
 				case ID_meas_2_card_angle_raw_roll: BT.txFrame.paramData = meas2card->measureAngleRawRoll; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleRawPitch; BT.txFrame.numberOfFrac = 0; break;
@@ -665,14 +556,6 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
                 case ID_meas_2_card_angle_KF_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleKFRawPitch; BT.txFrame.numberOfFrac = 0; break;
                 case ID_meas_2_card_angle_KF_PT10_roll: BT.txFrame.paramData = meas2card->measureAngleKFPT10Roll; BT.txFrame.numberOfFrac = 0; break;
                 case ID_meas_2_card_angle_KF_PT10_pitch: BT.txFrame.paramData = meas2card->measureAngleKFPT10Pitch; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT20_roll: BT.txFrame.paramData = meas2card->measureAngleKFPT20Roll; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT20_pitch: BT.txFrame.paramData = meas2card->measureAngleKFPT20Pitch; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT11_roll: BT.txFrame.paramData = meas2card->measureAngleKFPT11Roll; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT11_pitch: BT.txFrame.paramData = meas2card->measureAngleKFPT11Pitch; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT21_roll: BT.txFrame.paramData = meas2card->measureAngleKFPT21Roll; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT21_pitch: BT.txFrame.paramData = meas2card->measureAngleKFPT21Pitch; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT22_roll: BT.txFrame.paramData = meas2card->measureAngleKFPT22Roll; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT22_pitch: BT.txFrame.paramData = meas2card->measureAngleKFPT22Pitch; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_CF_raw_roll: BT.txFrame.paramData = meas2card->measureAngleCFRawRoll; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_CF_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleCFRawPitch; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_CF_PT10_roll: BT.txFrame.paramData = meas2card->measureAngleCFPT10Roll; BT.txFrame.numberOfFrac = 0; break;
@@ -684,48 +567,27 @@ void ProcessRxFrame(const controllerIn_st* ctrlIn)
 				case ID_meas_2_card_angle_CF_weighted_PT01_roll: BT.txFrame.paramData = meas2card->measureAngleCFWeightedPT01Roll; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_CF_weighted_PT01_pitch: BT.txFrame.paramData = meas2card->measureAngleCFWeightedPT01Pitch; BT.txFrame.numberOfFrac = 0; break;
                 //PID sensor
-                case ID_meas_2_card_PID_refsig_X: BT.txFrame.paramData = meas2card->measurePIDRefsigX; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_refsig_Y: BT.txFrame.paramData = meas2card->measurePIDRefsigY; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_refsig_Z: BT.txFrame.paramData = meas2card->measurePIDRefsigZ; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_sensor_X: BT.txFrame.paramData = meas2card->measurePIDSensorX; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_sensor_Y: BT.txFrame.paramData = meas2card->measurePIDSensorY; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_sensor_Z: BT.txFrame.paramData = meas2card->measurePIDSensorZ; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Pout_X: BT.txFrame.paramData = meas2card->measurePIDPoutX; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Pout_Y: BT.txFrame.paramData = meas2card->measurePIDPoutY; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Pout_Z: BT.txFrame.paramData = meas2card->measurePIDPoutZ; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Iout_X: BT.txFrame.paramData = meas2card->measurePIDIoutX; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Iout_Y: BT.txFrame.paramData = meas2card->measurePIDIoutY; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Iout_Z: BT.txFrame.paramData = meas2card->measurePIDIoutZ; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Dout_X: BT.txFrame.paramData = meas2card->measurePIDDoutX; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Dout_Y: BT.txFrame.paramData = meas2card->measurePIDDoutY; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_Dout_Z: BT.txFrame.paramData = meas2card->measurePIDDoutZ; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_FFout_X: BT.txFrame.paramData = meas2card->measurePIDFFoutX; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_FFout_Y: BT.txFrame.paramData = meas2card->measurePIDFFoutY; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_FFout_Z: BT.txFrame.paramData = meas2card->measurePIDFFoutZ; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_U_X: BT.txFrame.paramData = meas2card->measurePIDUX; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_U_Y: BT.txFrame.paramData = meas2card->measurePIDUY; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_PID_U_Z: BT.txFrame.paramData = meas2card->measurePIDUZ; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_refsig_X_int: BT.txFrame.paramData = meas2card->measurePIDRefsigX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_refsig_Y_int: BT.txFrame.paramData = meas2card->measurePIDRefsigY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_refsig_Z_int: BT.txFrame.paramData = meas2card->measurePIDRefsigZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_sensor_X_int: BT.txFrame.paramData = meas2card->measurePIDSensorX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_sensor_Y_int: BT.txFrame.paramData = meas2card->measurePIDSensorY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_sensor_Z_int: BT.txFrame.paramData = meas2card->measurePIDSensorZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Pout_X_int: BT.txFrame.paramData = meas2card->measurePIDPoutX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Pout_Y_int: BT.txFrame.paramData = meas2card->measurePIDPoutY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Pout_Z_int: BT.txFrame.paramData = meas2card->measurePIDPoutZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Iout_X_int: BT.txFrame.paramData = meas2card->measurePIDIoutX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Iout_Y_int: BT.txFrame.paramData = meas2card->measurePIDIoutY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Iout_Z_int: BT.txFrame.paramData = meas2card->measurePIDIoutZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Dout_X_int: BT.txFrame.paramData = meas2card->measurePIDDoutX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Dout_Y_int: BT.txFrame.paramData = meas2card->measurePIDDoutY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_Dout_Z_int: BT.txFrame.paramData = meas2card->measurePIDDoutZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_FFout_X_int: BT.txFrame.paramData = meas2card->measurePIDFFoutX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_FFout_Y_int: BT.txFrame.paramData = meas2card->measurePIDFFoutY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_FFout_Z_int: BT.txFrame.paramData = meas2card->measurePIDFFoutZ_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_U_X_int: BT.txFrame.paramData = meas2card->measurePIDUX_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_U_Y_int: BT.txFrame.paramData = meas2card->measurePIDUY_int; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_PID_U_Z_int: BT.txFrame.paramData = meas2card->measurePIDUZ_int; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_refsig_X: BT.txFrame.paramData = meas2card->measurePIDRefsigX_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_refsig_Y: BT.txFrame.paramData = meas2card->measurePIDRefsigY_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_refsig_Z: BT.txFrame.paramData = meas2card->measurePIDRefsigZ_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_sensor_X: BT.txFrame.paramData = meas2card->measurePIDSensorX_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_sensor_Y: BT.txFrame.paramData = meas2card->measurePIDSensorY_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_sensor_Z: BT.txFrame.paramData = meas2card->measurePIDSensorZ_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Pout_X: BT.txFrame.paramData = meas2card->measurePIDPoutX_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Pout_Y: BT.txFrame.paramData = meas2card->measurePIDPoutY_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Pout_Z: BT.txFrame.paramData = meas2card->measurePIDPoutZ_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Iout_X: BT.txFrame.paramData = meas2card->measurePIDIoutX_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Iout_Y: BT.txFrame.paramData = meas2card->measurePIDIoutY_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Iout_Z: BT.txFrame.paramData = meas2card->measurePIDIoutZ_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Dout_X: BT.txFrame.paramData = meas2card->measurePIDDoutX_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Dout_Y: BT.txFrame.paramData = meas2card->measurePIDDoutY_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_Dout_Z: BT.txFrame.paramData = meas2card->measurePIDDoutZ_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_FFout_X: BT.txFrame.paramData = meas2card->measurePIDFFoutX_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_FFout_Y: BT.txFrame.paramData = meas2card->measurePIDFFoutY_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_FFout_Z: BT.txFrame.paramData = meas2card->measurePIDFFoutZ_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_U_X: BT.txFrame.paramData = meas2card->measurePIDUX_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_U_Y: BT.txFrame.paramData = meas2card->measurePIDUY_i; BT.txFrame.numberOfFrac = 0; break;
+                case ID_meas_2_card_PID_U_Z: BT.txFrame.paramData = meas2card->measurePIDUZ_i; BT.txFrame.numberOfFrac = 0; break;
 
 				default:BT.txFrame.sendParam = false;
 			}

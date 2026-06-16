@@ -40,7 +40,7 @@ void SetupAccIntPin(void);
 void EnableIntHandling(void);
 
 // Method to run SPI related functions cyclically
-void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput);
+void RunSPI();
 
 // Function to check if SPI RX finished
 bool IsRxDone(void);

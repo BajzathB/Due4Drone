@@ -66,18 +66,18 @@ void SpiDmaTxRx(volatile uint32_t* txBuff, volatile uint8_t* rxBuff, uint32_t ct
 	DMAC->DMAC_CHER |= triggerCh;
 }
 
-// param C = dataRate/cutoffFreq
-void PT1Filter(volatile float* yOut, const volatile float xIn, const volatile float paramC)
-{
-	*yOut = (xIn + paramC * (*yOut)) / (paramC + 1);
-}
-
-void signalPT1Filter(volatile signal* sig)
-{
-	PT1Filter(&sig->signalsPT1.x, sig->offset.x, sig->paramC);
-	PT1Filter(&sig->signalsPT1.y, sig->offset.y, sig->paramC);
-	PT1Filter(&sig->signalsPT1.z, sig->offset.z, sig->paramC);
-}
+//// param C = dataRate/cutoffFreq
+//void PT1Filter(volatile float* yOut, const volatile float xIn, const volatile float paramC)
+//{
+//	*yOut = (xIn + paramC * (*yOut)) / (paramC + 1);
+//}
+//
+//void signalPT1Filter(volatile signal* sig)
+//{
+//	PT1Filter(&sig->signalsPT1.x, sig->offset.x, sig->paramC);
+//	PT1Filter(&sig->signalsPT1.y, sig->offset.y, sig->paramC);
+//	PT1Filter(&sig->signalsPT1.z, sig->offset.z, sig->paramC);
+//}
 
 //y=alpha*(x-y) where alpha=1/(1+dataRate/cutoffFreq)
 //>>15 is equal 1/32768, 2979/32768 = 1/(1+2000/200)
@@ -99,27 +99,22 @@ float calcRealFromInt(volatile signal* sig, E_direction dir, bool isPT1)
 	switch (dir)
 	{
 	case E_direction::X:
-		value = (isPT1) ? sig->signalsPT1_int.x : sig->signals_int.x;
+		value = (isPT1) ? sig->signalsPT1.x : sig->signals.x;
 		break;
 
 	case E_direction::Y:
-		value = (isPT1) ? sig->signalsPT1_int.y : sig->signals_int.y;
+		value = (isPT1) ? sig->signalsPT1.y : sig->signals.y;
 		break;
 
 	case E_direction::Z:
-		value = (isPT1) ? sig->signalsPT1_int.z : sig->signals_int.z;
+		value = (isPT1) ? sig->signalsPT1.z : sig->signals.z;
 		break;
 	}
 
 	return (float)(sig->raw2realMultiplier * value) / (float)sig->raw2realDivider;
 }
 
-float calcRealFromInt(int32_t value)
-{
-    return (float)(2000 * value) / 32768;
-}
-
-void calcMovingAverage(MovingAverage* ma, axis* value)
+void calcMovingAverage(MovingAverage* ma, axis_i32* value)
 {
 	// Remove oldest value from sum
 	ma->sumX -= ma->dataX[ma->index];

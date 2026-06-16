@@ -9,10 +9,11 @@ extern Tc* TC0;
 // testing compilation
 TEST(test_sysTime, SetupSysTimer_Call)
 {
+    droneTimes_st testTimes;
     SetupSysTimer();
-    UpdateSysTime();
+    UpdateSysTime(&testTimes);
+    getSysTick();
     getSysTime();
-    getSysLoopTime();
     getTimeSinceReset();
     calcDeltaTime(1.0f, 2.0f);
 
@@ -22,59 +23,56 @@ TEST(test_sysTime, SetupSysTimer_Call)
 // testing time values without presetting
 TEST(test_sysTime, UpdateSysTime_Time0)
 {
-    UpdateSysTime();
+    droneTimes_st testTimes;
+    UpdateSysTime(&testTimes);
 
     EXPECT_EQ(sysTimer.raw, 0);
-    EXPECT_EQ(sysTimer.loopTime, 0);
-    EXPECT_EQ(sysTimer.sysTime, 0);
-    EXPECT_NEAR(sysTimer.const_raw2real, 1 / 10500000.0, 1 / 1000000.0);
+    EXPECT_EQ(sysTimer.sysTick, 0);
+    EXPECT_EQ(testTimes.loopTick, 0);
+    EXPECT_EQ(testTimes.sysTick, 0);
 }
 
 // testing time values with presetting
 TEST(test_sysTime, UpdateSysTime_TimeValue)
 {
+    droneTimes_st testTimes;
+
     // 1st call
     TC0->TC_CHANNEL[2].TC_CV = 500000;
 
-    UpdateSysTime();
+    UpdateSysTime(&testTimes);
 
     EXPECT_EQ(sysTimer.raw, 500000);
-    EXPECT_NEAR(sysTimer.loopTime, 500000 / 10500000.0, 0.00001);
-    EXPECT_NEAR(sysTimer.sysTime, 500000 / 10500000.0, 0.00001);
+    EXPECT_EQ(sysTimer.sysTick, 500000);
 
     // 2nd call
     TC0->TC_CHANNEL[2].TC_CV = 700000;
 
-    UpdateSysTime();
+    UpdateSysTime(&testTimes);
 
     EXPECT_EQ(sysTimer.raw, 700000);
-    EXPECT_NEAR(sysTimer.loopTime, 700000 / 10500000.0, 0.00001);
-    EXPECT_NEAR(sysTimer.sysTime, 1200000 / 10500000.0, 0.00001);
+    EXPECT_EQ(sysTimer.sysTick, 1200000);
 }
 
 // testing sysTime getter
 TEST(test_sysTime, getSysTime)
 {
-    // 1st call
-    EXPECT_NEAR(sysTimer.sysTime, 1200000 / 10500000.0, 0.00001);
-
-    // 2nd call
-    sysTimer.sysTime = 0.5;
-
-    EXPECT_NEAR(getSysTime(), 0.5, 0.00001);
+    //
+    sysTimer.sysTick = 1200000;
+    EXPECT_NEAR(getSysTime(), float(1200000)/10500000, 0.00001);
+    //
+    sysTimer.sysTick = 29500000;
+    EXPECT_NEAR(getSysTime(), float(29500000) / 10500000, 0.00001);
 }
 
-
-// testing sysLoopTime getter
-TEST(test_sysTime, getSysLoopTime)
+TEST(test_sysTime, getSysTick)
 {
-    // 1st call
-    EXPECT_NEAR(sysTimer.loopTime, 700000 / 10500000.0, 0.00001);
-
-    // 2nd call
-    sysTimer.loopTime = 0.1;
-
-    EXPECT_NEAR(getSysLoopTime(), 0.1, 0.00001);
+    //
+    sysTimer.sysTick = 1200000;
+    EXPECT_EQ(getSysTick(), 1200000);
+    //
+    sysTimer.sysTick = 29500000;
+    EXPECT_EQ(getSysTick(), 29500000);
 }
 
 TEST(test_sysTime, getTimeSinceReset)

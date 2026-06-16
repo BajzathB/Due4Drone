@@ -21,69 +21,38 @@ typedef struct controllerIn_st
 {
 	sigOut gyro;
 	sigOut acc;
-    rcSignals_st rcSignals;
-    droneTimes_st droneTimes;
+  rcSignals_st rcSignals;
 }controllerIn_st;
 
 typedef struct controllerOut_st 
 {
-    axis U;
-    axis_i32 U_int;
+    axis_i32 U_i;
     E_armState armState{DISARMED};
 }controllerOut_st;
 
 typedef struct pid_st
 {
-    //axis P, I, D, Dmax, FFr, FFdr;
-    //axis error, errorSum, errorDot, errorPrev, errorDotFiltered;
-    //axis Pout, Iout, Dout, FFout;
-    //axis refSignal, refSignalPrev, refSignalDot, refSignalDotFiltered;
-    //axis u;
-    //float saturationI, saturationPID, DTermC, FFDTermC;
-    //float iRelaxRefThreshhold;
-    //float iRelaxErrThreshhold;
-    //float dMaxRefThreshhold;
-    //float dMaxErrThreshhold;
     sigOut sensor;
-    //sigOut sensorPrev;
-	//float deltaT{0.1f};
-    //float PFactor, IFactor, DFactor, FFrFactor, FFdrFactor;
+    axis_i32 error_i, errorSum_i, errorDot_i, errorPrev_i, errorDotPT1_i;
+    axis_i32 refSig_i, refSigPrev_i, refSigDot_i, refSigDotPT1_i;
+    axis_i32 P_i, I_i, D_i, Dmax_i, FFr_i, FFdr_i, u_i;
+    axis_i32 Ki_i, Kd_i, Kffr_i, Kffdr_i;
+    axis_i32 Pout_i, Iout_i, Dout_i, FFout_i;
+    int32_t satI_i, satPID_i;
+    axis_i32 signalPT1Prev_i;
 
-    axis_i32 error_int, errorSum_int, errorDot_int, errorPrev_int, errorDotPT1_int;
-    axis_i32 refSignal_int, refSignalPrev_int, refSignalDot_int, refSignalDotPT1_int;
-    axis_i32 P_int, I_int, D_int, Dmax_int, FFr_int, FFdr_int, u_int;
-    axis_i32 Pout_int, Iout_int, Dout_int, FFout_int;
-    uint32_t deltaTicks{ 1 };
-    int32_t inverseDt{1};
-    int32_t satI_int, satPID_int;
-    axis_i32 signalPT1Prev_int;
-    uint64_t runCtrlTickPrev{ 0 };
+    const uint32_t deltaTicks{ 5250 };  //0.5ms
+    const int32_t inverseDt{ 2000 };  //2kHz
+
+    int32_t iRelaxRefThold_i;
+    int32_t iRelaxErrThold_i;
+    int32_t dMaxRefThold_i;
+    int32_t dMaxErrThold_i;
 }pid_st;
-
-// Kalman Filter Struct
-typedef struct kalmanfilter_st 
-{
-    float value{0.0f};  // Estimated value
-    float p{1.0f};  // Estimation error covariance
-    float k{0.0f};  // Kalman gain
-} kalmanfilter_st;
-
-typedef struct kalmanfilter3d_st 
-{
-    kalmanfilter_st x;
-    kalmanfilter_st y;
-    kalmanfilter_st z;
-    float q{ 0.001f };  // Process noise covariance
-    float r{ 4.0f };  // Measurement noise covariance
-} kalmanfilter3d_st;
 
 typedef struct gyroData_st
 {
-    float paramC{ 10 };     //2000/x sampleRate/cutoffRate
     sigOut PT1;
-    sigOut PT2;
-    sigOut PT3;
-    kalmanfilter3d_st KF;
 };
 
 // Kalman filter struct
@@ -98,14 +67,12 @@ typedef struct
 
 typedef struct 
 {
-
     kalmanFilterAngle_st roll;
     kalmanFilterAngle_st pitch;
 }kalmanFilterAngle3d_st;
 
 typedef struct accData_st
 {
-    float paramC{ 64 };     //1600/x sampleRate/cutoffRate
     sigOut PT1;
     sigOut PT2;
     float rollAngle;
@@ -132,16 +99,17 @@ typedef struct accData_st
     double r_measure{ 50.0 }; // Measurement noise variance
     kalmanFilterAngle3d_st angleKF;
     kalmanFilterAngle3d_st angleKFPT10;
-    kalmanFilterAngle3d_st angleKFPT20;
-    kalmanFilterAngle3d_st angleKFPT11;
-    kalmanFilterAngle3d_st angleKFPT21;
-    kalmanFilterAngle3d_st angleKFPT22;
 
 };
 
 
 // Method to set initial values for controller variable
 void SetupController(void);
+
+// Method to set up timer for control loop
+void SetupCtrlLoopTimer(void);
+
+void ControllerDebug(void);
 
 // Method to run controller logic cyclically
 void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut);
@@ -158,9 +126,6 @@ float ParabolicScale(const uint16_t channel);
 // Function to calculate expo scaling for stick value
 inline int32_t expo(const uint16_t channel);
 
-// Function to linear interpolate stick value
-float LinearInterpol(const uint16_t xn, const uint16_t x0, const uint16_t x1, const float y0, const float y1);
-
 // Function to optimally linear interpolate to ~-8192-8192
 inline int32_t linearScale_8192(uint16_t ch);
 
@@ -171,10 +136,10 @@ inline int32_t linearScale_8192(uint16_t ch);
 //void CalcPID_wo_Dkick(pid_st* pidSt, axis* u);
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
-void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u);
+//void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u);
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
-void CalcPID_wo_Dkick_FF_IRelax_Dmax(pid_st* pidSt, axis* u, uint16_t twoWayswitch);
+//void CalcPID_wo_Dkick_FF_IRelax_Dmax(pid_st* pidSt, axis* u, uint16_t twoWayswitch);
 
 // Method to calc PID integer based
 void CalcPID_int(pid_st* pidSt, axis_i32* u);
@@ -212,9 +177,6 @@ gyroData_st* getGyroData();
 // Function to return acc data values
 accData_st* getAccData();
 
-// Method to calculate kalman filter of a signal
-void KalmanFilter(kalmanfilter_st* kf, float xIn);
-
 //Method to calculate kalman filter of acc signal
 void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime);
 
@@ -231,10 +193,10 @@ float minVal(float value1, float value2);
 float maxVal(float value1, float value2);
 
 // Method to calculate I relax factor value
-void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch);
+//void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch);
 
 // Method to calculate Dmax factor
-void calcDmaxFactor(axis* dDynamic, pid_st* pidSt);
+//void calcDmaxFactor(axis* dDynamic, pid_st* pidSt);
 
 // Function to claculate the wobble amplitude value
 float wobble(uint16_t pot1, uint16_t poti2);
@@ -242,5 +204,7 @@ float wobble(uint16_t pot1, uint16_t poti2);
 // Function to clamp value inbetween bounds
 inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max);
 inline int64_t clamp_i64(int64_t x, int64_t min, int64_t max);
+
+void setPIDParam(int32_t value, E_direction dir, E_pid pid);
 
 #endif // !CONTROLLER_HEADER

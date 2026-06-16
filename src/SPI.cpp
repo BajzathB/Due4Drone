@@ -63,24 +63,34 @@ extern Dmac* DMAC;
 
 #endif
 
-#define INT_BASE_VALUE
-//#define FLOAT_BASE_VALUE
-
 #define THREE_SECOND 31500000u //3sec in ticks
+
+//#define DEBUG_GYRO_INT
+//#define DEBUG_ACC_INT
+//#define DEBUG_SD_INT
 
 spi_st SPI;
 
-volatile uint32_t testCtrGyroActive{0};
-volatile uint32_t testCtrGyroPending{0};
-volatile uint32_t testCtrGyroFinish{0};
-volatile uint32_t testCtrGyroGoActive{0};
+#ifdef DEBUG_GYRO_INT
+volatile uint32_t testCtrGyroActive{ 0 };
+volatile uint32_t testCtrGyroPending{ 0 };
+volatile uint32_t testCtrGyroFinish{ 0 };
+volatile uint32_t testCtrGyroGoActive{ 0 };
+#endif // DEBUG_GYRO_INT
 
-volatile uint32_t testCtrAccActive{0};
-volatile uint32_t testCtrAccPending{0};
-volatile uint32_t testCtrAccFinish{0};
-volatile uint32_t testCtrAccGoActive{0};
+#ifdef DEBUG_ACC_INT
+volatile uint32_t testCtrAccActive{ 0 };
+volatile uint32_t testCtrAccPending{ 0 };
+volatile uint32_t testCtrAccFinish{ 0 };
+volatile uint32_t testCtrAccGoActive{ 0 };
+#endif // DEBUG_ACC_INT
 
-MovingAverage movingAverage;
+#ifdef DEBUG_SD_INT
+volatile uint32_t testCtrSDFinish{ 0 };
+volatile uint32_t testCtrSDGoActive{ 0 };
+#endif // DEBUG_SD_INT
+
+//MovingAverage movingAverage;
 
 
 void SetupSPI(void)
@@ -106,7 +116,7 @@ void SetupSPI(void)
 
 }
 
-void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput)
+void RunSPI()
 {
 	if (getSPISdCard()->sdCardInitFinished)
 	{
@@ -116,15 +126,28 @@ void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput)
 		getSPISdCard()->sdCardInitFinished = false;
 	}
 
-	if (spiInput->sysTick > THREE_SECOND)
+	if (getSysTick() > THREE_SECOND)
 	{
-		RunSdCard(spiInput, spiOutput);
+		RunSdCard();
 	}
 
-  // SerialUSB.print(testCtrGyroActive); SerialUSB.print("\t");
-  // SerialUSB.print(testCtrGyroPending); SerialUSB.print("\t");
-  // SerialUSB.print(testCtrGyroFinish); SerialUSB.print("\t");
-  // SerialUSB.print(testCtrGyroGoActive); SerialUSB.print("\t");
+#ifdef DEBUG_GYRO_INT
+	SerialUSB.print(testCtrGyroActive); SerialUSB.print("\t");
+	SerialUSB.print(testCtrGyroPending); SerialUSB.print("\t");
+	SerialUSB.print(testCtrGyroFinish); SerialUSB.print("\t");
+	SerialUSB.print(testCtrGyroGoActive); SerialUSB.print("\t");
+#endif // DEBUG_GYRO_INT
+#ifdef DEBUG_ACC_INT
+	SerialUSB.print(testCtrAccActive); SerialUSB.print("\t");
+	SerialUSB.print(testCtrAccPending); SerialUSB.print("\t");
+	SerialUSB.print(testCtrAccFinish); SerialUSB.print("\t");
+	SerialUSB.print(testCtrAccGoActive); SerialUSB.print("\t");
+#endif // DEBUG_ACC_INT
+#ifdef DEBUG_SD_INT
+	SerialUSB.print(testCtrSDFinish); SerialUSB.print("\t");
+	SerialUSB.print(testCtrSDGoActive); SerialUSB.print("\t");
+#endif // DEBUG_ACC_INT
+
 
 	//axis accVal;
 	//accVal.x = calcRealFromInt(&SPI.gyro, E_direction::X, false);
@@ -135,11 +158,6 @@ void RunSPI(SPIInput* spiInput, SPIOutput* spiOutput)
  //  SerialUSB.print(accVal.x); SerialUSB.print("\t");
  //  SerialUSB.print(accVal.y); SerialUSB.print("\t");
  //  SerialUSB.print(accVal.z); SerialUSB.print("\t");
- //  SerialUSB.print(movingAverage.averageX); SerialUSB.print("\t");
- //  SerialUSB.print(movingAverage.averageY); SerialUSB.print("\t");
- //  SerialUSB.print(movingAverage.averageZ); SerialUSB.print("\t");
- //  SerialUSB.print((float)SPI.gyro.offset_int.x); SerialUSB.print("\t");
- //  SerialUSB.print((float)SPI.gyro.offset_int.y); SerialUSB.print("\t");
  //  SerialUSB.println((float)SPI.gyro.offset_int.z);
 }
 
@@ -158,17 +176,24 @@ void PIOC_Handler(void)
 		if (ACTIVE == SPI.spiActivityAcc)
 		{
 			SPI.spiActivityGyro = PENDING;
+#ifdef DEBUG_GYRO_INT
             testCtrGyroPending++;
+#endif
 		}
 		else if (ACTIVE == getSPISdCard()->spiActivitySDCard)
 		{
 			SPI.spiActivityGyro = PENDING;
+#ifdef DEBUG_GYRO_INT
+			testCtrGyroPending++;
+#endif
 		}
 		else if (ACTIVE != SPI.spiActivityGyro)
 		{
 			SPI.spiActivityGyro = ACTIVE;
 			ReadMEMSMeas(CS_GYRO, 0x02);
+#ifdef DEBUG_GYRO_INT
             testCtrGyroActive++;
+#endif
 		}
 		else
 		{
@@ -189,17 +214,24 @@ void PIOA_Handler(void)
 		if (ACTIVE == SPI.spiActivityGyro)
 		{
 			SPI.spiActivityAcc = PENDING;
+#ifdef DEBUG_ACC_INT
             testCtrAccPending++;
+#endif
 		}
 		else if (ACTIVE == getSPISdCard()->spiActivitySDCard)
 		{
 			SPI.spiActivityAcc = PENDING;
+#ifdef DEBUG_ACC_INT
+			testCtrAccPending++;
+#endif
 		}
         else if (ACTIVE != SPI.spiActivityAcc)
         {
 			SPI.spiActivityAcc = ACTIVE;
 			ReadMEMSMeas(CS_ACC, 0x12);
+#ifdef DEBUG_ACC_INT
             testCtrAccActive++;
+#endif
         }
 		else
 		{
@@ -224,17 +256,24 @@ void DMAC_Handler(void)
 		{
             SPI.spiActivityGyro = INACTIVE;
 			isGyroReadFinished = true;
+#ifdef DEBUG_GYRO_INT
             testCtrGyroFinish++;
+#endif
 		}
 		else if (ACTIVE == SPI.spiActivityAcc)
 		{
             SPI.spiActivityAcc = INACTIVE;
 			isAccReadFinished = true;
+#ifdef DEBUG_ACC_INT
             testCtrAccFinish++;
+#endif
 		}
 		else if (ACTIVE == getSPISdCard()->spiActivitySDCard)
 		{
 			getSPISdCard()->spiActivitySDCard = INACTIVE;
+#ifdef DEBUG_SD_INT
+			testCtrSDFinish++;
+#endif
 			//if writing, do response and data response check
 			if (SDWRITE_WAIT_RESPONSE == getSPISdCard()->SDWriteState)
 			{
@@ -255,17 +294,24 @@ void DMAC_Handler(void)
 		{
 			SPI.spiActivityGyro = ACTIVE;
 			ReadMEMSMeas(CS_GYRO, 0x02);
+#ifdef DEBUG_GYRO_INT
             testCtrGyroGoActive++;
+#endif
 		}
 		else if (PENDING == SPI.spiActivityAcc && ACTIVE != getSPISdCard()->spiActivitySDCard)
 		{
 			SPI.spiActivityAcc = ACTIVE;
 			ReadMEMSMeas(CS_ACC, 0x12);
+#ifdef DEBUG_ACC_INT
             testCtrAccGoActive++;
+#endif
 		}
 		else if (PENDING == getSPISdCard()->spiActivitySDCard)
 		{
 			getSPISdCard()->spiActivitySDCard = ACTIVE;
+#ifdef DEBUG_SD_INT
+			testCtrSDGoActive++;
+#endif
 			TriggerNextSdCardTxRx();
 		}
 		else
@@ -277,24 +323,14 @@ void DMAC_Handler(void)
 		{
 			calcSignalGyro(&SPI.gyro, SPI.sensorRx);
 			calcOffsetGyro(&SPI.gyro);
-			compensateData(&SPI.gyro); 
-#ifdef INT_BASE_VALUE
-			gyroSignalPT1_133Hz(&SPI.gyro); //int runtime is 5 microsec
-#endif
-#ifdef FLOAT_BASE_VALUE
-			signalPT1Filter(&SPI.gyro);	//float runtime is 33 microsec
-#endif
+			compensateData(&SPI.gyro);
+			gyroSignalPT1_133Hz(&SPI.gyro);
 		}
 		else if (isAccReadFinished)
 		{
 			calcSignalAcc(&SPI.acc, SPI.sensorRx);
 			compensateData(&SPI.acc);
-#ifdef INT_BASE_VALUE
-			accSignalPT1_25Hz(&SPI.acc); //int runtime is ? microsec
-#endif
-#ifdef FLOAT_BASE_VALUE
-			signalPT1Filter(&SPI.acc);	//float runtime is ? microsec
-#endif
+			accSignalPT1_25Hz(&SPI.acc);
 		}
 		else
 		{
@@ -358,17 +394,11 @@ void SetupDMAC(void)
 void SetupGyro(void)
 {
 	// setting default gyro values
-    SPI.gyro.const_raw2real = 2000.0f / 32767.0f;
-    SPI.gyro.paramC = 10;   // 2000/200
     // offset calculated after startup
     SPI.gyro.offset.x = 0;
     SPI.gyro.offset.y = 0;
     SPI.gyro.offset.z = 0;
-    //intiger values
-    SPI.gyro.offset_int.x = 0;
-    SPI.gyro.offset_int.y = 0;
-    SPI.gyro.offset_int.z = 0;
-    
+    //raw to real parameters
     SPI.gyro.raw2realMultiplier = 2000;
     SPI.gyro.raw2realDivider = 32768;
 
@@ -408,20 +438,20 @@ void SetupGyro(void)
 	//check if register is correctly writen
 	badRegContent |= (0x80 == SPI.sensorRx[1]) ? 0x00 : 0x01;
 
-  ////Gyro selftest: addr: 0x3C
-  WriteToMEMS(CS_GYRO, 0x3C, 0x01); //start selftest
-  WaitRxDone();
-  delay(3);   // 3ms as a delay proved ok
-  ReadFromMEMS(CS_GYRO, 0x3C);
-  WaitRxDone();
-  ReadFromMEMS(CS_GYRO, 0x3C);
-  WaitRxDone();
+	////Gyro selftest: addr: 0x3C
+	WriteToMEMS(CS_GYRO, 0x3C, 0x01); //start selftest
+	WaitRxDone();
+	delay(3);   // 3ms as a delay proved ok
 	ReadFromMEMS(CS_GYRO, 0x3C);
 	WaitRxDone();
-  //check if register is correctly writen, ???1 ?01?
-  badRegContent |= (0x02 == (SPI.sensorRx[1] & 0x02)) ? 0x00 : 0x01;
-  badRegContent |= (0x00 == (SPI.sensorRx[1] & 0x04)) ? 0x00 : 0x01;
-  badRegContent |= (0x10 == (SPI.sensorRx[1] & 0x10)) ? 0x00 : 0x01;
+	ReadFromMEMS(CS_GYRO, 0x3C);
+	WaitRxDone();
+	ReadFromMEMS(CS_GYRO, 0x3C);
+	WaitRxDone();
+	//check if register is correctly writen, ???1 ?01?
+	badRegContent |= (0x02 == (SPI.sensorRx[1] & 0x02)) ? 0x00 : 0x01;
+	badRegContent |= (0x00 == (SPI.sensorRx[1] & 0x04)) ? 0x00 : 0x01;
+	badRegContent |= (0x10 == (SPI.sensorRx[1] & 0x10)) ? 0x00 : 0x01;
 
 	//set LED according to flag
 	badRegContent ? LEDGyroBlink() : LEDGyroOff();
@@ -446,16 +476,11 @@ void SetupGyroIntPin(void)
 void SetupAcc(void)
 {
 	// setting default acc values
-    SPI.acc.const_raw2real = 24.0f * 9.81 / 32768.0f;
-	SPI.acc.paramC = 64;   // 1600/25
     //offset manually tuned
-    SPI.acc.offset.x = 0.0125;
-    SPI.acc.offset.y = 0.022;
-    SPI.acc.offset.z = 0.005;
-    //intiger values
-    SPI.acc.offset_int.x = 18;
-    SPI.acc.offset_int.y = -5;
-    SPI.acc.offset_int.z = 0;
+    SPI.acc.offset.x = 18;
+    SPI.acc.offset.y = -5;
+    SPI.acc.offset.z = 0;
+	//raw to real parameters
     SPI.acc.raw2realMultiplier = 235;	//~235.44
     SPI.acc.raw2realDivider = 32768;
 
@@ -471,50 +496,50 @@ void SetupAcc(void)
 	//delay(2);
 
 	//ID: 0x00, read it to trigger SPI mode for acc
-  ReadFromMEMS(CS_ACC, 0x00);
-  WaitRxDone();
+	ReadFromMEMS(CS_ACC, 0x00);
+	WaitRxDone();
 
-  //Power: addr 0x7D, 0x04(active)
-  delay(1);
-  WriteToMEMS(CS_ACC, 0x7D, 0x04);
-  WaitRxDone();
-  delay(50);
+	//Power: addr 0x7D, 0x04(active)
+	delay(1);
+	WriteToMEMS(CS_ACC, 0x7D, 0x04);
+	WaitRxDone();
+	delay(50);
 
-  //Configuration: addr 0x40, low-pass 0x00(145Hz) + odr 0x0C(1600Hz) = 1 000 1100 = 0x8C
-  WriteToMEMS(CS_ACC, 0x40, 0x8C);
-  WaitRxDone();
-  ReadFromMEMS(CS_ACC, 0x40);
-  WaitRxDone();
-  badRegContent |= (0x8C == SPI.sensorRx[2]) ? 0x00 : 0x01;
+	//Configuration: addr 0x40, low-pass 0x00(145Hz) + odr 0x0C(1600Hz) = 1 000 1100 = 0x8C
+	WriteToMEMS(CS_ACC, 0x40, 0x8C);
+	WaitRxDone();
+	ReadFromMEMS(CS_ACC, 0x40);
+	WaitRxDone();
+	badRegContent |= (0x8C == SPI.sensorRx[2]) ? 0x00 : 0x01;
 
-  //Range: addr 0x41, 0x03(24g) = ??????03
-  WriteToMEMS(CS_ACC, 0x41, 0x03);
-  WaitRxDone();
-  ReadFromMEMS(CS_ACC, 0x41);
-  WaitRxDone();
-  badRegContent |= (0x03 == SPI.sensorRx[2]) ? 0x00 : 0x01;
+	//Range: addr 0x41, 0x03(24g) = ??????03
+	WriteToMEMS(CS_ACC, 0x41, 0x03);
+	WaitRxDone();
+	ReadFromMEMS(CS_ACC, 0x41);
+	WaitRxDone();
+	badRegContent |= (0x03 == SPI.sensorRx[2]) ? 0x00 : 0x01;
 
-  //Interrupt 2 IO config: addr 0x54, 0x01(active high) + 0x00(push-pull) + 0x01(output) = ???0101?
-  WriteToMEMS(CS_ACC, 0x54, 0x0A);
-  WaitRxDone();
-  ReadFromMEMS(CS_ACC, 0x54);
-  WaitRxDone();
-  badRegContent |= (0x0A == SPI.sensorRx[2]) ? 0x00 : 0x01;
+	//Interrupt 2 IO config: addr 0x54, 0x01(active high) + 0x00(push-pull) + 0x01(output) = ???0101?
+	WriteToMEMS(CS_ACC, 0x54, 0x0A);
+	WaitRxDone();
+	ReadFromMEMS(CS_ACC, 0x54);
+	WaitRxDone();
+	badRegContent |= (0x0A == SPI.sensorRx[2]) ? 0x00 : 0x01;
 
-  //Interrupt map: addr 0x58, 0x00(INT1 not) + 0x01(INT2) = ?1???0??
-  WriteToMEMS(CS_ACC, 0x58, 0x40);
-  WaitRxDone();
-  ReadFromMEMS(CS_ACC, 0x58);
-  WaitRxDone();
-  badRegContent |= (0x40 == SPI.sensorRx[2]) ? 0x00 : 0x01;
+	//Interrupt map: addr 0x58, 0x00(INT1 not) + 0x01(INT2) = ?1???0??
+	WriteToMEMS(CS_ACC, 0x58, 0x40);
+	WaitRxDone();
+	ReadFromMEMS(CS_ACC, 0x58);
+	WaitRxDone();
+	badRegContent |= (0x40 == SPI.sensorRx[2]) ? 0x00 : 0x01;
 
-  //Error register: good values: ???000?0 
-  ReadFromMEMS(CS_ACC, 0x02);
-  WaitRxDone();
-  badRegContent |= (0x00 == SPI.sensorRx[2]) ? 0x00 : 0x01;
+	//Error register: good values: ???000?0 
+	ReadFromMEMS(CS_ACC, 0x02);
+	WaitRxDone();
+	badRegContent |= (0x00 == SPI.sensorRx[2]) ? 0x00 : 0x01;
 
-  //set LED according to flag
-  badRegContent ? LEDAccBlink() : LEDAccOff();
+	//set LED according to flag
+	badRegContent ? LEDAccBlink() : LEDAccOff();
 }
 
 void SetupAccIntPin(void)
@@ -603,41 +628,18 @@ void ReadMEMSMeas(E_ChipSelect CS, uint32_t adr2read)
 }
 
 void calcSignalGyro(volatile signal* gyroSig, volatile uint8_t* buffer)
-{
-	int16_t x = (buffer[2] << 8) | buffer[1];
-	int16_t y = (buffer[4] << 8) | buffer[3];
-	int16_t z = (buffer[6] << 8) | buffer[5];
-	
-#ifdef INT_BASE_VALUE
-    gyroSig->signals_int.x = (int32_t)(x);
-    gyroSig->signals_int.y = (int32_t)(y);
-    gyroSig->signals_int.z = (int32_t)(z);
-#endif
-#ifdef FLOAT_BASE_VALUE
-	gyroSig->signals.x = (float)x * gyroSig->const_raw2real;
-	gyroSig->signals.y = (float)y * gyroSig->const_raw2real;
-	gyroSig->signals.z = (float)z * gyroSig->const_raw2real;
-#endif
-
+{	
+    gyroSig->signals.x = (int32_t(buffer[2]) << 8) | int32_t(buffer[1]);
+    gyroSig->signals.y = (int32_t(buffer[4]) << 8) | int32_t(buffer[3]);
+    gyroSig->signals.z = (int32_t(buffer[6]) << 8) | int32_t(buffer[5]);
 }
 
 void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer)
 {
     //note difference from gyro is that valid data start from 2nd posiion
-    int16_t x = (buffer[3] << 8) | buffer[2];
-    int16_t y = (buffer[5] << 8) | buffer[4];
-    int16_t z = (buffer[7] << 8) | buffer[6];
-
-#ifdef INT_BASE_VALUE
-	accSig->signals_int.x = (int32_t)(x);
-	accSig->signals_int.y = (int32_t)(y);
-	accSig->signals_int.z = (int32_t)(z);
-#endif
-#ifdef FLOAT_BASE_VALUE
-    accSig->signals.x = (float)x * accSig->const_raw2real;
-    accSig->signals.y = (float)y * accSig->const_raw2real;
-    accSig->signals.z = (float)z * accSig->const_raw2real;
-#endif
+	accSig->signals.x = (int32_t(buffer[3]) << 8) | int32_t(buffer[2]);
+	accSig->signals.y = (int32_t(buffer[5]) << 8) | int32_t(buffer[4]);
+	accSig->signals.z = (int32_t(buffer[7]) << 8) | int32_t(buffer[6]);
 }
 
 void calcOffsetGyro(volatile signal* gyroSig)
@@ -648,35 +650,17 @@ void calcOffsetGyro(volatile signal* gyroSig)
 	{
 		if (1000 <= n && n < 2024)
 		{
-#ifdef INT_BASE_VALUE
-            gyroSig->offset_int.x += gyroSig->signals_int.x;
-            gyroSig->offset_int.y += gyroSig->signals_int.y;
-            gyroSig->offset_int.z += gyroSig->signals_int.z;
-#endif
-#ifdef FLOAT_BASE_VALUE
-			gyroSig->offset.x += gyroSig->signals.x;
-			gyroSig->offset.y += gyroSig->signals.y;
-			gyroSig->offset.z += gyroSig->signals.z;
-#endif
+            gyroSig->offset.x += gyroSig->signals.x;
+            gyroSig->offset.y += gyroSig->signals.y;
+            gyroSig->offset.z += gyroSig->signals.z;
 		}
 		else if (2024 < n)
 		{
 			// divide by the number of measurements
 			// multiply by -1, positive offset should be extracted
-#ifdef INT_BASE_VALUE
-            gyroSig->offset_int.x /= -1024;
-            gyroSig->offset_int.y /= -1024;
-            gyroSig->offset_int.z /= -1024;
-#endif
-#ifdef FLOAT_BASE_VALUE
-			gyroSig->offset.x /= 1024.f;
-			gyroSig->offset.x *= -1.0f;
-			gyroSig->offset.y /= 1024.f;
-			gyroSig->offset.y *= -1.0f;
-			gyroSig->offset.z /= 1024.f;
-			gyroSig->offset.z *= -1.0f;
-#endif
-
+            gyroSig->offset.x /= -1024;
+            gyroSig->offset.y /= -1024;
+            gyroSig->offset.z /= -1024;
 			// set calc done flag
 			gyroSig->offsetCalcDone = true;
 			// reset n, if a 2nd calc retrigger needed
@@ -699,16 +683,9 @@ void compensateData(volatile signal* Sig)
 {
     if (true == Sig->offsetCalcDone)
     {
-#ifdef INT_BASE_VALUE
-        Sig->signals_int.x += Sig->offset_int.x;
-        Sig->signals_int.y += Sig->offset_int.y;
-        Sig->signals_int.z += Sig->offset_int.z;
-#endif
-#ifdef FLOAT_BASE_VALUE
-		Sig->signals.x += Sig->offset.x;
-		Sig->signals.y += Sig->offset.y;
-		Sig->signals.z += Sig->offset.z;
-#endif
+        Sig->signals.x += Sig->offset.x;
+        Sig->signals.y += Sig->offset.y;
+        Sig->signals.z += Sig->offset.z;
         Sig->newData = true;
     }
     else
@@ -719,58 +696,38 @@ void compensateData(volatile signal* Sig)
 
 void gyroSignalPT1_133Hz(volatile signal* sig)
 {
-	sig->signalsPT1_int.x = PT1_133Hz(sig->signalsPT1_int.x, sig->signals_int.x);
-	sig->signalsPT1_int.y = PT1_133Hz(sig->signalsPT1_int.y, sig->signals_int.y);
-	sig->signalsPT1_int.z = PT1_133Hz(sig->signalsPT1_int.z, sig->signals_int.z);
+	sig->signalsPT1.x = PT1_133Hz(sig->signalsPT1.x, sig->signals.x);
+	sig->signalsPT1.y = PT1_133Hz(sig->signalsPT1.y, sig->signals.y);
+	sig->signalsPT1.z = PT1_133Hz(sig->signalsPT1.z, sig->signals.z);
 }
 
 void accSignalPT1_25Hz(volatile signal* sig)
 {
-	sig->signalsPT1_int.x = PT1_25Hz(sig->signalsPT1_int.x, sig->signals_int.x);
-	sig->signalsPT1_int.y = PT1_25Hz(sig->signalsPT1_int.y, sig->signals_int.y);
-	sig->signalsPT1_int.z = PT1_25Hz(sig->signalsPT1_int.z, sig->signals_int.z);
+	sig->signalsPT1.x = PT1_25Hz(sig->signalsPT1.x, sig->signals.x);
+	sig->signalsPT1.y = PT1_25Hz(sig->signalsPT1.y, sig->signals.y);
+	sig->signalsPT1.z = PT1_25Hz(sig->signalsPT1.z, sig->signals.z);
 }
 
 void getGyroAndAcc(sigOut* sigGyro, sigOut* sigAcc)
 {
-    sigGyro->raw2realMulti = SPI.gyro.raw2realMultiplier;
+    sigGyro->raw2realMulti   = SPI.gyro.raw2realMultiplier;
     sigGyro->raw2realDivider = SPI.gyro.raw2realDivider;
-	sigAcc->raw2realMulti = SPI.acc.raw2realMultiplier;
-	sigAcc->raw2realDivider = SPI.acc.raw2realDivider;
+	sigAcc->raw2realMulti    = SPI.acc.raw2realMultiplier;
+	sigAcc->raw2realDivider  = SPI.acc.raw2realDivider;
 
     //disable DMAC interrupt
 	NVIC_DisableIRQ(DMAC_IRQn);
 
     //copy data
 	//gyro
-#ifdef FLOAT_BASE_VALUE
-    sigGyro->signal.x = SPI.gyro.signals.x;
-    sigGyro->signal.y = SPI.gyro.signals.y;
-    sigGyro->signal.z = SPI.gyro.signals.z;
-#endif
-#ifdef INT_BASE_VALUE
-    sigGyro->signal_int.x = SPI.gyro.signals_int.x;
-    sigGyro->signal_int.y = SPI.gyro.signals_int.y;
-    sigGyro->signal_int.z = SPI.gyro.signals_int.z;
-    sigGyro->signalPT1_int.x = SPI.gyro.signalsPT1_int.x;
-    sigGyro->signalPT1_int.y = SPI.gyro.signalsPT1_int.y;
-    sigGyro->signalPT1_int.z = SPI.gyro.signalsPT1_int.z;
-#endif
+    sigGyro->signalPT1.x = SPI.gyro.signalsPT1.x;
+    sigGyro->signalPT1.y = SPI.gyro.signalsPT1.y;
+    sigGyro->signalPT1.z = SPI.gyro.signalsPT1.z;
     sigGyro->newData = SPI.gyro.newData;
 	//acc
-#ifdef FLOAT_BASE_VALUE
-    sigAcc->signal.x  = SPI.acc.signals.x;
-    sigAcc->signal.y  = SPI.acc.signals.y;
-    sigAcc->signal.z  = SPI.acc.signals.z;
-#endif
-#ifdef INT_BASE_VALUE
-	sigAcc->signal_int.x = SPI.acc.signals_int.x;
-	sigAcc->signal_int.y = SPI.acc.signals_int.y;
-	sigAcc->signal_int.z = SPI.acc.signals_int.z;
-	sigAcc->signalPT1_int.x = SPI.acc.signalsPT1_int.x;
-	sigAcc->signalPT1_int.y = SPI.acc.signalsPT1_int.y;
-	sigAcc->signalPT1_int.z = SPI.acc.signalsPT1_int.z;
-#endif
+	sigAcc->signalPT1.x = SPI.acc.signalsPT1.x;
+	sigAcc->signalPT1.y = SPI.acc.signalsPT1.y;
+	sigAcc->signalPT1.z = SPI.acc.signalsPT1.z;
     sigAcc->newData = SPI.acc.newData;
 
 	//reset newData flag

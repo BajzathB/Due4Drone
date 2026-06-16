@@ -133,9 +133,9 @@ typedef struct SpiSDcard_st
 	uint32_t* loadingDataPointer = dataBuffer2;
 	uint16_t loadingDataCounter{ 1 };	//0th element is always 0xFE(start token)
 
-    float writeStartTick{ 0 };
+    uint32_t writeStartTick{ 0 };
     bool writingMultiFATBlock{ false };
-	uint64_t measTickPrev{ 0 };
+	uint32_t measTickPrev{ 0 };
     bool writeMeasData{ false };
 
 	date globalDateAndTime{};
@@ -156,15 +156,12 @@ typedef struct Meas2Card
     bool measureGyroPT1X{ false };
     bool measureGyroPT1Y{ false };
     bool measureGyroPT1Z{ false };
-    bool measureGyroPT2X{ false };
-    bool measureGyroPT2Y{ false };
-    bool measureGyroPT2Z{ false };
-    bool measureGyroRawX_int{ true };
-    bool measureGyroRawY_int{ false };
-    bool measureGyroRawZ_int{ false };
-    bool measureGyroPT1X_int{ false };
-    bool measureGyroPT1Y_int{ false };
-    bool measureGyroPT1Z_int{ false };
+    bool measureGyroRealX{ false };
+    bool measureGyroRealY{ false };
+    bool measureGyroRealZ{ false };
+    bool measureGyroRealPT1X{ false };
+    bool measureGyroRealPT1Y{ false };
+    bool measureGyroRealPT1Z{ false };
     //acc
     bool measureAccRawX{ false };
     bool measureAccRawY{ false };
@@ -172,15 +169,12 @@ typedef struct Meas2Card
     bool measureAccPT1X{ false };
     bool measureAccPT1Y{ false };
     bool measureAccPT1Z{ false };
-    bool measureAccPT2X{ false };
-    bool measureAccPT2Y{ false };
-    bool measureAccPT2Z{ false };
-	bool measureAccRawX_int{ false };
-	bool measureAccRawY_int{ false };
-	bool measureAccRawZ_int{ false };
-	bool measureAccPT1X_int{ false };
-	bool measureAccPT1Y_int{ false };
-	bool measureAccPT1Z_int{ false };
+	bool measureAccRealX{ false };
+	bool measureAccRealY{ false };
+	bool measureAccRealZ{ false };
+	bool measureAccRealPT1X{ false };
+	bool measureAccRealPT1Y{ false };
+	bool measureAccRealPT1Z{ false };
     //angle
     bool measureAngleRawRoll{ false };
     bool measureAngleRawPitch{ false };
@@ -192,14 +186,6 @@ typedef struct Meas2Card
     bool measureAngleKFRawPitch{ false };
     bool measureAngleKFPT10Roll{ false };
     bool measureAngleKFPT10Pitch{ false };
-    bool measureAngleKFPT20Roll{ false };
-    bool measureAngleKFPT20Pitch{ false };
-    bool measureAngleKFPT11Roll{ false };
-    bool measureAngleKFPT11Pitch{ false };
-    bool measureAngleKFPT21Roll{ false };
-    bool measureAngleKFPT21Pitch{ false };
-    bool measureAngleKFPT22Roll{ false };
-    bool measureAngleKFPT22Pitch{ false };
     bool measureAngleCFRawRoll{ false };
     bool measureAngleCFRawPitch{ false };
 	bool measureAngleCFPT10Roll{ false };
@@ -211,50 +197,27 @@ typedef struct Meas2Card
 	bool measureAngleCFWeightedPT01Roll{ false };
 	bool measureAngleCFWeightedPT01Pitch{ false };
     //PID control
-    bool measurePIDRefsigX{ false };
-    bool measurePIDRefsigY{ false };
-    bool measurePIDRefsigZ{ false };
-    bool measurePIDSensorX{ false };
-    bool measurePIDSensorY{ false };
-    bool measurePIDSensorZ{ false };
-    bool measurePIDPoutX{ false };
-    bool measurePIDPoutY{ false };
-    bool measurePIDPoutZ{ false };
-    bool measurePIDIoutX{ false };
-    bool measurePIDIoutY{ false };
-    bool measurePIDIoutZ{ false };
-    bool measurePIDDoutX{ false };
-    bool measurePIDDoutY{ false };
-    bool measurePIDDoutZ{ false };
-    bool measurePIDFFoutX{ false };
-    bool measurePIDFFoutY{ false };
-    bool measurePIDFFoutZ{ false };
-    bool measurePIDUX{ false };
-    bool measurePIDUY{ false };
-    bool measurePIDUZ{ false };
-
-  bool measurePIDDeltaTick_int{ true };
-	bool measurePIDRefsigX_int{ true };
-	bool measurePIDRefsigY_int{ false };
-	bool measurePIDRefsigZ_int{ false };
-	bool measurePIDSensorX_int{ true };
-	bool measurePIDSensorY_int{ false };
-	bool measurePIDSensorZ_int{ false };
-	bool measurePIDPoutX_int{ true };
-	bool measurePIDPoutY_int{ false };
-	bool measurePIDPoutZ_int{ false };
-	bool measurePIDIoutX_int{ true };
-	bool measurePIDIoutY_int{ false };
-	bool measurePIDIoutZ_int{ false };
-	bool measurePIDDoutX_int{ true };
-	bool measurePIDDoutY_int{ false };
-	bool measurePIDDoutZ_int{ false };
-	bool measurePIDFFoutX_int{ false };
-	bool measurePIDFFoutY_int{ false };
-	bool measurePIDFFoutZ_int{ false };
-	bool measurePIDUX_int{ false };
-	bool measurePIDUY_int{ false };
-	bool measurePIDUZ_int{ false };
+	bool measurePIDRefsigX_i{ true };
+	bool measurePIDRefsigY_i{ true };
+	bool measurePIDRefsigZ_i{ true };
+	bool measurePIDSensorX_i{ true };
+	bool measurePIDSensorY_i{ true };
+	bool measurePIDSensorZ_i{ true };
+	bool measurePIDPoutX_i{ false };
+	bool measurePIDPoutY_i{ false };
+	bool measurePIDPoutZ_i{ false };
+	bool measurePIDIoutX_i{ false };
+	bool measurePIDIoutY_i{ false };
+	bool measurePIDIoutZ_i{ false };
+	bool measurePIDDoutX_i{ false };
+	bool measurePIDDoutY_i{ false };
+	bool measurePIDDoutZ_i{ false };
+	bool measurePIDFFoutX_i{ false };
+	bool measurePIDFFoutY_i{ false };
+	bool measurePIDFFoutZ_i{ false };
+	bool measurePIDUX_i{ false };
+	bool measurePIDUY_i{ false };
+	bool measurePIDUZ_i{ false };
 
 }Meas2Card;
 
@@ -262,7 +225,7 @@ typedef struct Meas2Card
 void InitSDCard();
 
 // Method to run SD card communication and logic
-void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput);
+void RunSdCard();
 
 // Function to execute initial SD card configuration
 E_SDMainStates SetupSdCard(void);
@@ -340,7 +303,7 @@ void convert2String(uint32_t* buffer, uint8_t* startPos, float value, uint8_t nu
 void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFrac, bool isExplicitPlus, char* debugName);
 
 // Method to save data for measurement snapshots
-void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput);	
+void saveMeasData();	
 
 // Method to load data chararacters into loading buffer
 void loadData2Buffer(uint32_t* chars2Add, uint8_t numberOfChar);

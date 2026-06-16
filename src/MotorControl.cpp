@@ -35,7 +35,7 @@ extern Tc* TC1;
 
 MotorCommander motorCommand;
 
-void UpdateMotorSpeeds(const MotorInput* motorInput)
+void UpdateMotorSpeeds(volatile const MotorInput* motorInput)
 {
 	//calc motor speeds
 	CalcMotorSpeeds(motorInput, &motorCommand);
@@ -44,7 +44,7 @@ void UpdateMotorSpeeds(const MotorInput* motorInput)
 	SetTcCompareRegister(&motorCommand);
 
 	//trigger TC channels, not earlier than 250 us
-	TriggerTcRegisters(&motorCommand, motorInput->sysTick);
+	TriggerTcRegisters(&motorCommand);
 
 //  SerialUSB.print((float)motorInput->x_int);SerialUSB.print("\t");
 //  SerialUSB.print((float)motorInput->y_int);SerialUSB.print("\t");
@@ -53,32 +53,31 @@ void UpdateMotorSpeeds(const MotorInput* motorInput)
 //  SerialUSB.print(motorCommand.FR_tick_int);SerialUSB.print("\t");
 //  SerialUSB.print(motorCommand.RL_tick_int);SerialUSB.print("\t");
 //  SerialUSB.println(motorCommand.RR_tick_int);
-
 }
 
 
-void CalcMotorSpeeds(const MotorInput* motorInput, MotorCommander* motorCmd)
+void CalcMotorSpeeds(volatile const MotorInput* motorInput, MotorCommander* motorCmd)
 {
 	if (E_armState::ARMED == motorInput->armState)
 	{
-		int32_t scaledThrottle = interpolateThrottle(motorInput->throttle);
+		uint32_t scaledThrottle = interpolateThrottle(motorInput->throttle);
+		//calculation of the four motor speed
+		motorCmd->FL_tick = scaledThrottle + motorInput->x + motorInput->y + motorInput->z;
+		motorCmd->FR_tick = scaledThrottle - motorInput->x + motorInput->y - motorInput->z;
+		motorCmd->RL_tick = scaledThrottle + motorInput->x - motorInput->y - motorInput->z;
+		motorCmd->RR_tick = scaledThrottle - motorInput->x - motorInput->y + motorInput->z;
 
-		motorCmd->FL_tick_int = uint32_t(scaledThrottle + motorInput->x_int + motorInput->y_int + motorInput->z_int);
-		motorCmd->FR_tick_int = uint32_t(scaledThrottle - motorInput->x_int + motorInput->y_int - motorInput->z_int);
-		motorCmd->RL_tick_int = uint32_t(scaledThrottle + motorInput->x_int - motorInput->y_int - motorInput->z_int);
-		motorCmd->RR_tick_int = uint32_t(scaledThrottle - motorInput->x_int - motorInput->y_int + motorInput->z_int);
-
-		clampMotorSpeed(&motorCmd->FL_tick_int);
-		clampMotorSpeed(&motorCmd->FR_tick_int);
-		clampMotorSpeed(&motorCmd->RL_tick_int);
-		clampMotorSpeed(&motorCmd->RR_tick_int);
+		clampMotorSpeed(&motorCmd->FL_tick);
+		clampMotorSpeed(&motorCmd->FR_tick);
+		clampMotorSpeed(&motorCmd->RL_tick);
+		clampMotorSpeed(&motorCmd->RR_tick);
 	}
 	else
 	{
-		motorCmd->FL_tick_int = 1312;
-		motorCmd->FR_tick_int = 1312;
-		motorCmd->RL_tick_int = 1312;
-		motorCmd->RR_tick_int = 1312;
+		motorCmd->FL_tick = 1312;
+		motorCmd->FR_tick = 1312;
+		motorCmd->RL_tick = 1312;
+		motorCmd->RR_tick = 1312;
 	}
 }
 
@@ -89,10 +88,105 @@ uint32_t interpolateThrottle(uint16_t throttle)
 	return 1312 + dx + (dx >> 2) + (dx >> 4);
 }
 
-inline void clampMotorSpeed(int32_t* x)
+inline void clampMotorSpeed(uint32_t* x)
 {
 	if (*x > 2625) *x = 2625;
 	if (*x < 1312) *x = 1312;
+}
+
+void SetupMotorPins(void)
+{
+    //PB0-PB1 pin
+    Setup_PB0_PB1_for_oneshot_pulse();
+
+    //PB2-PB3 pin
+    Setup_PB2_PB3_for_oneshot_pulse();
+
+    //software triggering TC1
+    TC1->TC_BCR = TC_BCR_SYNC;
+}
+
+void TriggerTcRegisters(MotorCommander* motorCmd)
+{
+	//software triggering TC1
+	TC1->TC_BCR = TC_BCR_SYNC;
+}
+
+void SetTcCompareRegister(MotorCommander* motorCmd)
+{
+	//setting TIO0 RA value which corresponds to FRONT LEFT
+	TC1->TC_CHANNEL[0].TC_RA = uint32_t(motorCmd->FL_tick);
+	//setting TIO6 RB value which corresponds to FRONT LEFT motor
+	TC1->TC_CHANNEL[0].TC_RB = uint32_t(motorCmd->RL_tick);
+	//setting TIO6 RA value which corresponds to REAR RIGHT
+	TC1->TC_CHANNEL[1].TC_RA = uint32_t(motorCmd->FR_tick);
+	//setting TIO7 RA value which corresponds to REAR RIGHT
+	TC1->TC_CHANNEL[1].TC_RB = uint32_t(motorCmd->RR_tick);
+}
+
+void Setup_PB0_PB1_for_oneshot_pulse(void)
+{
+	PIOB->PIO_WPSR = 0x50494F00; //enable write mode
+	PIOB->PIO_PDR |= PIO_PDR_P0 | PIO_PDR_P1; //disable PIO
+	PIOB->PIO_ABSR |= PIO_ABSR_P0 | PIO_ABSR_P1;  //select peripheral B
+	PIOB->PIO_WPSR = 0x50494F01; //disable write mode
+
+	pmc_enable_periph_clk(ID_TC3);  //enable peripheral clock for TC1-channel 0
+
+	TC1->TC_WPMR = 0x504D4300;  //disable write protection mode
+	TC1->TC_CHANNEL[0].TC_CCR |= TC_CCR_CLKEN;  //enable clock
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_TCCLKS_TIMER_CLOCK2;  //clock selection MCK/8=10.5 MHz
+    TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_EEVT_XC0; //enable TIOB as output
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_WAVSEL_UP;  //counter increments without automatic trigger on RC
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_WAVE; //waveform mode selection
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_ACPA_CLEAR; //RA compare clears TIOA
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_ASWTRG_SET; //software trigger sets TIOA
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_BCPB_CLEAR; //RB compare clears TIOB
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_BSWTRG_SET; //software trigger sets TIOB
+	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_CPCSTOP;  //counter stops on RC compare
+	TC1->TC_CHANNEL[0].TC_RC = 2625;
+	TC1->TC_WPMR = 0x504D4301;  //reenable write protection mode
+
+	//setting RA and RB value
+	TC1->TC_CHANNEL[0].TC_RA = 1312;
+	TC1->TC_CHANNEL[0].TC_RB = 1312;
+}
+
+void Setup_PB2_PB3_for_oneshot_pulse(void)
+{
+	PIOB->PIO_WPSR = 0x50494F00; //enable write mode
+	PIOB->PIO_PDR |= PIO_PDR_P2 | PIO_PDR_P3; //disable PIO
+	PIOB->PIO_ABSR |= PIO_ABSR_P2 | PIO_ABSR_P3;  //select peripheral B
+	PIOB->PIO_WPSR = 0x50494F01; //disable write mode
+
+	pmc_enable_periph_clk(ID_TC4);  //enable peripheral clock for TC0-channel 1
+
+	TC1->TC_WPMR = 0x504D4300;  //disable write protection mode
+	TC1->TC_CHANNEL[1].TC_CCR |= TC_CCR_CLKEN;  //enable clock
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_TCCLKS_TIMER_CLOCK2;  //clock selection MCK/8=10.5 MHz
+    TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_EEVT_XC0; //enable TIOB as output
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_WAVSEL_UP;  //counter increments without automatic trigger on RC
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_WAVE; //waveform mode selection
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_ACPA_CLEAR; //RA compare clears TIOA
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_ASWTRG_SET; //software trigger sets TIOA
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_BCPB_CLEAR; //RB compare clears TIOB
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_BSWTRG_SET; //software trigger sets TIOB
+	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_CPCSTOP;  //counter stops on RC compare
+	TC1->TC_CHANNEL[1].TC_RC = 2625;
+	TC1->TC_WPMR = 0x504D4301;  //reenable write protection mode
+
+	//setting RA value
+	TC1->TC_CHANNEL[1].TC_RA = 1312;
+	TC1->TC_CHANNEL[1].TC_RB = 1312;
+}
+
+//set output for bluetooth transmission
+void getMotorSpeeds(MotorSpeeds* motorSpeeds)
+{
+	motorSpeeds->FL_tick = motorCommand.FL_tick;
+	motorSpeeds->FR_tick = motorCommand.FR_tick;
+	motorSpeeds->RL_tick = motorCommand.RL_tick;
+	motorSpeeds->RR_tick = motorCommand.RR_tick;
 }
 
 //void handleBeeps(const MotorInput* motorInput, MotorCommander* motorCmd)
@@ -147,135 +241,3 @@ inline void clampMotorSpeed(int32_t* x)
 //			break;
 //	}
 //}
-
-void SetupMotorPins(void)
-{
-    // initalize internal variables
-    motorCommand.sysTime = 0;
-    motorCommand.lastpulseTime = 0;
-	motorCommand.lastpulseTick = 0;
-
-    //PB0-PB1 pin
-    Setup_PB0_PB1_for_oneshot_pulse();
-
-    //PB2-PB3 pin
-    Setup_PB2_PB3_for_oneshot_pulse();
-
-    //software triggering TC1
-    TC1->TC_BCR = TC_BCR_SYNC;
-}
-
-void TriggerTcRegisters(MotorCommander* motorCmd, uint64_t sysTick)
-{
-	 //SerialUSB.print(motorCommand.sysTime - motorCommand.lastpulseTime,6); SerialUSB.print("\t");
-	 //SerialUSB.println(motorCommand.lastpulseTime,6);
-
-	//if ((motorCmd->sysTime - motorCmd->lastpulseTime) > MICROSEC_250)
-	//{
-	//	motorCmd->lastpulseTime = motorCmd->sysTime;
-
-	//	//software triggering TC1
-	//	TC1->TC_BCR = TC_BCR_SYNC;
-	//}
-
-	if ((sysTick - motorCmd->lastpulseTick) > 2625)
-	{
-		motorCmd->lastpulseTick = sysTick;
-
-		//software triggering TC1
-		TC1->TC_BCR = TC_BCR_SYNC;
-	}
-}
-
-void SetTcCompareRegister(MotorCommander* motorCmd)
-{
-	//motorCmd->FL_tick = motorCmd->FL * motorCmd->const_TC_clock_freq;
-	//motorCmd->FR_tick = motorCmd->FR * motorCmd->const_TC_clock_freq;
-	//motorCmd->RL_tick = motorCmd->RL * motorCmd->const_TC_clock_freq;
-	//motorCmd->RR_tick = motorCmd->RR * motorCmd->const_TC_clock_freq;
-
-	//setting TIO0 RA value which corresponds to FRONT LEFT
-	TC1->TC_CHANNEL[0].TC_RA = uint32_t(motorCmd->FL_tick_int);
-	//setting TIO6 RB value which corresponds to FRONT LEFT motor
-	TC1->TC_CHANNEL[0].TC_RB = uint32_t(motorCmd->RL_tick_int);
-	//setting TIO6 RA value which corresponds to REAR RIGHT
-	TC1->TC_CHANNEL[1].TC_RA = uint32_t(motorCmd->FR_tick_int);
-	//setting TIO7 RA value which corresponds to REAR RIGHT
-	TC1->TC_CHANNEL[1].TC_RB = uint32_t(motorCmd->RR_tick_int);
-}
-
-void Setup_PB0_PB1_for_oneshot_pulse(void)
-{
-	PIOB->PIO_WPSR = 0x50494F00; //enable write mode
-	PIOB->PIO_PDR |= PIO_PDR_P0 | PIO_PDR_P1; //disable PIO
-	PIOB->PIO_ABSR |= PIO_ABSR_P0 | PIO_ABSR_P1;  //select peripheral B
-	PIOB->PIO_WPSR = 0x50494F01; //disable write mode
-
-	pmc_enable_periph_clk(ID_TC3);  //enable peripheral clock for TC1-channel 0
-
-	TC1->TC_WPMR = 0x504D4300;  //disable write protection mode
-	TC1->TC_CHANNEL[0].TC_CCR |= TC_CCR_CLKEN;  //enable clock
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_TCCLKS_TIMER_CLOCK2;  //clock selection MCK/8=10.5 MHz
-    TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_EEVT_XC0; //enable TIOB as output
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_WAVSEL_UP;  //counter increments without automatic trigger on RC
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_WAVE; //waveform mode selection
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_ACPA_CLEAR; //RA compare clears TIOA
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_ASWTRG_SET; //software trigger sets TIOA
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_BCPB_CLEAR; //RB compare clears TIOB
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_BSWTRG_SET; //software trigger sets TIOB
-	TC1->TC_CHANNEL[0].TC_CMR |= TC_CMR_CPCSTOP;  //counter stops on RC compare
-	TC1->TC_CHANNEL[0].TC_RC = 2625;
-	TC1->TC_WPMR = 0x504D4301;  //reenable write protection mode
-
-	//setting RA and RB value
-	TC1->TC_CHANNEL[0].TC_RA = 1312;
-	TC1->TC_CHANNEL[0].TC_RB = 1312;
-	//software triggering
-}
-
-void Setup_PB2_PB3_for_oneshot_pulse(void)
-{
-	PIOB->PIO_WPSR = 0x50494F00; //enable write mode
-	PIOB->PIO_PDR |= PIO_PDR_P2 | PIO_PDR_P3; //disable PIO
-	PIOB->PIO_ABSR |= PIO_ABSR_P2 | PIO_ABSR_P3;  //select peripheral B
-	PIOB->PIO_WPSR = 0x50494F01; //disable write mode
-
-	pmc_enable_periph_clk(ID_TC4);  //enable peripheral clock for TC0-channel 0
-
-	TC1->TC_WPMR = 0x504D4300;  //disable write protection mode
-	TC1->TC_CHANNEL[1].TC_CCR |= TC_CCR_CLKEN;  //enable clock
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_TCCLKS_TIMER_CLOCK2;  //clock selection MCK/8=10.5 MHz
-    TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_EEVT_XC0; //enable TIOB as output
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_WAVSEL_UP;  //counter increments without automatic trigger on RC
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_WAVE; //waveform mode selection
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_ACPA_CLEAR; //RA compare clears TIOA
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_ASWTRG_SET; //software trigger sets TIOA
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_BCPB_CLEAR; //RB compare clears TIOB
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_BSWTRG_SET; //software trigger sets TIOB
-	TC1->TC_CHANNEL[1].TC_CMR |= TC_CMR_CPCSTOP;  //counter stops on RC compare
-	TC1->TC_CHANNEL[1].TC_RC = 2625;
-	TC1->TC_WPMR = 0x504D4301;  //reenable write protection mode
-
-	//setting RA value
-	TC1->TC_CHANNEL[1].TC_RA = 1312;
-	TC1->TC_CHANNEL[1].TC_RB = 1312;
-	//software triggering
-}
-
-//set output for bluetooth transmission
-void getMotorSpeeds(MotorSpeeds* motorSpeeds)
-{
-    //motorSpeeds->FL = motorCommand.FL;
-    //motorSpeeds->FR = motorCommand.FR;
-    //motorSpeeds->RL = motorCommand.RL;
-    //motorSpeeds->RR = motorCommand.RR;
-    //motorSpeeds->FL_tick = motorCommand.FL_tick;
-    //motorSpeeds->FR_tick = motorCommand.FR_tick;
-    //motorSpeeds->RL_tick = motorCommand.RL_tick;
-    //motorSpeeds->RR_tick = motorCommand.RR_tick;
-
-	motorSpeeds->FL_tick_int = motorCommand.FL_tick_int;
-	motorSpeeds->FR_tick_int = motorCommand.FR_tick_int;
-	motorSpeeds->RL_tick_int = motorCommand.RL_tick_int;
-	motorSpeeds->RR_tick_int = motorCommand.RR_tick_int;
-}

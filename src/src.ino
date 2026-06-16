@@ -43,14 +43,15 @@ void loop()
 {
   SPIInput spiInput;
   SPIOutput spiOutput;
-  controllerIn_st controlIn;
-  controllerOut_st controlOut;
+  //controllerIn_st controlIn;
+  //controllerOut_st controlOut;
+  droneTimes_st times;
 
-  UpdateSysTime(&controlIn.droneTimes);
-  spiInput.sysTick = controlIn.droneTimes.sysTick;
+  UpdateSysTime(&times);
+  spiInput.sysTick = times.sysTick;
 
-  getRcChannels(&controlIn.rcSignals);
-  getGyroAndAcc(&controlIn.gyro, &controlIn.acc);
+  //getRcChannels(&controlIn.rcSignals);
+  //getGyroAndAcc(&controlIn.gyro, &controlIn.acc);
   
   //SerialUSB.print(float(controlIn.gyro.signalPT1_int.x)); SerialUSB.print("\t");
   //SerialUSB.print(float(controlIn.gyro.signal_int.x)); SerialUSB.print("\t");
@@ -98,24 +99,25 @@ void loop()
   //   controlIn.rcSignals.Switch2Way = 1000;
   // }
 
-  RunController(&controlIn, &controlOut);
+  ControllerDebug();
+  //RunController(&controlIn, &controlOut);
 
-  RunBT(&controlIn, &controlOut);
+  RunBT();
 
-  spiInput.gyro = controlIn.gyro;
-  spiInput.acc = controlIn.acc;
-  spiInput.rcSignals.throttle = controlIn.rcSignals.throttle;
-  spiInput.rcSignals.roll = controlIn.rcSignals.roll;
-  spiInput.rcSignals.pitch = controlIn.rcSignals.pitch;
-  spiInput.rcSignals.yaw = controlIn.rcSignals.yaw;
-  spiInput.rcSignals.armStateSwitch = controlIn.rcSignals.armStateSwitch;
-  spiInput.rcSignals.measurementSwitch = controlIn.rcSignals.measurementSwitch;
-  spiInput.rcSignals.Poti1 = controlIn.rcSignals.Poti1;
-  spiInput.rcSignals.Poti2 = controlIn.rcSignals.Poti2;
-  spiInput.rcSignals.flightModeSwitch = controlIn.rcSignals.flightModeSwitch;
-  spiInput.rcSignals.Switch2Way = controlIn.rcSignals.Switch2Way;
+  // spiInput.gyro = controlIn.gyro;
+  // spiInput.acc = controlIn.acc;
+  // spiInput.rcSignals.throttle = controlIn.rcSignals.throttle;
+  // spiInput.rcSignals.roll = controlIn.rcSignals.roll;
+  // spiInput.rcSignals.pitch = controlIn.rcSignals.pitch;
+  // spiInput.rcSignals.yaw = controlIn.rcSignals.yaw;
+  // spiInput.rcSignals.armStateSwitch = controlIn.rcSignals.armStateSwitch;
+  // spiInput.rcSignals.measurementSwitch = controlIn.rcSignals.measurementSwitch;
+  // spiInput.rcSignals.Poti1 = controlIn.rcSignals.Poti1;
+  // spiInput.rcSignals.Poti2 = controlIn.rcSignals.Poti2;
+  // spiInput.rcSignals.flightModeSwitch = controlIn.rcSignals.flightModeSwitch;
+  // spiInput.rcSignals.Switch2Way = controlIn.rcSignals.Switch2Way;
 
-  RunSPI(&spiInput, &spiOutput);	//for sd card
+  RunSPI();	//for sd card
   
   //SerialUSB.print(controlIn.rcSignals.roll); SerialUSB.print("\t");
   //SerialUSB.print(controlIn.rcSignals.pitch); SerialUSB.print("\t");

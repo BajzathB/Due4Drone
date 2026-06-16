@@ -40,7 +40,7 @@
 //		...
 //		xth line: header for measured signals, example: sysTick,Graw,Gpt1,Gpt2,Accraw,Accpt1,Accpt2,Akf,Akfaccpt1\n
 // 
-//	1st meas is systick
+//	1st meas is sysTick
 //	every other measured value is separeted by comma(",")
 //	after last measured value is a "\n"
 //		x+th lines are the measurement values
@@ -107,8 +107,12 @@ void InitSDCard()
 	SDcard.globalDateAndTime.sec = 0;
 }
 
-void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
+void RunSdCard()
 {
+	rcSignals_st rcSig;
+
+	getRcChannels(&rcSig);
+
 	switch (SDcard.MainState)
 	{
 		case SD_INIT:
@@ -119,7 +123,7 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		}
 		case SD_WAIT_4_MEASUREMENT:
 		{
-			if (spiInput->rcSignals.measurementSwitch > 1500)
+			if (rcSig.measurementSwitch > 1500)
 			{
 				addMeasHeader();
 
@@ -133,29 +137,29 @@ void RunSdCard(SpiInput* spiInput, SPIOutput* spiOutput)
 		case SD_MEASUREMENT_ONGOING:
 		{
 			//save data every x ms
-			if (spiInput->sysTick - SDcard.measTickPrev >= DATA_SAVE_DELAY)
+			if (getSysTick() - SDcard.measTickPrev >= DATA_SAVE_DELAY)
 			{
-				SDcard.measTickPrev = spiInput->sysTick;
+				SDcard.measTickPrev = getSysTick();
 				
-				saveMeasData(spiInput, spiOutput);
+				saveMeasData();
 			}
 
 			if (SDcard.writeMeasData)
 			{
-				writeData(spiInput->rcSignals.measurementSwitch, spiInput->sysTick);
+				writeData(rcSig.measurementSwitch, getSysTick());
 			}
 
 			break;
 		}
 		case SD_WRITE_ROOT:
 		{
-			writeRoot(spiInput->sysTick);
+			writeRoot(getSysTick());
 
 			break;
 		}
 		case SD_WRITE_FAT:
 		{
-			writeFAT(spiInput->sysTick);
+			writeFAT(getSysTick());
 
 			break;
 		}
@@ -1581,46 +1585,41 @@ void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFr
     }
 }
 
-void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
+void saveMeasData()
 {
     gyroData_st* gyroData{ getGyroData() };
     accData_st* accData{ getAccData() };
     pid_st* pidData{ getPIDrates() };
+	spi_st* spiData{ getSPI() };
     
     //timestamp
-    measureData(meas2Card.measureSysTick, false, spiInput->sysTick/10500, 0, false, "tickMs: ");
+    measureData(meas2Card.measureSysTick, false, getSysTick()/10500, 0, false, "tickMs: ");
     //gyro
-    measureData(meas2Card.measureGyroRawX, true, spiInput->gyro.signal.x, 3, false, "gyroRawX: ");
-    measureData(meas2Card.measureGyroRawY, true, spiInput->gyro.signal.y, 3, false, "gyroRawY: ");
-    measureData(meas2Card.measureGyroRawZ, true, spiInput->gyro.signal.z, 3, false, "gyroRawZ: ");
-    measureData(meas2Card.measureGyroPT1X, true, gyroData->PT1.signal.x, 3, false, "gyroPT1X: ");
-    measureData(meas2Card.measureGyroPT1Y, true, gyroData->PT1.signal.y, 3, false, "gyroPT1Y: ");
-    measureData(meas2Card.measureGyroPT1Z, true, gyroData->PT1.signal.z, 3, false, "gyroPT1Z: ");
-    measureData(meas2Card.measureGyroPT2X, true, gyroData->PT2.signal.x, 3, false, "gyroPT2X: ");
-    measureData(meas2Card.measureGyroPT2Y, true, gyroData->PT2.signal.y, 3, false, "gyroPT2Y: ");
-    measureData(meas2Card.measureGyroPT2Z, true, gyroData->PT2.signal.z, 3, false, "gyroPT2Z: ");
-    measureData(meas2Card.measureGyroRawX_int, true, calcRealFromInt(&SPI.gyro, E_direction::X, false), 3, false, "gyroRawX_int: ");
-    measureData(meas2Card.measureGyroRawY_int, true, calcRealFromInt(&SPI.gyro, E_direction::Y, false), 3, false, "gyroRawY_int: ");
-    measureData(meas2Card.measureGyroRawZ_int, true, calcRealFromInt(&SPI.gyro, E_direction::Z, false), 3, false, "gyroRawZ_int: ");
-    measureData(meas2Card.measureGyroPT1X_int, true, calcRealFromInt(&SPI.gyro, E_direction::X, true), 3, false, "gyroPT1X_int: ");
-    measureData(meas2Card.measureGyroPT1Y_int, true, calcRealFromInt(&SPI.gyro, E_direction::Y, true), 3, false, "gyroPT1Y_int: ");
-    measureData(meas2Card.measureGyroPT1Z_int, true, calcRealFromInt(&SPI.gyro, E_direction::Z, true), 3, false, "gyroPT1Z_int: ");
+    measureData(meas2Card.measureGyroRawX, true, spiData->gyro.signals.x, 3, false, "gyroRawX_i: ");
+    measureData(meas2Card.measureGyroRawY, true, spiData->gyro.signals.y, 3, false, "gyroRawY_i: ");
+    measureData(meas2Card.measureGyroRawZ, true, spiData->gyro.signals.z, 3, false, "gyroRawZ_i: ");
+    measureData(meas2Card.measureGyroPT1X, true, gyroData->PT1.signalPT1.x, 3, false, "gyroPT1X_i: ");
+    measureData(meas2Card.measureGyroPT1Y, true, gyroData->PT1.signalPT1.y, 3, false, "gyroPT1Y_i: ");
+    measureData(meas2Card.measureGyroPT1Z, true, gyroData->PT1.signalPT1.z, 3, false, "gyroPT1Z_i: ");
+    measureData(meas2Card.measureGyroRealX, true, calcRealFromInt(&SPI.gyro, E_direction::X, false), 3, false, "gyroRealX: ");
+    measureData(meas2Card.measureGyroRealY, true, calcRealFromInt(&SPI.gyro, E_direction::Y, false), 3, false, "gyroRealY: ");
+    measureData(meas2Card.measureGyroRealZ, true, calcRealFromInt(&SPI.gyro, E_direction::Z, false), 3, false, "gyroRealZ: ");
+    measureData(meas2Card.measureGyroRealPT1X, true, calcRealFromInt(&SPI.gyro, E_direction::X, true), 3, false, "gyroRealPT1X: ");
+    measureData(meas2Card.measureGyroRealPT1Y, true, calcRealFromInt(&SPI.gyro, E_direction::Y, true), 3, false, "gyroRealPT1Y: ");
+    measureData(meas2Card.measureGyroRealPT1Z, true, calcRealFromInt(&SPI.gyro, E_direction::Z, true), 3, false, "gyroRealPT1Z: ");
     //acc
-    measureData(meas2Card.measureAccRawX, true, spiInput->acc.signal.x, 3, false, "accRawX: ");
-    measureData(meas2Card.measureAccRawY, true, spiInput->acc.signal.y, 3, false, "accRawY: ");
-    measureData(meas2Card.measureAccRawZ, true, spiInput->acc.signal.z, 3, false, "accRawZ: ");
-    measureData(meas2Card.measureAccPT1X, true, accData->PT1.signal.x, 3, false, "accPT1X: ");
-    measureData(meas2Card.measureAccPT1Y, true, accData->PT1.signal.y, 3, false, "accPT1Y: ");
-    measureData(meas2Card.measureAccPT1Z, true, accData->PT1.signal.z, 3, false, "accPT1Z: ");
-    measureData(meas2Card.measureAccPT2X, true, accData->PT2.signal.x, 3, false, "accPT2X: ");
-    measureData(meas2Card.measureAccPT2Y, true, accData->PT2.signal.y, 3, false, "accPT2Y: ");
-    measureData(meas2Card.measureAccPT2Z, true, accData->PT2.signal.z, 3, false, "accPT2Z: ");
-	measureData(meas2Card.measureAccRawX_int, true, calcRealFromInt(&SPI.acc, E_direction::X, false), 3, false, "accRawX_int: ");
-	measureData(meas2Card.measureAccRawY_int, true, calcRealFromInt(&SPI.acc, E_direction::Y, false), 3, false, "accRawY_int: ");
-	measureData(meas2Card.measureAccRawZ_int, true, calcRealFromInt(&SPI.acc, E_direction::Z, false), 3, false, "accRawZ_int: ");
-	measureData(meas2Card.measureAccPT1X_int, true, calcRealFromInt(&SPI.acc, E_direction::X, true), 3, false, "accPT1X_int: ");
-	measureData(meas2Card.measureAccPT1Y_int, true, calcRealFromInt(&SPI.acc, E_direction::Y, true), 3, false, "accPT1Y_int: ");
-	measureData(meas2Card.measureAccPT1Z_int, true, calcRealFromInt(&SPI.acc, E_direction::Z, true), 3, false, "accPT1Z_int: ");
+    measureData(meas2Card.measureAccRawX, true, spiData->acc.signals.x, 3, false, "accRawX_i: ");
+    measureData(meas2Card.measureAccRawY, true, spiData->acc.signals.y, 3, false, "accRawY_i: ");
+    measureData(meas2Card.measureAccRawZ, true, spiData->acc.signals.z, 3, false, "accRawZ_i: ");
+    measureData(meas2Card.measureAccPT1X, true, accData->PT1.signalPT1.x, 3, false, "accPT1X_i: ");
+    measureData(meas2Card.measureAccPT1Y, true, accData->PT1.signalPT1.y, 3, false, "accPT1Y_i: ");
+    measureData(meas2Card.measureAccPT1Z, true, accData->PT1.signalPT1.z, 3, false, "accPT1Z_i: ");
+	measureData(meas2Card.measureAccRealX, true, calcRealFromInt(&SPI.acc, E_direction::X, false), 3, false, "accRealX: ");
+	measureData(meas2Card.measureAccRealY, true, calcRealFromInt(&SPI.acc, E_direction::Y, false), 3, false, "accRealY: ");
+	measureData(meas2Card.measureAccRealZ, true, calcRealFromInt(&SPI.acc, E_direction::Z, false), 3, false, "accRealZ: ");
+	measureData(meas2Card.measureAccRealPT1X, true, calcRealFromInt(&SPI.acc, E_direction::X, true), 3, false, "accRealPT1X: ");
+	measureData(meas2Card.measureAccRealPT1Y, true, calcRealFromInt(&SPI.acc, E_direction::Y, true), 3, false, "accRealPT1Y: ");
+	measureData(meas2Card.measureAccRealPT1Z, true, calcRealFromInt(&SPI.acc, E_direction::Z, true), 3, false, "accRealPT1Z: ");
     //angle
     measureData(meas2Card.measureAngleRawRoll, true, accData->rollAngle, 3, false, "rollAngleRaw: ");
     measureData(meas2Card.measureAngleRawPitch, true, accData->pitchAngle, 3, false, "pitchAngleRaw: ");
@@ -1632,14 +1631,6 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
     measureData(meas2Card.measureAngleKFRawPitch, true, accData->angleKF.pitch.angle, 3, false, "angleKFPitch: ");
     measureData(meas2Card.measureAngleKFPT10Roll, true, accData->angleKFPT10.roll.angle, 3, false, "angleKFPT10Roll: ");
     measureData(meas2Card.measureAngleKFPT10Pitch, true, accData->angleKFPT10.pitch.angle, 3, false, "angleKFPT10Pitch: ");
-    measureData(meas2Card.measureAngleKFPT20Roll, true, accData->angleKFPT20.roll.angle, 3, false, "angleKFPT20Roll: ");
-    measureData(meas2Card.measureAngleKFPT20Pitch, true, accData->angleKFPT20.pitch.angle, 3, false, "angleKFPT20Pitch: ");
-    measureData(meas2Card.measureAngleKFPT11Roll, true, accData->angleKFPT11.roll.angle, 3, false, "angleKFPT11Roll: ");
-    measureData(meas2Card.measureAngleKFPT11Pitch, true, accData->angleKFPT11.pitch.angle, 3, false, "angleKFPT11Pitch: ");
-    measureData(meas2Card.measureAngleKFPT21Roll, true, accData->angleKFPT21.roll.angle, 3, false, "angleKFPT21Roll: ");
-    measureData(meas2Card.measureAngleKFPT21Pitch, true, accData->angleKFPT21.pitch.angle, 3, false, "angleKFPT21Pitch: ");
-    measureData(meas2Card.measureAngleKFPT22Roll, true, accData->angleKFPT22.roll.angle, 3, false, "angleKFPT22Roll: ");
-    measureData(meas2Card.measureAngleKFPT22Pitch, true, accData->angleKFPT22.pitch.angle, 3, false, "angleKFPT22Pitch: ");
 	measureData(meas2Card.measureAngleCFRawRoll, true, accData->rollAngleCF, 3, false, "angleCFRoll: ");
 	measureData(meas2Card.measureAngleCFRawPitch, true, accData->pitchAngleCF, 3, false, "angleCFPitch: ");
 	measureData(meas2Card.measureAngleCFPT10Roll, true, accData->rollAngleCF10, 3, false, "angleCFPT10Roll: ");
@@ -1652,50 +1643,27 @@ void saveMeasData(SpiInput* spiInput, SPIOutput* spiOutput)
 	measureData(meas2Card.measureAngleCFWeightedPT01Pitch, true, accData->pitchAngleCFw01, 3, false, "angleCFWeightedPT01 Pitch: ");
 
     //PID control
-    //measureData(meas2Card.measurePIDRefsigX, true, pidData->refSignal.x, 3, false, "PIDRefSigX: ");
-    //measureData(meas2Card.measurePIDRefsigY, true, pidData->refSignal.y, 3, false, "PIDRefSigY: ");
-    //measureData(meas2Card.measurePIDRefsigZ, true, pidData->refSignal.z, 3, false, "PIDRefSigZ: ");
-    //measureData(meas2Card.measurePIDSensorX, true, pidData->sensor.signal.x, 3, false, "PIDSensorX: ");
-    //measureData(meas2Card.measurePIDSensorY, true, pidData->sensor.signal.y, 3, false, "PIDSensorY: ");
-    //measureData(meas2Card.measurePIDSensorZ, true, pidData->sensor.signal.z, 3, false, "PIDSensorZ: ");
-    //measureData(meas2Card.measurePIDPoutX, true, pidData->Pout.x, 3, false, "PIDPoutX: ");
-    //measureData(meas2Card.measurePIDPoutY, true, pidData->Pout.y, 3, false, "PIDPoutY: ");
-    //measureData(meas2Card.measurePIDPoutZ, true, pidData->Pout.z, 3, false, "PIDPoutZ: ");
-    //measureData(meas2Card.measurePIDIoutX, true, pidData->Iout.x, 3, false, "PIDIoutX: ");
-    //measureData(meas2Card.measurePIDIoutY, true, pidData->Iout.y, 3, false, "PIDIoutY: ");
-    //measureData(meas2Card.measurePIDIoutZ, true, pidData->Iout.z, 3, false, "PIDIoutZ: ");
-    //measureData(meas2Card.measurePIDDoutX, true, pidData->Dout.x, 3, false, "PIDDoutX: ");
-    //measureData(meas2Card.measurePIDDoutY, true, pidData->Dout.y, 3, false, "PIDDoutY: ");
-    //measureData(meas2Card.measurePIDDoutZ, true, pidData->Dout.z, 3, false, "PIDDoutZ: ");
-    //measureData(meas2Card.measurePIDFFoutX, true, pidData->FFout.x, 3, false, "PIDFFoutX: ");
-    //measureData(meas2Card.measurePIDFFoutY, true, pidData->FFout.y, 3, false, "PIDFFoutY: ");
-    //measureData(meas2Card.measurePIDFFoutZ, true, pidData->FFout.z, 3, false, "PIDFFoutZ: ");
-    //measureData(meas2Card.measurePIDUX, true, pidData->u.x, 3, false, "PIDUX: ");
-    //measureData(meas2Card.measurePIDUY, true, pidData->u.y, 3, false, "PIDUY: ");
-    //measureData(meas2Card.measurePIDUZ, true, pidData->u.z, 3, false, "PIDUZ: ");
-
-	measureData(meas2Card.measurePIDDeltaTick_int, true, float(pidData->deltaTicks), 0, false, "PIDDeltaTicks: ");
-	measureData(meas2Card.measurePIDRefsigX_int, true, float(pidData->refSignal_int.x), 0, false, "PIDRefSigXi: ");	
-	measureData(meas2Card.measurePIDRefsigY_int, true, float(pidData->refSignal_int.y), 0, false, "PIDRefSigYi: ");
-	measureData(meas2Card.measurePIDRefsigZ_int, true, float(pidData->refSignal_int.z), 0, false, "PIDRefSigZi: ");
-	measureData(meas2Card.measurePIDSensorX_int, true, float(pidData->sensor.signalPT1_int.x), 0, false, "PIDSensorXi: ");
-	measureData(meas2Card.measurePIDSensorY_int, true, float(pidData->sensor.signalPT1_int.y), 0, false, "PIDSensorYi: ");
-	measureData(meas2Card.measurePIDSensorZ_int, true, float(pidData->sensor.signalPT1_int.z), 0, false, "PIDSensorZi: ");
-	measureData(meas2Card.measurePIDPoutX_int, true, pidData->Pout_int.x, 0, false, "PIDPoutXi: ");
-	measureData(meas2Card.measurePIDPoutY_int, true, pidData->Pout_int.y, 0, false, "PIDPoutYi: ");
-	measureData(meas2Card.measurePIDPoutZ_int, true, pidData->Pout_int.z, 0, false, "PIDPoutZi: ");
-	measureData(meas2Card.measurePIDIoutX_int, true, pidData->Iout_int.x, 0, false, "PIDIoutXi: ");
-	measureData(meas2Card.measurePIDIoutY_int, true, pidData->Iout_int.y, 0, false, "PIDIoutYi: ");
-	measureData(meas2Card.measurePIDIoutZ_int, true, pidData->Iout_int.z, 0, false, "PIDIoutZi: ");
-	measureData(meas2Card.measurePIDDoutX_int, true, pidData->Dout_int.x, 0, false, "PIDDoutXi: ");
-	measureData(meas2Card.measurePIDDoutY_int, true, pidData->Dout_int.y, 0, false, "PIDDoutYi: ");
-	measureData(meas2Card.measurePIDDoutZ_int, true, pidData->Dout_int.z, 0, false, "PIDDoutZi: ");
-	measureData(meas2Card.measurePIDFFoutX_int, true, pidData->FFout_int.x, 0, false, "PIDFFoutXi: ");
-	measureData(meas2Card.measurePIDFFoutY_int, true, pidData->FFout_int.y, 0, false, "PIDFFoutYi: ");
-	measureData(meas2Card.measurePIDFFoutZ_int, true, pidData->FFout_int.z, 0, false, "PIDFFoutZi: ");
-	measureData(meas2Card.measurePIDUX_int, true, pidData->u_int.x, 0, false, "PIDUXi: ");
-	measureData(meas2Card.measurePIDUY_int, true, pidData->u_int.y, 0, false, "PIDUYi: ");
-	measureData(meas2Card.measurePIDUZ_int, true, pidData->u_int.z, 0, false, "PIDUZi: ");
+	measureData(meas2Card.measurePIDRefsigX_i, true, pidData->refSig_i.x, 0, false, "PIDRefSigXi: ");
+	measureData(meas2Card.measurePIDRefsigY_i, true, pidData->refSig_i.y, 0, false, "PIDRefSigYi: ");
+	measureData(meas2Card.measurePIDRefsigZ_i, true, pidData->refSig_i.z, 0, false, "PIDRefSigZi: ");
+	measureData(meas2Card.measurePIDSensorX_i, true, pidData->sensor.signalPT1.x, 0, false, "PIDSensorXi: ");
+	measureData(meas2Card.measurePIDSensorY_i, true, pidData->sensor.signalPT1.y, 0, false, "PIDSensorYi: ");
+	measureData(meas2Card.measurePIDSensorZ_i, true, pidData->sensor.signalPT1.z, 0, false, "PIDSensorZi: ");
+	measureData(meas2Card.measurePIDPoutX_i, true, pidData->Pout_i.x, 0, false, "PIDPoutXi: ");
+	measureData(meas2Card.measurePIDPoutY_i, true, pidData->Pout_i.y, 0, false, "PIDPoutYi: ");
+	measureData(meas2Card.measurePIDPoutZ_i, true, pidData->Pout_i.z, 0, false, "PIDPoutZi: ");
+	measureData(meas2Card.measurePIDIoutX_i, true, pidData->Iout_i.x, 0, false, "PIDIoutXi: ");
+	measureData(meas2Card.measurePIDIoutY_i, true, pidData->Iout_i.y, 0, false, "PIDIoutYi: ");
+	measureData(meas2Card.measurePIDIoutZ_i, true, pidData->Iout_i.z, 0, false, "PIDIoutZi: ");
+	measureData(meas2Card.measurePIDDoutX_i, true, pidData->Dout_i.x, 0, false, "PIDDoutXi: ");
+	measureData(meas2Card.measurePIDDoutY_i, true, pidData->Dout_i.y, 0, false, "PIDDoutYi: ");
+	measureData(meas2Card.measurePIDDoutZ_i, true, pidData->Dout_i.z, 0, false, "PIDDoutZi: ");
+	measureData(meas2Card.measurePIDFFoutX_i, true, pidData->FFout_i.x, 0, false, "PIDFFoutXi: ");
+	measureData(meas2Card.measurePIDFFoutY_i, true, pidData->FFout_i.y, 0, false, "PIDFFoutYi: ");
+	measureData(meas2Card.measurePIDFFoutZ_i, true, pidData->FFout_i.z, 0, false, "PIDFFoutZi: ");
+	measureData(meas2Card.measurePIDUX_i, true, pidData->u_i.x, 0, false, "PIDUXi: ");
+	measureData(meas2Card.measurePIDUY_i, true, pidData->u_i.y, 0, false, "PIDUYi: ");
+	measureData(meas2Card.measurePIDUZ_i, true, pidData->u_i.z, 0, false, "PIDUZi: ");
 
 	appendNewLine();
 }
@@ -1843,42 +1811,38 @@ void addMeasHeader(void)
 	SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
 	//2nd line
 	{
-        addMeasNameHeader(true, false,"Pxi", 2);
-        addMeasNameHeader(true, true, "Ixi", 2);
-        addMeasNameHeader(true, true, "Dxi", 2);
-        addMeasNameHeader(true, true, "Pyi", 2);
-        addMeasNameHeader(true, true, "Iyi", 2);
-        addMeasNameHeader(true, true, "Dyi", 2);
-        addMeasNameHeader(true, true, "Pzi", 2);
-        addMeasNameHeader(true, true, "Izi", 2);
-        addMeasNameHeader(true, true, "FFrxi", 4);
-        addMeasNameHeader(true, true, "FFryi", 4);
-        addMeasNameHeader(true, true, "FFdrxi", 5);
-        addMeasNameHeader(true, true, "FFdryi", 5);
-        addMeasNameHeader(true, true, "satIi", 4);
-        addMeasNameHeader(true, true, "satPIDi", 6);
-        //addMeasNameHeader(true, true, "DTermC", 6);
-        addMeasNameHeader(true, true, "GparamC", 7);
-        addMeasNameHeader(true, true, "AparamC", 7);
+        addMeasNameHeader(true, false,"Px", 2);
+        addMeasNameHeader(true, true, "Ix", 2);
+        addMeasNameHeader(true, true, "Dx", 2);
+        addMeasNameHeader(true, true, "Py", 2);
+        addMeasNameHeader(true, true, "Iy", 2);
+        addMeasNameHeader(true, true, "Dy", 2);
+        addMeasNameHeader(true, true, "Pz", 2);
+        addMeasNameHeader(true, true, "Iz", 2);
+        addMeasNameHeader(true, true, "FFrx", 4);
+        addMeasNameHeader(true, true, "FFry", 4);
+        addMeasNameHeader(true, true, "FFdrx", 5);
+        addMeasNameHeader(true, true, "FFdry", 5);
+        addMeasNameHeader(true, true, "satI", 4);
+        addMeasNameHeader(true, true, "satPID", 6);
         addMeasNameHeader(true, true, "KFQAng", 6);
         addMeasNameHeader(true, true, "KFQbias", 7);
         addMeasNameHeader(true, true, "KFRmeas", 7);
-  //      addMeasNameHeader(true, true, "CPx", 3);
-  //      addMeasNameHeader(true, true, "CIx", 3);
-		//addMeasNameHeader(true, true, "CPy", 3);
-		//addMeasNameHeader(true, true, "CIy", 3);
-		//addMeasNameHeader(true, true, "CsatI", 5);
-		//addMeasNameHeader(true, true, "CsatPID", 7);
-		//addMeasNameHeader(true, true, "CFFdrx", 6);
-		//addMeasNameHeader(true, true, "CFFdry", 6);
-		//addMeasNameHeader(true, true, "CFalpha", 7);
-		//addMeasNameHeader(true, true, "FFDTermC", 8);
-		//addMeasNameHeader(true, true, "IRelaxR", 7);
-		//addMeasNameHeader(true, true, "IRelaxE", 7);
-		//addMeasNameHeader(true, true, "DmaxR", 5);
-		//addMeasNameHeader(true, true, "DmaxE", 5);
-		//addMeasNameHeader(true, true, "DMx", 3);
-		//addMeasNameHeader(true, true, "DMy", 3);
+        addMeasNameHeader(true, true, "CPx", 3);
+        addMeasNameHeader(true, true, "CIx", 3);
+		addMeasNameHeader(true, true, "CPy", 3);
+		addMeasNameHeader(true, true, "CIy", 3);
+		addMeasNameHeader(true, true, "CsatI", 5);
+		addMeasNameHeader(true, true, "CsatPID", 7);
+		addMeasNameHeader(true, true, "CFFdrx", 6);
+		addMeasNameHeader(true, true, "CFFdry", 6);
+		addMeasNameHeader(true, true, "CFalpha", 7);
+		addMeasNameHeader(true, true, "IRelaxR", 7);
+		addMeasNameHeader(true, true, "IRelaxE", 7);
+		addMeasNameHeader(true, true, "DmaxR", 5);
+		addMeasNameHeader(true, true, "DmaxE", 5);
+		addMeasNameHeader(true, true, "DMx", 3);
+		addMeasNameHeader(true, true, "DMy", 3);
 		SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
 #ifdef LOG_SAVED_DATA
 		SerialUSB.print("End of 2nd line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
@@ -1893,39 +1857,33 @@ void addMeasHeader(void)
         gyroData_st* gyro{ getGyroData() };
         accData_st* acc{ getAccData() };
 
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_int.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_int.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_int.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_int.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_int.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_int.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_int.z, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_i.z, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_int.z, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_i.z, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_int.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_int.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_int.x, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_int.y, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->satI_int, 0, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->satI_i, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->satPID_int, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->DTermC, 0, false);
-        tempBuffer[numberOfCharacters++] = ',';
-        convert2String(tempBuffer, &numberOfCharacters, gyro->paramC, 1, false);
-        tempBuffer[numberOfCharacters++] = ',';
-        convert2String(tempBuffer, &numberOfCharacters, acc->paramC, 1, false);
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->satPID_i, 0, false);
         tempBuffer[numberOfCharacters++] = ',';
         convert2String(tempBuffer, &numberOfCharacters, acc->q_angle, 6, false);
         tempBuffer[numberOfCharacters++] = ',';
@@ -1933,39 +1891,35 @@ void addMeasHeader(void)
         tempBuffer[numberOfCharacters++] = ',';
         convert2String(tempBuffer, &numberOfCharacters, acc->r_measure, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->P.x, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->I.x, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->P.y, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->I.y, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->saturationI, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->saturationPID, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.x, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr.y, 0, false);
-  //      tempBuffer[numberOfCharacters++] = ',';
-  //      convert2String(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->FFDTermC, 3, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxRefThreshhold, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxErrThreshhold, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxRefThreshhold, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxErrThreshhold, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.x, 0, false);
-		//tempBuffer[numberOfCharacters++] = ',';
-		//convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax.y, 0, false);
-
-        //newline
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->P_i.x, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->I_i.x, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->P_i.y, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->I_i.y, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->satI_i, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->satPID_i, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr_i.x, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr_i.y, 0, false);
+        tempBuffer[numberOfCharacters++] = ',';
+        convert2String(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxRefThold_i, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxErrThold_i, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxRefThold_i, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxErrThold_i, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax_i.x, 0, false);
+		tempBuffer[numberOfCharacters++] = ',';
+		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = '\n';
 
 		loadData2Buffer(tempBuffer, numberOfCharacters);
@@ -1984,15 +1938,12 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureGyroPT1X, true, "GPT1X", 5);
         addMeasNameHeader(meas2Card.measureGyroPT1Y, true, "GPT1Y", 5);
         addMeasNameHeader(meas2Card.measureGyroPT1Z, true, "GPT1Z", 5);
-        addMeasNameHeader(meas2Card.measureGyroPT2X, true, "GPT2X", 5);
-        addMeasNameHeader(meas2Card.measureGyroPT2Y, true, "GPT2Y", 5);
-        addMeasNameHeader(meas2Card.measureGyroPT2Z, true, "GPT2Z", 5);
-        addMeasNameHeader(meas2Card.measureGyroRawX_int, true, "GRawXi", 6);
-        addMeasNameHeader(meas2Card.measureGyroRawY_int, true, "GRawYi", 6);
-        addMeasNameHeader(meas2Card.measureGyroRawZ_int, true, "GRawZi", 6);
-        addMeasNameHeader(meas2Card.measureGyroPT1X_int, true, "GPT1Xi", 6);
-        addMeasNameHeader(meas2Card.measureGyroPT1Y_int, true, "GPT1Yi", 6);
-        addMeasNameHeader(meas2Card.measureGyroPT1Z_int, true, "GPT1Zi", 6);
+        addMeasNameHeader(meas2Card.measureGyroRealX, true, "GRealX", 6);
+        addMeasNameHeader(meas2Card.measureGyroRealY, true, "GRealY", 6);
+        addMeasNameHeader(meas2Card.measureGyroRealZ, true, "GRealZ", 6);
+        addMeasNameHeader(meas2Card.measureGyroRealPT1X, true, "GRealPT1X", 9);
+        addMeasNameHeader(meas2Card.measureGyroRealPT1Y, true, "GRealPT1Y", 9);
+        addMeasNameHeader(meas2Card.measureGyroRealPT1Z, true, "GRealPT1Z", 9);
         //acc
         addMeasNameHeader(meas2Card.measureAccRawX, true, "ARawX", 5);
         addMeasNameHeader(meas2Card.measureAccRawY, true, "ARawY", 5);
@@ -2000,15 +1951,12 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureAccPT1X, true, "APT1X", 5);
         addMeasNameHeader(meas2Card.measureAccPT1Y, true, "APT1Y", 5);
         addMeasNameHeader(meas2Card.measureAccPT1Z, true, "APT1Z", 5);
-        addMeasNameHeader(meas2Card.measureAccPT2X, true, "APT2X", 5);
-        addMeasNameHeader(meas2Card.measureAccPT2Y, true, "APT2Y", 5);
-        addMeasNameHeader(meas2Card.measureAccPT2Z, true, "APT2Z", 5);
-		addMeasNameHeader(meas2Card.measureAccRawX_int, true, "ARawXi", 6);
-		addMeasNameHeader(meas2Card.measureAccRawY_int, true, "ARawYi", 6);
-		addMeasNameHeader(meas2Card.measureAccRawZ_int, true, "ARawZi", 6);
-		addMeasNameHeader(meas2Card.measureAccPT1X_int, true, "APT1Xi", 6);
-		addMeasNameHeader(meas2Card.measureAccPT1Y_int, true, "APT1Yi", 6);
-		addMeasNameHeader(meas2Card.measureAccPT1Z_int, true, "APT1Zi", 6);
+		addMeasNameHeader(meas2Card.measureAccRealX, true, "ARealX", 6);
+		addMeasNameHeader(meas2Card.measureAccRealY, true, "ARealY", 6);
+		addMeasNameHeader(meas2Card.measureAccRealZ, true, "ARealZ", 6);
+		addMeasNameHeader(meas2Card.measureAccRealPT1X, true, "ARealPT1X", 9);
+		addMeasNameHeader(meas2Card.measureAccRealPT1Y, true, "ARealPT1Y", 9);
+		addMeasNameHeader(meas2Card.measureAccRealPT1Z, true, "ARealPT1Z", 9);
         //angle
         addMeasNameHeader(meas2Card.measureAngleRawRoll, true, "aRawR", 5);
         addMeasNameHeader(meas2Card.measureAngleRawPitch, true, "aRawP", 5);
@@ -2020,14 +1968,6 @@ void addMeasHeader(void)
         addMeasNameHeader(meas2Card.measureAngleKFRawPitch, true, "aKFRawP", 7);
         addMeasNameHeader(meas2Card.measureAngleKFPT10Roll, true, "aKFPT10R", 8);
         addMeasNameHeader(meas2Card.measureAngleKFPT10Pitch, true, "aKFPT10P", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT20Roll, true, "aKFPT20R", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT20Pitch, true, "aKFPT20P", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT11Roll, true, "aKFPT11R", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT11Pitch, true, "aKFPT11P", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT21Roll, true, "aKFPT21R", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT21Pitch, true, "aKFPT21P", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT22Roll, true, "aKFPT22R", 8);
-        addMeasNameHeader(meas2Card.measureAngleKFPT22Pitch, true, "aKFPT22P", 8);
         addMeasNameHeader(meas2Card.measureAngleCFRawRoll, true, "aCFRawR", 7);
         addMeasNameHeader(meas2Card.measureAngleCFRawPitch, true, "aCFRawP", 7);
 		addMeasNameHeader(meas2Card.measureAngleCFPT10Roll, true, "aCFPT10R", 8);
@@ -2039,51 +1979,27 @@ void addMeasHeader(void)
 		addMeasNameHeader(meas2Card.measureAngleCFWeightedPT01Roll, true, "aCFwPT01R", 9);
 		addMeasNameHeader(meas2Card.measureAngleCFWeightedPT01Pitch, true, "aCFwPT01P", 9);
         //PID control
-        addMeasNameHeader(meas2Card.measurePIDRefsigX, true, "PIDRefX", 7);
-        addMeasNameHeader(meas2Card.measurePIDRefsigY, true, "PIDRefY", 7);
-        addMeasNameHeader(meas2Card.measurePIDRefsigZ, true, "PIDRefZ", 7);
-        addMeasNameHeader(meas2Card.measurePIDSensorX, true, "PIDSensX", 8);
-        addMeasNameHeader(meas2Card.measurePIDSensorY, true, "PIDSensY", 8);
-        addMeasNameHeader(meas2Card.measurePIDSensorZ, true, "PIDSensZ", 8);
-        addMeasNameHeader(meas2Card.measurePIDPoutX, true, "PIDPoutX", 8);
-        addMeasNameHeader(meas2Card.measurePIDPoutY, true, "PIDPoutY", 8);
-        addMeasNameHeader(meas2Card.measurePIDPoutZ, true, "PIDPoutZ", 8);
-        addMeasNameHeader(meas2Card.measurePIDIoutX, true, "PIDIoutX", 8);
-        addMeasNameHeader(meas2Card.measurePIDIoutY, true, "PIDIoutY", 8);
-        addMeasNameHeader(meas2Card.measurePIDIoutZ, true, "PIDIoutZ", 8);
-        addMeasNameHeader(meas2Card.measurePIDDoutX, true, "PIDDoutX", 8);
-        addMeasNameHeader(meas2Card.measurePIDDoutY, true, "PIDDoutY", 8);
-        addMeasNameHeader(meas2Card.measurePIDDoutZ, true, "PIDDoutZ", 8);
-        addMeasNameHeader(meas2Card.measurePIDFFoutX, true, "PIDFFoutX", 9);
-        addMeasNameHeader(meas2Card.measurePIDFFoutY, true, "PIDFFoutY", 9);
-        addMeasNameHeader(meas2Card.measurePIDFFoutZ, true, "PIDFFoutZ", 9);
-        addMeasNameHeader(meas2Card.measurePIDUX, true, "PIDUX", 5);
-        addMeasNameHeader(meas2Card.measurePIDUY, true, "PIDUY", 5);
-        addMeasNameHeader(meas2Card.measurePIDUZ, true, "PIDUZ", 5);
-
-		addMeasNameHeader(meas2Card.measurePIDDeltaTick_int, true, "PIDdtick", 8);
-		addMeasNameHeader(meas2Card.measurePIDRefsigX_int, true, "PIDRefXi", 8);
-		addMeasNameHeader(meas2Card.measurePIDRefsigY_int, true, "PIDRefYi", 8);
-		addMeasNameHeader(meas2Card.measurePIDRefsigZ_int, true, "PIDRefZi", 8);
-		addMeasNameHeader(meas2Card.measurePIDSensorX_int, true, "PIDSensXi", 9);
-		addMeasNameHeader(meas2Card.measurePIDSensorY_int, true, "PIDSensYi", 9);
-		addMeasNameHeader(meas2Card.measurePIDSensorZ_int, true, "PIDSensZi", 9);
-		addMeasNameHeader(meas2Card.measurePIDPoutX_int, true, "PIDPoutXi", 9);
-		addMeasNameHeader(meas2Card.measurePIDPoutY_int, true, "PIDPoutYi", 9);
-		addMeasNameHeader(meas2Card.measurePIDPoutZ_int, true, "PIDPoutZi", 9);
-		addMeasNameHeader(meas2Card.measurePIDIoutX_int, true, "PIDIoutXi", 9);
-		addMeasNameHeader(meas2Card.measurePIDIoutY_int, true, "PIDIoutYi", 9);
-		addMeasNameHeader(meas2Card.measurePIDIoutZ_int, true, "PIDIoutZi", 9);
-		addMeasNameHeader(meas2Card.measurePIDDoutX_int, true, "PIDDoutXi", 9);
-		addMeasNameHeader(meas2Card.measurePIDDoutY_int, true, "PIDDoutYi", 9);
-		addMeasNameHeader(meas2Card.measurePIDDoutZ_int, true, "PIDDoutZi", 9);
-		addMeasNameHeader(meas2Card.measurePIDFFoutX_int, true, "PIDFFoutXi", 10);
-		addMeasNameHeader(meas2Card.measurePIDFFoutY_int, true, "PIDFFoutYi", 10);
-		addMeasNameHeader(meas2Card.measurePIDFFoutZ_int, true, "PIDFFoutZi", 10);
-		addMeasNameHeader(meas2Card.measurePIDUX_int, true, "PIDUXi", 6);
-		addMeasNameHeader(meas2Card.measurePIDUY_int, true, "PIDUYi", 6);
-		addMeasNameHeader(meas2Card.measurePIDUZ_int, true, "PIDUZi", 6);
-
+		addMeasNameHeader(meas2Card.measurePIDRefsigX_i, true, "PIDRefXi", 8);
+		addMeasNameHeader(meas2Card.measurePIDRefsigY_i, true, "PIDRefYi", 8);
+		addMeasNameHeader(meas2Card.measurePIDRefsigZ_i, true, "PIDRefZi", 8);
+		addMeasNameHeader(meas2Card.measurePIDSensorX_i, true, "PIDSensXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDSensorY_i, true, "PIDSensYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDSensorZ_i, true, "PIDSensZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDPoutX_i, true, "PIDPoutXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDPoutY_i, true, "PIDPoutYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDPoutZ_i, true, "PIDPoutZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDIoutX_i, true, "PIDIoutXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDIoutY_i, true, "PIDIoutYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDIoutZ_i, true, "PIDIoutZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDDoutX_i, true, "PIDDoutXi", 9);
+		addMeasNameHeader(meas2Card.measurePIDDoutY_i, true, "PIDDoutYi", 9);
+		addMeasNameHeader(meas2Card.measurePIDDoutZ_i, true, "PIDDoutZi", 9);
+		addMeasNameHeader(meas2Card.measurePIDFFoutX_i, true, "PIDFFoutXi", 10);
+		addMeasNameHeader(meas2Card.measurePIDFFoutY_i, true, "PIDFFoutYi", 10);
+		addMeasNameHeader(meas2Card.measurePIDFFoutZ_i, true, "PIDFFoutZi", 10);
+		addMeasNameHeader(meas2Card.measurePIDUX_i, true, "PIDUXi", 6);
+		addMeasNameHeader(meas2Card.measurePIDUY_i, true, "PIDUYi", 6);
+		addMeasNameHeader(meas2Card.measurePIDUZ_i, true, "PIDUZi", 6);
 
         appendNewLine();
 #ifdef LOG_SAVED_DATA

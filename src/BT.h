@@ -57,24 +57,23 @@ struct bt{
 	rxframe_st rxFrame;
 	txframe_st txFrame;
 
-    float txDeltaT{ 0 };
-    uint32_t txDeltaTick{ 0 };
+    uint64_t lastTimeTx{ 0 };
 };
 
 // Method to set initial values for controller variable
 void SetupBT(void);
 
 // Method to run controller logic cyclically
-void RunBT(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut);
+void RunBT();
 
 // Method to process received message
-void BTReceive(const controllerIn_st* ctrlIn);
+void BTReceive();
 
 // Method to assemble and send message
-void BTTransmit(const controllerIn_st* ctrlIn, const controllerOut_st* ctrlOut);
+void BTTransmit();
 
 // Method to process received frame
-void ProcessRxFrame(const controllerIn_st* ctrlIn);
+void ProcessRxFrame();
 
 // Functions to convert input string to value from SET cmd
 bool ConvertStrToBool(volatile buffer_* input);

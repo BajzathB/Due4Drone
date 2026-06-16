@@ -7,18 +7,15 @@
 
 typedef struct droneTimes_st
 {
-	float sysTime;
 	uint32_t loopTick;	//1tick=95.23nanosec
 	uint64_t sysTick;
-	const uint32_t divider{10500000};
 };
 
 typedef struct sysTime {
 	uint32_t raw;
-	float sysTime;
-	const float const_raw2real = 0.000000095238095; //1/10.5 MHz?
-
 	uint64_t sysTick;
+	const uint32_t divider{ 10500000 };	//10.5MHz
+
 } sysTime;
 
 //  Method to setup system time
@@ -27,17 +24,11 @@ void SetupSysTimer(void);
 // Method to update system time value
 void UpdateSysTime(droneTimes_st* times);
 
-// Method to get drone times
-void getDroneTimes(droneTimes_st* times);
+// Function to get system tick
+uint64_t getSysTick(void);
 
 // Function to get system time in second
 float getSysTime(void);
-
-// Function to get system tick value
-uint64_t getSysTick(void);
-
-// Function to get system loop tick, the ticks between last and current cycle
-float getLoopTick(void);
 
 // Function to get time since timer restarted in UpdateSysTime function, output in microsec
 float getTimeSinceReset(void);

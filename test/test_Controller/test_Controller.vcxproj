@@ -35,8 +35,12 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\Controller.h" />
     <ClInclude Include="..\..\src\LED.h" />
+    <ClInclude Include="..\..\src\MotorControl.h" />
     <ClInclude Include="..\..\src\RC.h" />
+    <ClInclude Include="..\..\src\SPI.h" />
     <ClInclude Include="..\..\src\SPI_common.h" />
+    <ClInclude Include="..\..\src\SPI_SDcard.h" />
+    <ClInclude Include="..\..\src\sysTime.h" />
     <ClInclude Include="..\helper\support4Testing.h" />
     <ClInclude Include="..\helper\support4Testing.hpp" />
     <ClInclude Include="pch.h" />
@@ -44,8 +48,12 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\Controller.cpp" />
     <ClCompile Include="..\..\src\LED.cpp" />
+    <ClCompile Include="..\..\src\MotorControl.cpp" />
     <ClCompile Include="..\..\src\RC.cpp" />
+    <ClCompile Include="..\..\src\SPI.cpp" />
     <ClCompile Include="..\..\src\SPI_common.cpp" />
+    <ClCompile Include="..\..\src\SPI_SDcard.cpp" />
+    <ClCompile Include="..\..\src\sysTime.cpp" />
     <ClCompile Include="..\helper\support4Testing.cpp" />
     <ClCompile Include="test.cpp" />
     <ClCompile Include="pch.cpp">
