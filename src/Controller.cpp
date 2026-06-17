@@ -46,7 +46,7 @@ const float sinWave[LUT_SIZE] = { 0.0f, 0.3894183f, 0.6816387f, 0.8674232f, 0.96
     -0.8671281f, -0.9633994f, -0.9997712f, -0.9739821f, -0.8876354f, -0.7118896f, -0.4279156f, 0.0f};
 float wobbleTime{ 0.0f };
 
-volatile E_armState armState{ DISARMED };
+E_armState armState{ DISARMED };
 controllerIn_st controlIn;
 controllerOut_st controlOut;
 MotorInput motorInput;
@@ -175,48 +175,48 @@ void TC0_Handler(void)
         getRcChannels(&controlIn.rcSignals);
         getGyroAndAcc(&controlIn.gyro, &controlIn.acc);
       
-        //testing
-        static uint64_t counter{0};
-        if(counter > 10000) //5sec
-        {
-          controlIn.rcSignals.throttle = 1000;
-          controlIn.rcSignals.roll = 1500;
-          controlIn.rcSignals.pitch = 1500;
-          controlIn.rcSignals.yaw = 1500;
-          controlIn.rcSignals.armStateSwitch = 2000;
-          controlIn.rcSignals.measurementSwitch = 1000;
-          controlIn.rcSignals.Poti1 = 1500;
-          controlIn.rcSignals.Poti2 = 1600;
-          controlIn.rcSignals.flightModeSwitch = 1000;
-          controlIn.rcSignals.Switch2Way = 1000;
-        }
-        if(counter > 12000) //6sec
-        {
-          controlIn.rcSignals.throttle = 1100;
-          controlIn.rcSignals.roll = 1500;
-          controlIn.rcSignals.pitch = 1500;
-          controlIn.rcSignals.yaw = 1500;
-          controlIn.rcSignals.armStateSwitch = 2000;
-          controlIn.rcSignals.measurementSwitch = 1000;
-          controlIn.rcSignals.Poti1 = 1500;
-          controlIn.rcSignals.Poti2 = 1600;
-          controlIn.rcSignals.flightModeSwitch = 1500;
-          controlIn.rcSignals.Switch2Way = 1000;
-        }
-        if(counter > 20000)  //10sec
-        {
-          controlIn.rcSignals.throttle = 1000;
-          controlIn.rcSignals.roll = 1500;
-          controlIn.rcSignals.pitch = 1500;
-          controlIn.rcSignals.yaw = 1500;
-          controlIn.rcSignals.armStateSwitch = 1000;
-          controlIn.rcSignals.measurementSwitch = 1000;
-          controlIn.rcSignals.Poti1 = 1000;
-          controlIn.rcSignals.Poti2 = 1000;
-          controlIn.rcSignals.flightModeSwitch = 1000;
-          controlIn.rcSignals.Switch2Way = 1000;
-        }
-        counter++;
+        ////testing
+        //static uint64_t counter{0};
+        //if(counter > 10000) //5sec
+        //{
+        //  controlIn.rcSignals.throttle = 1000;
+        //  controlIn.rcSignals.roll = 1500;
+        //  controlIn.rcSignals.pitch = 1500;
+        //  controlIn.rcSignals.yaw = 1500;
+        //  controlIn.rcSignals.armStateSwitch = 2000;
+        //  controlIn.rcSignals.measurementSwitch = 1000;
+        //  controlIn.rcSignals.Poti1 = 1500;
+        //  controlIn.rcSignals.Poti2 = 1600;
+        //  controlIn.rcSignals.flightModeSwitch = 1000;
+        //  controlIn.rcSignals.Switch2Way = 1000;
+        //}
+        //if(counter > 12000) //6sec
+        //{
+        //  controlIn.rcSignals.throttle = 1100;
+        //  controlIn.rcSignals.roll = 1600;
+        //  controlIn.rcSignals.pitch = 1500;
+        //  controlIn.rcSignals.yaw = 1500;
+        //  controlIn.rcSignals.armStateSwitch = 2000;
+        //  controlIn.rcSignals.measurementSwitch = 2000;
+        //  controlIn.rcSignals.Poti1 = 1500;
+        //  controlIn.rcSignals.Poti2 = 1600;
+        //  controlIn.rcSignals.flightModeSwitch = 1000;
+        //  controlIn.rcSignals.Switch2Way = 1000;
+        //}
+        // if(counter > 20000)  //10sec
+        // {
+        //   controlIn.rcSignals.throttle = 1000;
+        //   controlIn.rcSignals.roll = 1500;
+        //   controlIn.rcSignals.pitch = 1500;
+        //   controlIn.rcSignals.yaw = 1500;
+        //   controlIn.rcSignals.armStateSwitch = 1000;
+        //   controlIn.rcSignals.measurementSwitch = 1000;
+        //   controlIn.rcSignals.Poti1 = 1000;
+        //   controlIn.rcSignals.Poti2 = 1000;
+        //   controlIn.rcSignals.flightModeSwitch = 1000;
+        //   controlIn.rcSignals.Switch2Way = 1000;
+        // }
+        //counter++;
 
         RunController(&controlIn, &controlOut);
 
@@ -237,15 +237,63 @@ void TC0_Handler(void)
 
 void ControllerDebug(void)
 {
-    SerialUSB.print("2-1: ");
-    SerialUSB.println(calcDeltaTime(timer1, timer2), 3);
+    static uint64_t lastTime{0};
+
+    if(getSysTick() - lastTime > 10500) //1ms
+    {
+      lastTime = getSysTick();
+
+      //SerialUSB.print("T21: ");
+      //SerialUSB.print(calcDeltaTime(timer1, timer2), 3); SerialUSB.print("\t");
+      ////SerialUSB.print("gyro: ");
+      //SerialUSB.print((float)controlIn.gyro.signalPT1.x); SerialUSB.print("\t");
+      ////SerialUSB.print("acc: ");
+      //SerialUSB.print((float)controlIn.acc.signalPT1.x); SerialUSB.print("\t");
+      //SerialUSB.print("ctrl: ");
+      //SerialUSB.print((float)pidRate.refSig_i.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.sensor.signalPT1.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.error_i.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.errorSum_i.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.errorDot_i.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.errorDotPT1_i.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.Pout_i.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.Iout_i.x); SerialUSB.print("\t");
+      //SerialUSB.print((float)pidRate.Dout_i.x); SerialUSB.print("\t");
+      ////SerialUSB.print("u: ");
+      //SerialUSB.print((float)controlOut.U_i.x); SerialUSB.print("\t");
+      ////SerialUSB.print("params: ");
+      //SerialUSB.print(pidRate.P_i.x); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.I_i.x); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.D_i.x); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.Ki_i.x); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.Kd_i.x); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.P_i.y); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.I_i.y); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.D_i.y); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.Ki_i.y); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.Kd_i.y); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.P_i.z); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.I_i.z); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.D_i.z); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.Ki_i.z); SerialUSB.print("\t");
+      //SerialUSB.print(pidRate.Kd_i.z); SerialUSB.print("\t");
+      //
+      //MotorSpeeds motors;
+      //getMotorSpeeds(&motors);
+      //SerialUSB.print(motors.FL_tick); SerialUSB.print("\t");
+      //SerialUSB.print(motors.FR_tick); SerialUSB.print("\t");
+      //SerialUSB.print(motors.RL_tick); SerialUSB.print("\t");
+      //SerialUSB.print(motors.RR_tick); SerialUSB.print("\t");
+      //
+      //SerialUSB.println();
+    }
 }
 
 void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 {
     E_flightMode flightMode = EvalFlightMode(ctrlIn->rcSignals.flightModeSwitch);
 
-    EvalArmState(&ctrlIn->rcSignals);
+    E_armState armStatus = EvalArmState(&ctrlIn->rcSignals);
 
     //{
     //    accData.rollAngle =  atan2(ctrlIn->acc.signal.y,  
@@ -283,7 +331,7 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
     //}
 
     //control when armed and on high throttle
-    if (ARMED == armState && ctrlIn->rcSignals.throttle > 1010)
+    if (ARMED == armStatus && ctrlIn->rcSignals.throttle > 1010)
     {
         int32_t rollScaled_int{ expo(ctrlIn->rcSignals.roll) };
         int32_t pitchScaled_int{ expo(ctrlIn->rcSignals.pitch) };
@@ -410,10 +458,10 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 
     }
 
-    ctrlOut->armState = armState;
+    ctrlOut->armState = armStatus;
 }
 
-void EvalArmState(const rcSignals_st* rcSig)
+E_armState EvalArmState(const rcSignals_st* rcSig)
 {
     if (rcSig->armStateSwitch > 1800u)
     {
@@ -430,6 +478,8 @@ void EvalArmState(const rcSignals_st* rcSig)
     {
         armState = E_armState::DISARMED;
     }
+
+    return armState;
 }
 
 E_flightMode EvalFlightMode(const uint16_t flightModeChannel)
@@ -1164,10 +1214,36 @@ float wobble(uint16_t pot1, uint16_t poti2)
     return wobbleAplitude* interpolatedSin;
 }
 
-void setPIDParam(int32_t value, E_direction dir, E_pid pid)
+void setPIDParam(int32_t value, E_pid pid, E_direction dir)
 {
     switch (pid)
     {
+    case E_pid::P:
+    {
+        switch (dir)
+        {
+        case E_direction::X:
+        {
+            pidRate.P_i.x = value;
+            break;
+        }
+        case E_direction::Y:
+        {
+            pidRate.P_i.y = value;
+            break;
+        }
+        case E_direction::Z:
+        {
+            pidRate.P_i.z = value;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+        }
+        break;
+    }
     case E_pid::I:
     {
         switch (dir)
@@ -1204,19 +1280,19 @@ void setPIDParam(int32_t value, E_direction dir, E_pid pid)
         case E_direction::X:
         {
             pidRate.D_i.x = value;
-            pidRate.Kd_i.x = pidRate.I_i.x * pidRate.deltaTicks;
+            pidRate.Kd_i.x = pidRate.D_i.x * pidRate.inverseDt;
             break;
         }
         case E_direction::Y:
         {
             pidRate.D_i.y = value;
-            pidRate.Kd_i.y = pidRate.I_i.y * pidRate.deltaTicks;
+            pidRate.Kd_i.y = pidRate.D_i.y * pidRate.inverseDt;
             break;
         }
         case E_direction::Z:
         {
             pidRate.D_i.z = value;
-            pidRate.Kd_i.z = pidRate.I_i.z * pidRate.deltaTicks;
+            pidRate.Kd_i.z = pidRate.D_i.z * pidRate.inverseDt;
             break;
         }
         default:

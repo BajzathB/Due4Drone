@@ -55,19 +55,6 @@ typedef enum E_ChipSelect : uint32_t
 	CS_SDCARD = 0b0111
 };
 
-typedef struct SpiInput
-{
-	sigOut gyro, acc;
-	rcSignals_st rcSignals;
-	uint64_t sysTick;
-	E_armState armState{ DISARMED };
-}SPIInput;
-
-typedef struct SpiOutput
-{
-
-}SPIOutput;
-
 typedef struct signal
 {
 	volatile int32_t raw2realMultiplier{1};
@@ -130,7 +117,6 @@ int32_t PT1_25Hz(int32_t y, const int32_t x);
 
 // Function to calc float value from raw int
 float calcRealFromInt(volatile signal* sig, direction dir, bool isPT1);
-float calcRealFromInt(int32_t value);
 
 // Function to calc moving average of 3 axis data
 void calcMovingAverage(MovingAverage* ma, axis_i32* value);

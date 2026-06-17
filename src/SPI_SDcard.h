@@ -197,27 +197,27 @@ typedef struct Meas2Card
 	bool measureAngleCFWeightedPT01Roll{ false };
 	bool measureAngleCFWeightedPT01Pitch{ false };
     //PID control
-	bool measurePIDRefsigX_i{ true };
-	bool measurePIDRefsigY_i{ true };
-	bool measurePIDRefsigZ_i{ true };
-	bool measurePIDSensorX_i{ true };
-	bool measurePIDSensorY_i{ true };
-	bool measurePIDSensorZ_i{ true };
-	bool measurePIDPoutX_i{ false };
-	bool measurePIDPoutY_i{ false };
-	bool measurePIDPoutZ_i{ false };
-	bool measurePIDIoutX_i{ false };
-	bool measurePIDIoutY_i{ false };
-	bool measurePIDIoutZ_i{ false };
-	bool measurePIDDoutX_i{ false };
-	bool measurePIDDoutY_i{ false };
-	bool measurePIDDoutZ_i{ false };
-	bool measurePIDFFoutX_i{ false };
-	bool measurePIDFFoutY_i{ false };
-	bool measurePIDFFoutZ_i{ false };
-	bool measurePIDUX_i{ false };
-	bool measurePIDUY_i{ false };
-	bool measurePIDUZ_i{ false };
+	bool measurePIDRefsigX{ true };
+	bool measurePIDRefsigY{ true };
+	bool measurePIDRefsigZ{ false };
+	bool measurePIDSensorX{ true };
+	bool measurePIDSensorY{ true };
+	bool measurePIDSensorZ{ false };
+	bool measurePIDPoutX{ true };
+	bool measurePIDPoutY{ false };
+	bool measurePIDPoutZ{ false };
+	bool measurePIDIoutX{ true };
+	bool measurePIDIoutY{ false };
+	bool measurePIDIoutZ{ false };
+	bool measurePIDDoutX{ true };
+	bool measurePIDDoutY{ false };
+	bool measurePIDDoutZ{ false };
+	bool measurePIDFFoutX{ false };
+	bool measurePIDFFoutY{ false };
+	bool measurePIDFFoutZ{ false };
+	bool measurePIDUX{ true };
+	bool measurePIDUY{ false };
+	bool measurePIDUZ{ false };
 
 }Meas2Card;
 

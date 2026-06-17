@@ -115,22 +115,16 @@ void ControllerDebug(void);
 void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut);
 
 // Function to evaluate the arm status based on switch state
-void EvalArmState(const rcSignals_st* rcSig);
+E_armState EvalArmState(const rcSignals_st* rcSig);
 
 // Function to evaluate the flight mode state based on switch state
 E_flightMode EvalFlightMode(const uint16_t flightModeChannel);
-
-// Function to calculate parabolical scaling of stick value
-float ParabolicScale(const uint16_t channel);
 
 // Function to calculate expo scaling for stick value
 inline int32_t expo(const uint16_t channel);
 
 // Function to optimally linear interpolate to ~-8192-8192
 inline int32_t linearScale_8192(uint16_t ch);
-
-// Method to calculate low-pass filtered value of a signal
-//void PT1Filter(float* yOut, const float xIn, const float paramC );
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
 //void CalcPID_wo_Dkick(pid_st* pidSt, axis* u);
@@ -205,6 +199,6 @@ float wobble(uint16_t pot1, uint16_t poti2);
 inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max);
 inline int64_t clamp_i64(int64_t x, int64_t min, int64_t max);
 
-void setPIDParam(int32_t value, E_direction dir, E_pid pid);
+void setPIDParam(int32_t value, E_pid pid, E_direction dir);
 
 #endif // !CONTROLLER_HEADER

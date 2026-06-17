@@ -31,9 +31,7 @@ TEST(test_SPI, SPI_Call)
     SetupAcc();
     SetupAccIntPin();
     EnableIntHandling();
-    SPIInput testInput;
-    SPIOutput testOutput;
-    RunSPI(&testInput, &testOutput);
+    RunSPI();
     IsRxDone();
     WaitRxDone();
     uint32_t testTx[10];
@@ -628,17 +626,14 @@ TEST(test_SPI, IsRxDone_Test)
 
 TEST(test_SPI, RunSPI_Test)
 {
-    SPIInput testIn;
-    SPIOutput testOut;
-
     //sd card not finished
     getSPISdCard()->sdCardInitFinished = false;
-    RunSPI(&testIn, &testOut);
+    RunSPI();
     EXPECT_EQ(getSPISdCard()->sdCardInitFinished, false);
 
     //sd card finished
     getSPISdCard()->sdCardInitFinished = true;
-    RunSPI(&testIn, &testOut);
+    RunSPI();
     EXPECT_EQ(getSPISdCard()->sdCardInitFinished, false);
 }
 

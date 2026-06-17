@@ -14,13 +14,11 @@ extern sysTime sysTimer;
 TEST(test_BT, BT_Call) 
 {
 	SetupBT();
-	controllerIn_st testIn;
-	controllerOut_st testOut;
-	RunBT(&testIn, &testOut);
+	RunBT();
 	USART1_Handler();
-	BTReceive(&testIn);
-	BTTransmit(&testIn, &testOut);
-	ProcessRxFrame(&testIn);
+	BTReceive();
+	BTTransmit();
+	ProcessRxFrame();
 	buffer_ testBuffer;
 	testBuffer.vector[3] = '1';
 	testBuffer.vector[4] = '\r';
@@ -445,40 +443,40 @@ TEST(test_BT, SetSteamFlag_Test)
 
 	//7th
 	BT.input.vector[3] = 'O';
-	SetSteamFlag(ID_gyro_signal_X);
-	EXPECT_EQ(BT.txFrame.streamDataFlags, 1 << 3);
+	SetSteamFlag(ID_gyro_PT1_X);
+	EXPECT_EQ(BT.txFrame.streamDataFlags, 1 << 10);
 
 	//8th
 	BT.input.vector[3] = 'F';
-	SetSteamFlag(ID_gyro_signal_X);
+	SetSteamFlag(ID_gyro_PT1_X);
 	EXPECT_EQ(BT.txFrame.streamDataFlags, 0);
 
 	//9th
 	BT.input.vector[3] = 'O';
-	SetSteamFlag(ID_gyro_signal_Y);
-	EXPECT_EQ(BT.txFrame.streamDataFlags, 1 << 4);
+	SetSteamFlag(ID_gyro_PT1_Y);
+	EXPECT_EQ(BT.txFrame.streamDataFlags, 1 << 11);
 
 	//10th
 	BT.input.vector[3] = 'F';
-	SetSteamFlag(ID_gyro_signal_Y);
+	SetSteamFlag(ID_gyro_PT1_Y);
 	EXPECT_EQ(BT.txFrame.streamDataFlags, 0);
 
 	//11th
 	BT.input.vector[3] = 'O';
-	SetSteamFlag(ID_gyro_signal_Z);
-	EXPECT_EQ(BT.txFrame.streamDataFlags, 1 << 5);
+	SetSteamFlag(ID_gyro_PT1_Z);
+	EXPECT_EQ(BT.txFrame.streamDataFlags, 1 << 12);
 
 	//12th
 	BT.input.vector[3] = 'F';
-	SetSteamFlag(ID_gyro_signal_Z);
+	SetSteamFlag(ID_gyro_PT1_Z);
 	EXPECT_EQ(BT.txFrame.streamDataFlags, 0);
 
     //1st
     BT.input.vector[3] = 'O';
     SetSteamFlag(ID_pidRate_sensor_signal_X);
-    SetSteamFlag(ID_gyro_signal_X);
-    SetSteamFlag(ID_gyro_signal_Z);
-    EXPECT_EQ(BT.txFrame.streamDataFlags, 0b101001);
+    SetSteamFlag(ID_gyro_PT1_X);
+    SetSteamFlag(ID_gyro_PT1_Z);
+    EXPECT_EQ(BT.txFrame.streamDataFlags, 0b0001010000000001);
 }
 
 TEST(test_BT, SetStreamData_Test)
@@ -498,15 +496,14 @@ TEST(test_BT, SetStreamData_Test)
 	BT.output.vector[10] = 0;
 	BT.output.vector[11] = 0;
 	BT.output.ctr = 1;
-	SetStreamData(10, 1.234);
+	SetStreamData(10, 1234);
 	EXPECT_EQ(BT.output.vector[1], 10);
 	EXPECT_EQ(BT.output.vector[2], 0);
 	EXPECT_EQ(BT.output.vector[3], '1');
-	EXPECT_EQ(BT.output.vector[4], '.');
-	EXPECT_EQ(BT.output.vector[5], '2');
-	EXPECT_EQ(BT.output.vector[6], '3');
-	EXPECT_EQ(BT.output.vector[7], '4');
-	EXPECT_EQ(BT.output.vector[8], '!');
+	EXPECT_EQ(BT.output.vector[4], '2');
+	EXPECT_EQ(BT.output.vector[5], '3');
+	EXPECT_EQ(BT.output.vector[6], '4');
+	EXPECT_EQ(BT.output.vector[7], '!');
 
 	//2nd
 	BT.output.vector[1] = 0;
@@ -521,16 +518,15 @@ TEST(test_BT, SetStreamData_Test)
 	BT.output.vector[10] = 0;
 	BT.output.vector[11] = 0;
 	BT.output.ctr = 1;
-	SetStreamData(234, 12.345);
+	SetStreamData(234, 12345);
 	EXPECT_EQ(BT.output.vector[1], 234);
 	EXPECT_EQ(BT.output.vector[2], 0);
 	EXPECT_EQ(BT.output.vector[3], '1');
 	EXPECT_EQ(BT.output.vector[4], '2');
-	EXPECT_EQ(BT.output.vector[5], '.');
-	EXPECT_EQ(BT.output.vector[6], '3');
-	EXPECT_EQ(BT.output.vector[7], '4');
-	EXPECT_EQ(BT.output.vector[8], '5');
-	EXPECT_EQ(BT.output.vector[9], '!');
+	EXPECT_EQ(BT.output.vector[5], '3');
+	EXPECT_EQ(BT.output.vector[6], '4');
+	EXPECT_EQ(BT.output.vector[7], '5');
+	EXPECT_EQ(BT.output.vector[8], '!');
 
 	//3rd
 	BT.output.vector[1] = 0;
@@ -545,17 +541,16 @@ TEST(test_BT, SetStreamData_Test)
 	BT.output.vector[10] = 0;
 	BT.output.vector[11] = 0;
 	BT.output.ctr = 1;
-	SetStreamData(3003, 987.654);
+	SetStreamData(3003, 987654);
 	EXPECT_EQ(BT.output.vector[1], 0xBB);
 	EXPECT_EQ(BT.output.vector[2], 0x0B);
 	EXPECT_EQ(BT.output.vector[3], '9');
 	EXPECT_EQ(BT.output.vector[4], '8');
 	EXPECT_EQ(BT.output.vector[5], '7');
-	EXPECT_EQ(BT.output.vector[6], '.');
-	EXPECT_EQ(BT.output.vector[7], '6');
-	EXPECT_EQ(BT.output.vector[8], '5');
-	EXPECT_EQ(BT.output.vector[9], '4');
-	EXPECT_EQ(BT.output.vector[10], '!');
+	EXPECT_EQ(BT.output.vector[6], '6');
+	EXPECT_EQ(BT.output.vector[7], '5');
+	EXPECT_EQ(BT.output.vector[8], '4');
+	EXPECT_EQ(BT.output.vector[9], '!');
 
 	//4th
 	BT.output.vector[1] = 0;
@@ -570,24 +565,19 @@ TEST(test_BT, SetStreamData_Test)
 	BT.output.vector[10] = 0;
 	BT.output.vector[11] = 0;
 	BT.output.ctr = 1;
-	SetStreamData(4000, 1875.000);
+	SetStreamData(4000, 1875);
 	EXPECT_EQ(BT.output.vector[1], 0xA0);
 	EXPECT_EQ(BT.output.vector[2], 0x0F);
 	EXPECT_EQ(BT.output.vector[3], '1');
 	EXPECT_EQ(BT.output.vector[4], '8');
 	EXPECT_EQ(BT.output.vector[5], '7');
 	EXPECT_EQ(BT.output.vector[6], '5');
-	EXPECT_EQ(BT.output.vector[7], '.');
-	EXPECT_EQ(BT.output.vector[8], '0');
-	EXPECT_EQ(BT.output.vector[9], '0');
-	EXPECT_EQ(BT.output.vector[10], '0');
-	EXPECT_EQ(BT.output.vector[11], '!');
+	EXPECT_EQ(BT.output.vector[7], '!');
 }
 
 TEST(test_BT, ProcessRxFrame_Test)
 {
 	pid_st* testPID{ getPIDrates() };
-	controllerIn_st testIn;
 
 	//1st: no frame end
 	BT.input.vector[0] = CMD_NONE;
@@ -597,7 +587,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 4;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_NONE);
 	EXPECT_EQ(BT.rxFrame.id, 0);
 
@@ -611,7 +601,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_NONE);
 	EXPECT_EQ(BT.rxFrame.id, 0);
 
@@ -625,26 +615,26 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_GET);
 	EXPECT_EQ(BT.rxFrame.id, 1999);
 	EXPECT_EQ(BT.txFrame.sendParam, false);
 
 	//4th: get pid rate p x
 	BT.input.vector[0] = CMD_GET;
-	BT.input.vector[1] = 0xD0;
-	BT.input.vector[2] = 0x07;
+	BT.input.vector[1] = 0xEE;
+	BT.input.vector[2] = 0x03;
 	BT.input.vector[3] = '\r';
 	BT.input.vector[4] = '\n';
 	BT.input.ctr = 5;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	testPID->P.x = 55.0f;
-	ProcessRxFrame(&testIn);
+	testPID->P_i.x = 55;
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_GET);
-	EXPECT_EQ(BT.rxFrame.id, 2000);
+	EXPECT_EQ(BT.rxFrame.id, 1006);
 	EXPECT_EQ(BT.txFrame.sendParam, true);
-	EXPECT_EQ(BT.txFrame.paramData, 55.0f);
+	EXPECT_EQ(BT.txFrame.paramData, 55);
 
 	//5th: stream
 	BT.input.vector[0] = CMD_STREAM;
@@ -656,7 +646,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
 	EXPECT_EQ(BT.rxFrame.id, 5);
 
@@ -670,28 +660,25 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_SET);
 	EXPECT_EQ(BT.rxFrame.id, 100);
 	
 	//6th set pid rate p x
 	BT.input.vector[0] = CMD_SET;
-	BT.input.vector[1] = 0xD0;
-	BT.input.vector[2] = 0x07;
+	BT.input.vector[1] = 0xEE;
+	BT.input.vector[2] = 0x03;
 	BT.input.vector[3] = '4';
 	BT.input.vector[4] = '8';
-	BT.input.vector[5] = '.';
-	BT.input.vector[6] = '9';
-	BT.input.vector[7] = '2';
-	BT.input.vector[8] = '\r';
-	BT.input.vector[9] = '\n';
-	BT.input.ctr = 10;
+	BT.input.vector[5] = '\r';
+	BT.input.vector[6] = '\n';
+	BT.input.ctr = 7;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_SET);
 	EXPECT_EQ(BT.rxFrame.id, ID_control_PID_rate_P_X);
-	EXPECT_NEAR(testPID->P.x, 48.92, 0.01);
+	EXPECT_EQ(testPID->P_i.x, 48);
 
 	//7th stream sensor x
 	BT.txFrame.streamDataFlags = 0;
@@ -704,14 +691,14 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 6;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
 	EXPECT_EQ(BT.rxFrame.id, ID_pidRate_sensor_signal_X);
 	EXPECT_EQ(BT.txFrame.streamDataFlags, 1);
 
 	//8th stream gyro x too
 	BT.input.vector[0] = CMD_STREAM;
-	BT.input.vector[1] = 0xBB;
+	BT.input.vector[1] = 0xC2;
 	BT.input.vector[2] = 0x0B;
 	BT.input.vector[3] = 'O';
 	BT.input.vector[8] = '\r';
@@ -719,10 +706,10 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 10;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
-	EXPECT_EQ(BT.rxFrame.id, ID_gyro_signal_X);
-	EXPECT_EQ(BT.txFrame.streamDataFlags, 9);
+	EXPECT_EQ(BT.rxFrame.id, ID_gyro_PT1_X);
+	EXPECT_EQ(BT.txFrame.streamDataFlags, (1<<10)+1);
 
     //9th stream sensor x, turn off
     BT.input.vector[0] = CMD_STREAM;
@@ -734,10 +721,10 @@ TEST(test_BT, ProcessRxFrame_Test)
     BT.input.ctr = 6;
     BT.rxFrame.cmd = CMD_NONE;
     BT.rxFrame.id = 0;
-    ProcessRxFrame(&testIn);
+    ProcessRxFrame();
     EXPECT_EQ(BT.rxFrame.cmd, CMD_STREAM);
     EXPECT_EQ(BT.rxFrame.id, ID_pidRate_sensor_signal_X);
-    EXPECT_EQ(BT.txFrame.streamDataFlags, 8);
+    EXPECT_EQ(BT.txFrame.streamDataFlags, 1 << 10);
 
 	//10th set global time
 	BT.input.vector[0] = CMD_SET;
@@ -760,7 +747,7 @@ TEST(test_BT, ProcessRxFrame_Test)
 	BT.input.ctr = 17;
 	BT.rxFrame.cmd = CMD_NONE;
 	BT.rxFrame.id = 0;
-	ProcessRxFrame(&testIn);
+	ProcessRxFrame();
 	EXPECT_EQ(BT.rxFrame.cmd, CMD_SET);
 	EXPECT_EQ(BT.rxFrame.id, ID_update_global_time);
 }
@@ -909,8 +896,9 @@ TEST(test_BT, CalcCharAndFillOutput_Test)
 
 TEST(test_BT, BTTransmit_Test)
 {
-	controllerIn_st testIn;
-	controllerOut_st testOut;
+	pid_st* pidRate{ getPIDrates() };
+	gyroData_st* gyroData{ getGyroData() };
+
 	BT.txFrame.streamDataFlags = 0;
 	BT.output.vector[1] = '$';
 	BT.output.vector[2] = 0;
@@ -919,44 +907,46 @@ TEST(test_BT, BTTransmit_Test)
 	BT.output.vector[5] = 0;
 
     //0st: deltaT small
-    sysTimer.loopTime = 0.005;
-    BT.txDeltaT = 0;
-    BTTransmit(&testIn, &testOut);
-    EXPECT_NEAR(BT.txDeltaT, 0.005, 0.0005);
-    sysTimer.loopTime = 0.001;
-    BTTransmit(&testIn, &testOut);
-    EXPECT_NEAR(BT.txDeltaT, 0.006, 0.0005);
+    sysTimer.sysTick = 1000;
+    BT.lastTimeTx = 0;
+    BTTransmit();
+    EXPECT_EQ(BT.lastTimeTx, 0);
+    sysTimer.sysTick = 10000;
+    BTTransmit();
+	EXPECT_EQ(BT.lastTimeTx, 0);
 
 	//1st: no send
-    sysTimer.loopTime = 0.005;
+    sysTimer.sysTick = 115501;
 	BT.txFrame.sendParam = false;
 	BT.txFrame.paramData = 0;
 	BT.txFrame.numberOfFrac = 0;
-	BTTransmit(&testIn, &testOut);
+	BTTransmit();
 	EXPECT_EQ(BT.output.vector[2], 0);
 	EXPECT_EQ(BT.output.vector[3], 0);
-    EXPECT_NEAR(BT.txDeltaT, 0.011, 0.0005);
+	EXPECT_EQ(BT.lastTimeTx, 115501);
 
 	//2nd: send param, 1 digit
-    BT.txDeltaT = 0.012;
+    BT.lastTimeTx = 120000;
+	sysTimer.sysTick = 300000;
 	BT.txFrame.sendParam = true;
 	BT.txFrame.paramData = 5;
 	BT.txFrame.numberOfFrac = 0;
-	BTTransmit(&testIn, &testOut);
+	BTTransmit();
 	EXPECT_EQ(BT.output.vector[0], 5);
 	EXPECT_EQ(BT.output.vector[1], '$');
 	EXPECT_EQ(BT.output.vector[2], 'P');
 	EXPECT_EQ(BT.output.vector[3], '5');
 	EXPECT_EQ(BT.output.vector[4], '\r');
 	EXPECT_EQ(BT.output.vector[5], '\n');
-    EXPECT_NEAR(BT.txDeltaT, 0.0f, 0.0005);
+	EXPECT_EQ(BT.lastTimeTx, 300000);
 
 	//3rd: send param, 4 digit
-    BT.txDeltaT = 0.012;
+	BT.lastTimeTx = 350000;
+	sysTimer.sysTick = 500000;
 	BT.txFrame.sendParam = true;
 	BT.txFrame.paramData = 1657;
 	BT.txFrame.numberOfFrac = 0;
-	BTTransmit(&testIn, &testOut);
+	BTTransmit();
 	EXPECT_EQ(BT.output.vector[0], 8);
 	EXPECT_EQ(BT.output.vector[1], '$');
 	EXPECT_EQ(BT.output.vector[2], 'P');
@@ -968,11 +958,12 @@ TEST(test_BT, BTTransmit_Test)
 	EXPECT_EQ(BT.output.vector[8], '\n');
 
 	//4th: send param, 1-3, negative
-    BT.txDeltaT = 0.012;
+	BT.lastTimeTx = 500100;
+	sysTimer.sysTick = 700000;
 	BT.txFrame.sendParam = true;
 	BT.txFrame.paramData = -1.4985;
 	BT.txFrame.numberOfFrac = 3;
-	BTTransmit(&testIn, &testOut);
+	BTTransmit();
 	EXPECT_EQ(BT.output.vector[0], 10);
 	EXPECT_EQ(BT.output.vector[1], '$');
 	EXPECT_EQ(BT.output.vector[2], 'P');
@@ -992,7 +983,8 @@ TEST(test_BT, BTTransmit_Test)
 
 
 	//5th: send 1 stream data
-    BT.txDeltaT = 0.012;
+	BT.lastTimeTx = 750000;
+	sysTimer.sysTick = 900000;
 	BT.txFrame.sendParam = false;
 	BT.txFrame.streamDataFlags = 1;
 	BT.output.vector[0] = 0;
@@ -1001,125 +993,119 @@ TEST(test_BT, BTTransmit_Test)
 	BT.output.vector[3] = 0;
 	BT.output.vector[4] = 0;
 	BT.output.vector[5] = 0;
-	pidRate.sensor.signal.x = 1.234f;
-	BTTransmit(&testIn, &testOut);
-	EXPECT_EQ(BT.output.vector[0], 12);
+	pidRate->sensor.signalPT1.x = 1234;
+	BTTransmit();
+	EXPECT_EQ(BT.output.vector[0], 11);
 	EXPECT_EQ(BT.output.vector[1], '$');
 	EXPECT_EQ(BT.output.vector[2], 'S');
 	EXPECT_EQ(BT.output.vector[3], uint8_t(ID_pidRate_sensor_signal_X & 0xFF));
 	EXPECT_EQ(BT.output.vector[4], uint8_t((ID_pidRate_sensor_signal_X & 0xFF00) >> 8));
 	EXPECT_EQ(BT.output.vector[5], '1');
-	EXPECT_EQ(BT.output.vector[6], '.');
-	EXPECT_EQ(BT.output.vector[7], '2');
-	EXPECT_EQ(BT.output.vector[8], '3');
-	EXPECT_EQ(BT.output.vector[9], '4');
-	EXPECT_EQ(BT.output.vector[10], '!');
-	EXPECT_EQ(BT.output.vector[11], '\r');
-	EXPECT_EQ(BT.output.vector[12], '\n');
+	EXPECT_EQ(BT.output.vector[6], '2');
+	EXPECT_EQ(BT.output.vector[7], '3');
+	EXPECT_EQ(BT.output.vector[8], '4');
+	EXPECT_EQ(BT.output.vector[9], '!');
+	EXPECT_EQ(BT.output.vector[10], '\r');
+	EXPECT_EQ(BT.output.vector[11], '\n');
 
 	//6th: send 1 stream data again
-    BT.txDeltaT = 0.012;
+	BT.lastTimeTx = 950000;
+	sysTimer.sysTick = 1100000;
 	BT.txFrame.sendParam = false;
 	BT.txFrame.streamDataFlags = 1;
-	pidRate.sensor.signal.x = 5.678f;
-	BTTransmit(&testIn, &testOut);
-	EXPECT_EQ(BT.output.vector[0], 12);
+	pidRate->sensor.signalPT1.x = 5678;
+	BTTransmit();
+	EXPECT_EQ(BT.output.vector[0], 11);
 	EXPECT_EQ(BT.output.vector[1], '$');
 	EXPECT_EQ(BT.output.vector[2], 'S');
 	EXPECT_EQ(BT.output.vector[3], uint8_t(ID_pidRate_sensor_signal_X & 0xFF));
 	EXPECT_EQ(BT.output.vector[4], uint8_t((ID_pidRate_sensor_signal_X & 0xFF00) >> 8));
 	EXPECT_EQ(BT.output.vector[5], '5');
-	EXPECT_EQ(BT.output.vector[6], '.');
-	EXPECT_EQ(BT.output.vector[7], '6');
-	EXPECT_EQ(BT.output.vector[8], '7');
-	EXPECT_EQ(BT.output.vector[9], '8');
-	EXPECT_EQ(BT.output.vector[10], '!');
-	EXPECT_EQ(BT.output.vector[11], '\r');
-	EXPECT_EQ(BT.output.vector[12], '\n');
+	EXPECT_EQ(BT.output.vector[6], '6');
+	EXPECT_EQ(BT.output.vector[7], '7');
+	EXPECT_EQ(BT.output.vector[8], '8');
+	EXPECT_EQ(BT.output.vector[9], '!');
+	EXPECT_EQ(BT.output.vector[10], '\r');
+	EXPECT_EQ(BT.output.vector[11], '\n');
 
 	//7th: send 2 stream data
-    BT.txDeltaT = 0.012;
+	BT.lastTimeTx = 1100500;
+	sysTimer.sysTick = 1300000;
 	BT.txFrame.sendParam = false;
-	BT.txFrame.streamDataFlags = 0b1001;
+	BT.txFrame.streamDataFlags = (1<<10)+1;
 	BT.output.vector[0] = 0;
 	BT.output.vector[1] = '$';
 	BT.output.vector[2] = 0;
 	BT.output.vector[3] = 0;
 	BT.output.vector[4] = 0;
 	BT.output.vector[5] = 0;
-	pidRate.sensor.signal.x = 1.234f;
-	testIn.gyro.signal.x = 2.345f;
-	BTTransmit(&testIn, &testOut);
-	EXPECT_EQ(BT.output.vector[0], 20);
+	pidRate->sensor.signalPT1.x = 1234;
+	gyroData->PT1.signalPT1.x = 2345;
+	BTTransmit();
+	EXPECT_EQ(BT.output.vector[0], 18);
 	EXPECT_EQ(BT.output.vector[1], '$');
 	EXPECT_EQ(BT.output.vector[2], 'S');
 	EXPECT_EQ(BT.output.vector[3], uint8_t(ID_pidRate_sensor_signal_X & 0xFF));
 	EXPECT_EQ(BT.output.vector[4], uint8_t((ID_pidRate_sensor_signal_X & 0xFF00) >> 8));
 	EXPECT_EQ(BT.output.vector[5], '1');
-	EXPECT_EQ(BT.output.vector[6], '.');
-	EXPECT_EQ(BT.output.vector[7], '2');
-	EXPECT_EQ(BT.output.vector[8], '3');
-	EXPECT_EQ(BT.output.vector[9], '4');
-	EXPECT_EQ(BT.output.vector[10], '!');
-	EXPECT_EQ(BT.output.vector[11], uint8_t(ID_gyro_signal_X & 0xFF));
-	EXPECT_EQ(BT.output.vector[12], uint8_t((ID_gyro_signal_X & 0xFF00) >> 8));
-	EXPECT_EQ(BT.output.vector[13], '2');
-	EXPECT_EQ(BT.output.vector[14], '.');
-	EXPECT_EQ(BT.output.vector[15], '3');
-	EXPECT_EQ(BT.output.vector[16], '4');
-	EXPECT_EQ(BT.output.vector[17], '5');
-	EXPECT_EQ(BT.output.vector[18], '!');
-	EXPECT_EQ(BT.output.vector[19], '\r');
-	EXPECT_EQ(BT.output.vector[20], '\n');
+	EXPECT_EQ(BT.output.vector[6], '2');
+	EXPECT_EQ(BT.output.vector[7], '3');
+	EXPECT_EQ(BT.output.vector[8], '4');
+	EXPECT_EQ(BT.output.vector[9], '!');
+	EXPECT_EQ(BT.output.vector[10], uint8_t(ID_gyro_PT1_X & 0xFF));
+	EXPECT_EQ(BT.output.vector[11], uint8_t((ID_gyro_PT1_X & 0xFF00) >> 8));
+	EXPECT_EQ(BT.output.vector[12], '2');
+	EXPECT_EQ(BT.output.vector[13], '3');
+	EXPECT_EQ(BT.output.vector[14], '4');
+	EXPECT_EQ(BT.output.vector[15], '5');
+	EXPECT_EQ(BT.output.vector[16], '!');
+	EXPECT_EQ(BT.output.vector[17], '\r');
+	EXPECT_EQ(BT.output.vector[18], '\n');
 
 	//8th: send 3 stream data + param data
-    BT.txDeltaT = 0.012;
+	BT.lastTimeTx = 1300500;
+	sysTimer.sysTick = 1500000;
     BT.txFrame.sendParam = false;
-    BT.txFrame.streamDataFlags = 0b11001;
+    BT.txFrame.streamDataFlags = (1 << 11)+ (1 << 10)+1;
     BT.output.vector[0] = 0;
     BT.output.vector[1] = '$';
     BT.output.vector[2] = 0;
     BT.output.vector[3] = 0;
     BT.output.vector[4] = 0;
     BT.output.vector[5] = 0;
-    pidRate.sensor.signal.x = 1.234f;
-    testIn.gyro.signal.x = 2.345f;
-    testIn.gyro.signal.y = 987.5f; 
+	pidRate->sensor.signalPT1.x = 1234;
+	gyroData->PT1.signalPT1.x = 2345;
+	gyroData->PT1.signalPT1.y = 9875;
     BT.txFrame.sendParam = true;
     BT.txFrame.paramData = 5;
     BT.txFrame.numberOfFrac = 0;
-    BTTransmit(&testIn, &testOut);
-    EXPECT_EQ(BT.output.vector[0], 32);
+    BTTransmit();
+    EXPECT_EQ(BT.output.vector[0], 27);
     EXPECT_EQ(BT.output.vector[1], '$');
     EXPECT_EQ(BT.output.vector[2], 'S');
     EXPECT_EQ(BT.output.vector[3], uint8_t(ID_pidRate_sensor_signal_X & 0xFF));
     EXPECT_EQ(BT.output.vector[4], uint8_t((ID_pidRate_sensor_signal_X & 0xFF00) >> 8));
     EXPECT_EQ(BT.output.vector[5], '1');
-    EXPECT_EQ(BT.output.vector[6], '.');
-    EXPECT_EQ(BT.output.vector[7], '2');
-    EXPECT_EQ(BT.output.vector[8], '3');
-    EXPECT_EQ(BT.output.vector[9], '4');
-    EXPECT_EQ(BT.output.vector[10], '!');
-    EXPECT_EQ(BT.output.vector[11], uint8_t(ID_gyro_signal_X & 0xFF));
-    EXPECT_EQ(BT.output.vector[12], uint8_t((ID_gyro_signal_X & 0xFF00) >> 8));
-    EXPECT_EQ(BT.output.vector[13], '2');
-    EXPECT_EQ(BT.output.vector[14], '.');
-    EXPECT_EQ(BT.output.vector[15], '3');
-    EXPECT_EQ(BT.output.vector[16], '4');
-    EXPECT_EQ(BT.output.vector[17], '5');
-    EXPECT_EQ(BT.output.vector[18], '!');
-    EXPECT_EQ(BT.output.vector[19], uint8_t(ID_gyro_signal_Y & 0xFF));
-    EXPECT_EQ(BT.output.vector[20], uint8_t((ID_gyro_signal_Y & 0xFF00) >> 8));
-    EXPECT_EQ(BT.output.vector[21], '9');
-    EXPECT_EQ(BT.output.vector[22], '8');
-    EXPECT_EQ(BT.output.vector[23], '7');
-    EXPECT_EQ(BT.output.vector[24], '.');
+    EXPECT_EQ(BT.output.vector[6], '2');
+    EXPECT_EQ(BT.output.vector[7], '3');
+    EXPECT_EQ(BT.output.vector[8], '4');
+    EXPECT_EQ(BT.output.vector[9], '!');
+    EXPECT_EQ(BT.output.vector[10], uint8_t(ID_gyro_PT1_X & 0xFF));
+    EXPECT_EQ(BT.output.vector[11], uint8_t((ID_gyro_PT1_X & 0xFF00) >> 8));
+    EXPECT_EQ(BT.output.vector[12], '2');
+    EXPECT_EQ(BT.output.vector[13], '3');
+    EXPECT_EQ(BT.output.vector[14], '4');
+    EXPECT_EQ(BT.output.vector[15], '5');
+    EXPECT_EQ(BT.output.vector[16], '!');
+    EXPECT_EQ(BT.output.vector[17], uint8_t(ID_gyro_PT1_Y & 0xFF));
+    EXPECT_EQ(BT.output.vector[18], uint8_t((ID_gyro_PT1_Y & 0xFF00) >> 8));
+    EXPECT_EQ(BT.output.vector[19], '9');
+    EXPECT_EQ(BT.output.vector[20], '8');
+    EXPECT_EQ(BT.output.vector[21], '7');
+    EXPECT_EQ(BT.output.vector[22], '5');
+    EXPECT_EQ(BT.output.vector[23], '!');
+    EXPECT_EQ(BT.output.vector[24], 'P');
     EXPECT_EQ(BT.output.vector[25], '5');
-    EXPECT_EQ(BT.output.vector[26], '0');
-    EXPECT_EQ(BT.output.vector[27], '0');
-    EXPECT_EQ(BT.output.vector[28], '!');
-    EXPECT_EQ(BT.output.vector[29], 'P');
-    EXPECT_EQ(BT.output.vector[30], '5');
-    EXPECT_EQ(BT.output.vector[31], '\r');
-    EXPECT_EQ(BT.output.vector[32], '\n');
+    EXPECT_EQ(BT.output.vector[26], '\r');
+    EXPECT_EQ(BT.output.vector[27], '\n');
 }

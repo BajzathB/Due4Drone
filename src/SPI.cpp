@@ -159,6 +159,17 @@ void RunSPI()
  //  SerialUSB.print(accVal.y); SerialUSB.print("\t");
  //  SerialUSB.print(accVal.z); SerialUSB.print("\t");
  //  SerialUSB.println((float)SPI.gyro.offset_int.z);
+  //float testX = calcRealFromInt(&SPI.gyro, E_direction::X, false);
+
+	//static uint64_t lastTime{ 0 };
+	//if (getSysTick() - lastTime > 105000) //10ms
+	//{
+	//	lastTime = getSysTick();
+
+	//	SerialUSB.print((float)SPI.gyro.signals.x); SerialUSB.print("\t");
+	//	SerialUSB.print((float)SPI.gyro.signalsPT1.x); SerialUSB.print("\t");
+	//	SerialUSB.println(0.061 * (float)SPI.gyro.signals.x);
+	//}
 }
 
 //Handling interrupt for gyro
@@ -629,17 +640,23 @@ void ReadMEMSMeas(E_ChipSelect CS, uint32_t adr2read)
 
 void calcSignalGyro(volatile signal* gyroSig, volatile uint8_t* buffer)
 {	
-    gyroSig->signals.x = (int32_t(buffer[2]) << 8) | int32_t(buffer[1]);
-    gyroSig->signals.y = (int32_t(buffer[4]) << 8) | int32_t(buffer[3]);
-    gyroSig->signals.z = (int32_t(buffer[6]) << 8) | int32_t(buffer[5]);
+	int16_t x = (buffer[2] << 8) | buffer[1];
+	int16_t y = (buffer[4] << 8) | buffer[3];
+	int16_t z = (buffer[6] << 8) | buffer[5];
+	gyroSig->signals.x = (int32_t)(x);
+	gyroSig->signals.y = (int32_t)(y);
+	gyroSig->signals.z = (int32_t)(z);
 }
 
 void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer)
 {
     //note difference from gyro is that valid data start from 2nd posiion
-	accSig->signals.x = (int32_t(buffer[3]) << 8) | int32_t(buffer[2]);
-	accSig->signals.y = (int32_t(buffer[5]) << 8) | int32_t(buffer[4]);
-	accSig->signals.z = (int32_t(buffer[7]) << 8) | int32_t(buffer[6]);
+	int16_t x = (buffer[3] << 8) | buffer[2];
+	int16_t y = (buffer[5] << 8) | buffer[4];
+	int16_t z = (buffer[7] << 8) | buffer[6];
+	accSig->signals.x = (int32_t)(x);
+	accSig->signals.y = (int32_t)(y);
+	accSig->signals.z = (int32_t)(z);
 }
 
 void calcOffsetGyro(volatile signal* gyroSig)

@@ -13,18 +13,14 @@
 #define ID_meas_2_card_gyro_PT1_X 104
 #define ID_meas_2_card_gyro_PT1_Y 105
 #define ID_meas_2_card_gyro_PT1_Z 106
-#define ID_meas_2_card_gyro_PT2_X 107
-#define ID_meas_2_card_gyro_PT2_Y 108
-#define ID_meas_2_card_gyro_PT2_Z 109
+
 #define ID_meas_2_card_acc_raw_X 110
 #define ID_meas_2_card_acc_raw_Y 111
 #define ID_meas_2_card_acc_raw_Z 112
 #define ID_meas_2_card_acc_PT1_X 113
 #define ID_meas_2_card_acc_PT1_Y 114
 #define ID_meas_2_card_acc_PT1_Z 115
-#define ID_meas_2_card_acc_PT2_X 116
-#define ID_meas_2_card_acc_PT2_Y 117
-#define ID_meas_2_card_acc_PT2_Z 118
+
 #define ID_meas_2_card_angle_raw_roll 119
 #define ID_meas_2_card_angle_raw_pitch 120
 #define ID_meas_2_card_angle_PT1_roll 121
@@ -74,39 +70,18 @@
 #define ID_meas_2_card_angle_CF_weighted_raw_pitch 165
 #define ID_meas_2_card_angle_CF_weighted_PT01_roll 166
 #define ID_meas_2_card_angle_CF_weighted_PT01_pitch 167
-#define ID_meas_2_card_gyro_raw_X_int 168
-#define ID_meas_2_card_gyro_raw_Y_int 169
-#define ID_meas_2_card_gyro_raw_Z_int 170
-#define ID_meas_2_card_gyro_PT1_X_int 171
-#define ID_meas_2_card_gyro_PT1_Y_int 172
-#define ID_meas_2_card_gyro_PT1_Z_int 173
-#define ID_meas_2_card_acc_raw_X_int 174
-#define ID_meas_2_card_acc_raw_Y_int 175
-#define ID_meas_2_card_acc_raw_Z_int 176
-#define ID_meas_2_card_acc_PT1_X_int 177
-#define ID_meas_2_card_acc_PT1_Y_int 178
-#define ID_meas_2_card_acc_PT1_Z_int 179
-#define ID_meas_2_card_PID_refsig_X_int 181
-#define ID_meas_2_card_PID_refsig_Y_int 182
-#define ID_meas_2_card_PID_refsig_Z_int 183
-#define ID_meas_2_card_PID_sensor_X_int 184
-#define ID_meas_2_card_PID_sensor_Y_int 185
-#define ID_meas_2_card_PID_sensor_Z_int 186
-#define ID_meas_2_card_PID_Pout_X_int 187
-#define ID_meas_2_card_PID_Pout_Y_int 188
-#define ID_meas_2_card_PID_Pout_Z_int 189
-#define ID_meas_2_card_PID_Iout_X_int 190
-#define ID_meas_2_card_PID_Iout_Y_int 191
-#define ID_meas_2_card_PID_Iout_Z_int 192
-#define ID_meas_2_card_PID_Dout_X_int 193
-#define ID_meas_2_card_PID_Dout_Y_int 194
-#define ID_meas_2_card_PID_Dout_Z_int 195
-#define ID_meas_2_card_PID_FFout_X_int 196
-#define ID_meas_2_card_PID_FFout_Y_int 197
-#define ID_meas_2_card_PID_FFout_Z_int 198
-#define ID_meas_2_card_PID_U_X_int 199
-#define ID_meas_2_card_PID_U_Y_int 200
-#define ID_meas_2_card_PID_U_Z_int 201
+#define ID_meas_2_card_gyro_real_X 168
+#define ID_meas_2_card_gyro_real_Y 169
+#define ID_meas_2_card_gyro_real_Z 170
+#define ID_meas_2_card_gyro_real_PT1_X 171
+#define ID_meas_2_card_gyro_real_PT1_Y 172
+#define ID_meas_2_card_gyro_real_PT1_Z 173
+#define ID_meas_2_card_acc_real_X 174
+#define ID_meas_2_card_acc_real_Y 175
+#define ID_meas_2_card_acc_real_Z 176
+#define ID_meas_2_card_acc_real_PT1_X 177
+#define ID_meas_2_card_acc_real_PT1_Y 178
+#define ID_meas_2_card_acc_real_PT1_Z 179
 
 
 
@@ -115,42 +90,31 @@
 #define ID_SDCARD_MAINSTATE 1000
 #define ID_SDCARD_RESET_MEASRUEMENT 1001
 #define ID_SDCARD_REINIT_SDCARD 1002
-#define ID_spi_acc_offset_int_x 1003
-#define ID_spi_acc_offset_int_y 1004
-#define ID_spi_acc_offset_int_z 1005
-#define ID_control_PID_rate_P_X_int 1006
-#define ID_control_PID_rate_I_X_int 1007
-#define ID_control_PID_rate_D_X_int 1008
-#define ID_control_PID_rate_P_Y_int 1009
-#define ID_control_PID_rate_I_Y_int 1010
-#define ID_control_PID_rate_D_Y_int 1011
-#define ID_control_PID_rate_P_Z_int 1012
-#define ID_control_PID_rate_I_Z_int 1013
-#define ID_control_PID_rate_D_Z_int 1014
-#define ID_control_PID_rate_FF_X_int 1015
-#define ID_control_PID_rate_FF_Y_int 1016
-#define ID_control_PID_rate_FF_DX_int 1017
-#define ID_control_PID_rate_FF_DY_int 1018
-#define ID_control_PID_rate_sat_I_int 1019
-#define ID_control_PID_rate_sat_PID_int 1020
+#define ID_spi_acc_offset_x 1003
+#define ID_spi_acc_offset_y 1004
+#define ID_spi_acc_offset_z 1005
+#define ID_control_PID_rate_P_X 1006
+#define ID_control_PID_rate_I_X 1007
+#define ID_control_PID_rate_D_X 1008
+#define ID_control_PID_rate_P_Y 1009
+#define ID_control_PID_rate_I_Y 1010
+#define ID_control_PID_rate_D_Y 1011
+#define ID_control_PID_rate_P_Z 1012
+#define ID_control_PID_rate_I_Z 1013
+#define ID_control_PID_rate_D_Z 1014
+#define ID_control_PID_rate_FF_X 1015
+#define ID_control_PID_rate_FF_Y 1016
+#define ID_control_PID_rate_FF_DX 1017
+#define ID_control_PID_rate_FF_DY 1018
+#define ID_control_PID_rate_sat_I 1019
+#define ID_control_PID_rate_sat_PID 1020
 
 
 
 
 
 //float
-#define ID_control_PID_rate_P_X 2000
-#define ID_control_PID_rate_I_X 2001
-#define ID_control_PID_rate_D_X 2002
-#define ID_control_PID_rate_P_Y 2003
-#define ID_control_PID_rate_I_Y 2004
-#define ID_control_PID_rate_D_Y 2005
-#define ID_control_PID_rate_P_Z 2006
-#define ID_control_PID_rate_I_Z 2007
-#define ID_control_PID_rate_D_Z 2008
-#define ID_control_PID_rate_saturation_I 2009
-#define ID_control_PID_rate_saturation_PID 2010
-#define ID_control_PID_rate_Dterm_C 2011
+
 #define ID_gyro_filter_paramC 2012
 #define ID_gyro_kalman_filter_q 2013
 #define ID_gyro_kalman_filter_r 2014
@@ -173,16 +137,13 @@
 #define ID_control_PID_cascade_saturation_I 2031
 #define ID_control_PID_cascade_saturation_PID 2032
 #define ID_control_PID_cascade_Dterm_C 2033
-#define ID_control_PID_rate_FF_X 2034
-#define ID_control_PID_rate_FF_Y 2035
-#define ID_control_PID_rate_FF_DX 2036
-#define ID_control_PID_rate_FF_DY 2037
+
 #define ID_control_PID_cascade_FF_X 2038
 #define ID_control_PID_cascade_FF_Y 2039
 #define ID_control_PID_cascade_FF_DX 2040
 #define ID_control_PID_cascade_FF_DY 2041
 #define ID_complementary_filter_alpha 2042
-#define ID_control_PID_rate_FF_Dterm_C 2043
+
 #define ID_control_PID_rate_I_relax_ref_threshhold 2044
 #define ID_control_PID_rate_I_relax_error_threshhold 2045
 #define ID_control_PID_rate_D_max_ref_threshhold 2046
@@ -198,9 +159,7 @@
 #define ID_pidRate_sensor_signal_X 3000
 #define ID_pidRate_sensor_signal_Y 3001
 #define ID_pidRate_sensor_signal_Z 3002
-#define ID_gyro_signal_X 3003
-#define ID_gyro_signal_Y 3004
-#define ID_gyro_signal_Z 3005
+
 #define ID_motorCommand_FL 3006
 #define ID_motorCommand_FR 3007
 #define ID_motorCommand_RL 3008
@@ -220,9 +179,7 @@
 #define ID_acc_PT1_X 3022
 #define ID_acc_PT1_Y 3023
 #define ID_acc_PT1_Z 3024
-#define ID_acc_PT2_X 3025
-#define ID_acc_PT2_Y 3026
-#define ID_acc_PT2_Z 3027
+
 #define ID_roll 3028
 #define ID_pitch 3029
 #define ID_roll_PT1 3030
