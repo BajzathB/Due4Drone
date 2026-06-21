@@ -1678,6 +1678,10 @@ void saveMeasData()
 	measureData(meas2Card.measurePIDUY, true, pidData->u_i.y, 0, false, "PIDUYi: ");
 	measureData(meas2Card.measurePIDUZ, true, pidData->u_i.z, 0, false, "PIDUZi: ");
 
+	measureData(meas2Card.measurePIDrefSigDotPT1X, true, pidData->refSigDotPT1_i.x, 0, false, "PIDRefDotPT1Xi: ");
+	measureData(meas2Card.measurePIDrefSigDotPT1Y, true, pidData->refSigDotPT1_i.y, 0, false, "PIDRefDotPT1Yi: ");
+	measureData(meas2Card.measurePIDrefSigDotPT1Z, true, pidData->refSigDotPT1_i.z, 0, false, "PIDRefDotPT1Zi: ");
+
 	appendNewLine();
 }
 
@@ -1791,7 +1795,7 @@ void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numb
 {
     if (isMeasured)
     {
-        uint32_t tempBuffer[10];
+        uint32_t tempBuffer[30];
         uint8_t numberOfCharacters{ 0 };
 
         if (isCommaed) appendComma();
@@ -1863,7 +1867,7 @@ void addMeasHeader(void)
 	}
 	//3rd line
 	{
-		uint32_t tempBuffer[300];
+		uint32_t tempBuffer[500];
 		uint8_t numberOfCharacters{ 0 };
 		pid_st* pidRate{ getPIDrates() };
 		pid_st* pidCascade{ getPIDcascade() };
@@ -2013,6 +2017,10 @@ void addMeasHeader(void)
 		addMeasNameHeader(meas2Card.measurePIDUX, true, "PIDUXi", 6);
 		addMeasNameHeader(meas2Card.measurePIDUY, true, "PIDUYi", 6);
 		addMeasNameHeader(meas2Card.measurePIDUZ, true, "PIDUZi", 6);
+
+		addMeasNameHeader(meas2Card.measurePIDrefSigDotPT1X, true, "PIDRefDotPT1Xi", 14);
+		addMeasNameHeader(meas2Card.measurePIDrefSigDotPT1Y, true, "PIDRefDotPT1Yi", 14);
+		addMeasNameHeader(meas2Card.measurePIDrefSigDotPT1Z, true, "PIDRefDotPT1Zi", 14);
 
         appendNewLine();
 #ifdef LOG_SAVED_DATA

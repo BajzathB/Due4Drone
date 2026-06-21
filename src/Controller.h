@@ -33,7 +33,8 @@ typedef struct controllerOut_st
 typedef struct pid_st
 {
     sigOut sensor;
-    axis_i32 error_i, errorSum_i, errorDot_i, errorPrev_i, errorDotPT1_i;
+    axis_i32 error_i, errorDot_i, errorPrev_i, errorDotPT1_i;
+    axis_i64 errorSum_i;
     axis_i32 refSig_i, refSigPrev_i, refSigDot_i, refSigDotPT1_i;
     axis_i32 P_i, I_i, D_i, Dmax_i, FFr_i, FFdr_i, u_i;
     axis_i32 Ki_i, Kd_i, Kffr_i, Kffdr_i;
@@ -197,7 +198,6 @@ float wobble(uint16_t pot1, uint16_t poti2);
 
 // Function to clamp value inbetween bounds
 inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max);
-inline int64_t clamp_i64(int64_t x, int64_t min, int64_t max);
 
 void setPIDParam(int32_t value, E_pid pid, E_direction dir);
 

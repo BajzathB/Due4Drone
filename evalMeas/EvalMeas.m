@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_05_26";
-fileNumber = 11; %1 is ., 2 is ..
+directory = "2026_06_21";
+fileNumber = 14; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -396,7 +396,7 @@ legend("ref", "gyro")
 % plot(meas.sysTime, [ref_int gyro_int error_int]);
 h(2) = subplot(2,1,2);
 plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
-legend("Pout", "Iout", "Pout")
+legend("Pout", "Iout", "Dout")
 linkaxes(h, 'x');
 
 

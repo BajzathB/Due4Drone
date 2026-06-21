@@ -8,6 +8,12 @@ typedef struct axis_i32
     int32_t y{ 0 };
     int32_t z{ 0 };
 }axis_i32;
+typedef struct axis_i64
+{
+    int64_t x{ 0 };
+    int64_t y{ 0 };
+    int64_t z{ 0 };
+}axis_i64;
 
 typedef struct sigOut
 {

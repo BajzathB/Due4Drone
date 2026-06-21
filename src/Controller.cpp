@@ -62,13 +62,13 @@ float timer2;
 void SetupController(void)
 {
     //RATE
-    pidRate.P_i.x = 35;
-    pidRate.I_i.x = 1;
-    pidRate.D_i.x = 25;
-    pidRate.P_i.y = 35;
-    pidRate.I_i.y = 1;
-    pidRate.D_i.y = 25;
-    pidRate.P_i.z = 200;
+    pidRate.P_i.x = 58;
+    pidRate.I_i.x = 70;
+    pidRate.D_i.x = 47;
+    pidRate.P_i.y = 58;
+    pidRate.I_i.y = 70;
+    pidRate.D_i.y = 47;
+    pidRate.P_i.z = 250;
     pidRate.I_i.z = 0;
     pidRate.D_i.z = 0;
     pidRate.FFr_i.x = 0;
@@ -102,15 +102,15 @@ void SetupController(void)
  //   pidRate.dMaxErrThreshhold = 100.0f;
 
 	//PID
-	pidRate.errorSum_i.x = 0.0f;
-	pidRate.errorSum_i.y = 0.0f;
-	pidRate.errorSum_i.z = 0.0f;
-	pidRate.errorPrev_i.x = 0.0f;
-	pidRate.errorPrev_i.y = 0.0f;
-	pidRate.errorPrev_i.z = 0.0f;
-	pidRate.errorDotPT1_i.x = 0.0f;
-	pidRate.errorDotPT1_i.y = 0.0f;
-	pidRate.errorDotPT1_i.z = 0.0f;
+	pidRate.errorSum_i.x = 0;
+	pidRate.errorSum_i.y = 0;
+	pidRate.errorSum_i.z = 0;
+	pidRate.errorPrev_i.x = 0;
+	pidRate.errorPrev_i.y = 0;
+	pidRate.errorPrev_i.z = 0;
+	pidRate.errorDotPT1_i.x = 0;
+	pidRate.errorDotPT1_i.y = 0;
+	pidRate.errorDotPT1_i.z = 0;
 
     //CASCADE
     //pidCascade.P.x = 30.0f;
@@ -930,27 +930,34 @@ void CalcProportional_int(pid_st* pid)
     pid->error_i.y = pid->refSig_i.y - pid->sensor.signalPT1.y;
     pid->error_i.z = pid->refSig_i.z - pid->sensor.signalPT1.z;
     //P
-    //PFactor = 1024, 2x for scaling
-    pid->Pout_i.x = (pid->P_i.x * pid->error_i.x) >> 9;
-    pid->Pout_i.y = (pid->P_i.y * pid->error_i.y) >> 9;
-    pid->Pout_i.z = (pid->P_i.z * pid->error_i.z) >> 9;
+    //PFactor = 1024, +x for scaling
+    pid->Pout_i.x = (pid->P_i.x * pid->error_i.x) >> 8;
+    pid->Pout_i.y = (pid->P_i.y * pid->error_i.y) >> 8;
+    pid->Pout_i.z = (pid->P_i.z * pid->error_i.z) >> 8;
 }
 
 void CalcIntegral_int(pid_st* pid)
 {
     //errorSum, shift due to tick
-    int64_t x_i64 = (int64_t)pid->errorSum_i.x + (int64_t)pid->error_i.x;
-    int64_t y_i64 = (int64_t)pid->errorSum_i.y + (int64_t)pid->error_i.y;
-    int64_t z_i64 = (int64_t)pid->errorSum_i.z + (int64_t)pid->error_i.z;
-    //anit-windup
-    pid->errorSum_i.x = clamp_i64(x_i64, -pid->satI_i, pid->satI_i);
-    pid->errorSum_i.y = clamp_i64(y_i64, -pid->satI_i, pid->satI_i);
-    pid->errorSum_i.z = clamp_i64(z_i64, -pid->satI_i, pid->satI_i);
+    pid->errorSum_i.x += (int64_t)pid->error_i.x;
+    pid->errorSum_i.y += (int64_t)pid->error_i.y;
+    pid->errorSum_i.z += (int64_t)pid->error_i.z;
     //I
     //IFactor + 3x scaling, +10 due to tick
-    pid->Iout_i.x = (int32_t)(((int64_t)pid->Ki_i.x * (int64_t)pid->errorSum_i.x) >> 30);
-    pid->Iout_i.y = (int32_t)(((int64_t)pid->Ki_i.y * (int64_t)pid->errorSum_i.y) >> 30);
-    pid->Iout_i.z = (int32_t)(((int64_t)pid->Ki_i.z * (int64_t)pid->errorSum_i.z) >> 30);
+    pid->Iout_i.x = (int32_t)(((int64_t)pid->Ki_i.x * pid->errorSum_i.x) >> 30);
+    pid->Iout_i.y = (int32_t)(((int64_t)pid->Ki_i.y * pid->errorSum_i.y) >> 30);
+    pid->Iout_i.z = (int32_t)(((int64_t)pid->Ki_i.z * pid->errorSum_i.z) >> 30);
+    //anit-windup
+    pid->Iout_i.x = clamp_i32(pid->Iout_i.x, -pid->satI_i, pid->satI_i);
+    pid->Iout_i.y = clamp_i32(pid->Iout_i.y, -pid->satI_i, pid->satI_i);
+    pid->Iout_i.z = clamp_i32(pid->Iout_i.z, -pid->satI_i, pid->satI_i);
+    //remove added error if saturated
+    if (pid->Iout_i.x ==  pid->satI_i && pid->error_i.x > 0) pid->errorSum_i.x -= (int64_t)pid->error_i.x;
+    if (pid->Iout_i.x == -pid->satI_i && pid->error_i.x < 0) pid->errorSum_i.x -= (int64_t)pid->error_i.x;
+    if (pid->Iout_i.y ==  pid->satI_i && pid->error_i.y > 0) pid->errorSum_i.y -= (int64_t)pid->error_i.y;
+    if (pid->Iout_i.y == -pid->satI_i && pid->error_i.y < 0) pid->errorSum_i.y -= (int64_t)pid->error_i.y;
+    if (pid->Iout_i.z ==  pid->satI_i && pid->error_i.z > 0) pid->errorSum_i.z -= (int64_t)pid->error_i.z;
+    if (pid->Iout_i.z == -pid->satI_i && pid->error_i.z < 0) pid->errorSum_i.z -= (int64_t)pid->error_i.z;
 }
 
 void CalcDerivative_int(pid_st* pid)
@@ -971,10 +978,10 @@ void CalcDerivative_int(pid_st* pid)
         pid->errorDotPT1_i.z = PT1_133Hz(pid->errorDotPT1_i.z, pid->errorDot_i.z);
 
         //D
-        //DFactor = 8192, + scaling
-        pid->Dout_i.x = (int32_t)(((int64_t)pid->Kd_i.x * (int64_t)pid->errorDotPT1_i.x) >> 16);
-        pid->Dout_i.y = (int32_t)(((int64_t)pid->Kd_i.y * (int64_t)pid->errorDotPT1_i.y) >> 16);
-        pid->Dout_i.z = (int32_t)(((int64_t)pid->Kd_i.z * (int64_t)pid->errorDotPT1_i.z) >> 16);
+        //DFactor = 8192, +inversDt, +x scaling
+        pid->Dout_i.x = (int32_t)(((int64_t)pid->Kd_i.x * (int64_t)pid->errorDotPT1_i.x) >> 13);
+        pid->Dout_i.y = (int32_t)(((int64_t)pid->Kd_i.y * (int64_t)pid->errorDotPT1_i.y) >> 13);
+        pid->Dout_i.z = (int32_t)(((int64_t)pid->Kd_i.z * (int64_t)pid->errorDotPT1_i.z) >> 13);
 
         pid->sensor.newData = false;
     }
@@ -1024,14 +1031,6 @@ void ScalePIDoutput_int(axis_i32* u, uint8_t shift)
 }
 
 inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max)
-{
-    if (x > max) return max;
-    if (x < min) return min;
-
-    return x;
-}
-
-inline int64_t clamp_i64(int64_t x, int64_t min, int64_t max)
 {
     if (x > max) return max;
     if (x < min) return min;

@@ -218,6 +218,19 @@ typedef struct Meas2Card
 	bool measurePIDUX{ true };
 	bool measurePIDUY{ false };
 	bool measurePIDUZ{ false };
+    //PID internals
+    bool measurePIDerrorX{ false };
+    bool measurePIDerrorY{ false };
+    bool measurePIDerrorZ{ false };
+    bool measurePIDerrorSumX{ false };
+    bool measurePIDerrorSumY{ false };
+    bool measurePIDerrorSumZ{ false };
+    bool measurePIDerrorDotPT1X{ false };
+    bool measurePIDerrorDotPT1Y{ false };
+    bool measurePIDerrorDotPT1Z{ false };
+    bool measurePIDrefSigDotPT1X{ true };
+    bool measurePIDrefSigDotPT1Y{ false };
+    bool measurePIDrefSigDotPT1Z{ false };
 
 }Meas2Card;
 
