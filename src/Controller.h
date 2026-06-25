@@ -41,6 +41,7 @@ typedef struct pid_st
     axis_i32 Pout_i, Iout_i, Dout_i, FFout_i;
     int32_t satI_i, satPID_i;
     axis_i32 signalPT1Prev_i;
+    axis_i32 iRelaxWeight;
 
     const uint32_t deltaTicks{ 5250 };  //0.5ms
     const int32_t inverseDt{ 2000 };  //2kHz
@@ -183,12 +184,13 @@ void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyro
 
 // Function to return lower value
 float minVal(float value1, float value2);
+int32_t minVal(int32_t value1, int32_t value2);
 
 // Function to return higher value
 float maxVal(float value1, float value2);
 
 // Method to calculate I relax factor value
-//void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch);
+void calcIRelaxWeight(pid_st* pidSt);
 
 // Method to calculate Dmax factor
 //void calcDmaxFactor(axis* dDynamic, pid_st* pidSt);

@@ -91,6 +91,9 @@ void SetupController(void)
     pidRate.Kffdr_i.x = pidRate.FFdr_i.x * pidRate.inverseDt;
     pidRate.Kffdr_i.y = pidRate.FFdr_i.y * pidRate.inverseDt;
     pidRate.Kffdr_i.z = pidRate.FFdr_i.z * pidRate.inverseDt;
+    pidRate.iRelaxWeight.x = 1024;
+    pidRate.iRelaxWeight.y = 1024;
+    pidRate.iRelaxWeight.z = 1024;
  //   //iRelax
  //   pidRate.iRelaxRefThreshhold = 6000.0f;
  //   pidRate.iRelaxErrThreshhold = 500.0f;
@@ -881,7 +884,7 @@ void CalcPID_int(pid_st* pidSt, axis_i32* u)
     CalcProportional_int(pidSt);
 
     //I relax
-    //todo
+    calcIRelaxWeight(pidSt);
     
     //I
     CalcIntegral_int(pidSt);
@@ -938,10 +941,10 @@ void CalcProportional_int(pid_st* pid)
 
 void CalcIntegral_int(pid_st* pid)
 {
-    //errorSum, shift due to tick
-    pid->errorSum_i.x += (int64_t)pid->error_i.x;
-    pid->errorSum_i.y += (int64_t)pid->error_i.y;
-    pid->errorSum_i.z += (int64_t)pid->error_i.z;
+    //errorSum with Irelax applied
+    pid->errorSum_i.x += ((int64_t)pid->error_i.x * (int64_t)pid->iRelaxWeight.x) >> 10;
+    pid->errorSum_i.y += ((int64_t)pid->error_i.y * (int64_t)pid->iRelaxWeight.y) >> 10;
+    pid->errorSum_i.z += ((int64_t)pid->error_i.z * (int64_t)pid->iRelaxWeight.z) >> 10;
     //I
     //IFactor + 3x scaling, +10 due to tick
     pid->Iout_i.x = (int32_t)(((int64_t)pid->Ki_i.x * pid->errorSum_i.x) >> 30);
@@ -1116,12 +1119,29 @@ float minVal(float value1, float value2)
 {
     return (value1 < value2) ? value1 : value2;
 }
+int32_t minVal(int32_t value1, int32_t value2)
+{
+    return (value1 < value2) ? value1 : value2;
+}
 
 float maxVal(float value1, float value2)
 {
     return (value1 < value2) ? value2 : value1;
 }
-//
+
+void calcIRelaxWeight(pid_st* pidSt)
+{
+    int32_t dX = abs(pidSt->refSigDotPT1_i.x);
+    int32_t dY = abs(pidSt->refSigDotPT1_i.y);
+    int32_t dZ = abs(pidSt->refSigDotPT1_i.z);
+
+    //131,072 >> 7 = 1024
+    //occures when from 0 to ~9500(580dps) stick input
+    pidSt->iRelaxWeight.x = 1024 - minVal(1024, dX >> 7);
+    pidSt->iRelaxWeight.y = 1024 - minVal(1024, dY >> 7);
+    pidSt->iRelaxWeight.z = 1024 - minVal(1024, dZ >> 7);
+}
+
 //void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch)
 //{
 //    if (twoWaySwitch < 1500)

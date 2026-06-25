@@ -170,6 +170,18 @@ void ResetMeasDataFlags(void)
     meas2Card.measurePIDUX = false;
     meas2Card.measurePIDUY = false;
     meas2Card.measurePIDUZ = false;
+    meas2Card.measurePIDerrorX = false;
+    meas2Card.measurePIDerrorY = false;
+    meas2Card.measurePIDerrorZ = false;
+    meas2Card.measurePIDerrorSumX = false;
+    meas2Card.measurePIDerrorSumY = false;
+    meas2Card.measurePIDerrorSumZ = false;
+    meas2Card.measurePIDerrorDotPT1X = false;
+    meas2Card.measurePIDerrorDotPT1Y = false;
+    meas2Card.measurePIDerrorDotPT1Z = false;
+    meas2Card.measurePIDrefSigDotPT1X = false;
+    meas2Card.measurePIDrefSigDotPT1Y = false;
+    meas2Card.measurePIDrefSigDotPT1Z = false;
 }
 
 TEST(test_BT_SDcard, SDcard_Call)
