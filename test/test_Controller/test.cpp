@@ -787,6 +787,18 @@ TEST(test_Controller, calcIRelaxWeight_Test)
     EXPECT_EQ(testPid.iRelaxWeight.x, 0);
     EXPECT_EQ(testPid.iRelaxWeight.y, 0);
     EXPECT_EQ(testPid.iRelaxWeight.z, 0);
+
+    //
+    testPid.Iout_i.x = 10000;
+    testPid.Iout_i.y = -10000;
+    testPid.Iout_i.z = -10000;
+    testPid.error_i.x = -1000;
+    testPid.error_i.y = -1000;
+    testPid.error_i.z = 1000;
+    calcIRelaxWeight(&testPid);
+    EXPECT_EQ(testPid.iRelaxWeight.x, 2048);
+    EXPECT_EQ(testPid.iRelaxWeight.y, 0);
+    EXPECT_EQ(testPid.iRelaxWeight.z, 2048);
 }
 
 //TEST(test_Controller, PID_compare_I)

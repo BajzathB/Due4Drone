@@ -1,7 +1,7 @@
 clear all, clc
 
 %reading files from folder
-directory = "2026_06_21";
+directory = "2026_06_28";
 files = dir(directory);
 files = files(3:end);
 % fileList = strings(1, length(files));
@@ -14,14 +14,20 @@ files = files(3:end);
 
 %manually select files
 fileList = [
-% % "MEAS358.txt"
-% "MEAS359.txt"
-% % "MEAS360.txt"
-% % "MEAS361.txt"
+% "MEAS359.txt" //PD
 
-"MEAS369.txt"
-"MEAS370.txt"
+% "MEAS372.txt"
+% "MEAS374.txt"
+% "MEAS375.txt"
 
+% "MEAS377.txt"
+% "MEAS379.txt"
+
+"MEAS2.txt"
+"MEAS3.txt"
+"MEAS4.txt"
+"MEAS5.txt"
+"MEAS7.txt"
 
 ];
 

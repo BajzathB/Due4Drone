@@ -231,6 +231,9 @@ typedef struct Meas2Card
     bool measurePIDrefSigDotPT1X{ true };
     bool measurePIDrefSigDotPT1Y{ false };
     bool measurePIDrefSigDotPT1Z{ false };
+    bool measurePIDiRelaxWeightX{ true };
+    bool measurePIDiRelaxWeightY{ false };
+    bool measurePIDiRelaxWeightZ{ false };
 
 }Meas2Card;
 

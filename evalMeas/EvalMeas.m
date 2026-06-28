@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_06_21";
-fileNumber = 14; %1 is ., 2 is ..
+directory = "2026_06_28";
+fileNumber = 9; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -389,15 +389,28 @@ usedParams = "PIDtoolbox" + newline ...
     + sprintf("rate: %.f", header.Px) ...
     + sprintf(", %.f", header.Ix) ...
     + sprintf(", %.f", header.Dx);
-h(1) = subplot(2,1,1);
+h(1) = subplot(2,2,1);
 plot(meas.sysTickMs, [meas.PIDRefXi meas.PIDSensXi]);
 title(usedParams, 'Interpreter', 'none');
-legend("ref", "gyro")
-% plot(meas.sysTime, [ref_int gyro_int error_int]);
-h(2) = subplot(2,1,2);
+legend("ref", "gyro");
+h(2) = subplot(2,2,3);
 plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
-legend("Pout", "Iout", "Dout")
+legend("Pout", "Iout", "Dout");
+
+
+h(3) = subplot(2,2,2);
+plot(meas.sysTickMs, [meas.PIDIoutXi meas.PIDiRelaxWeightX*100]);
+legend("Iout", "iRelaxW", "RefDot")
+h(4) = subplot(2,2,4);
+plot(meas.sysTickMs, [ meas.PIDUXi]);
+legend("Uout");
+max(abs(meas.PIDIoutXi))
+max(abs(meas.PIDUXi))
+
 linkaxes(h, 'x');
+
+
+
 
 
 

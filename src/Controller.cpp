@@ -63,10 +63,10 @@ void SetupController(void)
 {
     //RATE
     pidRate.P_i.x = 58;
-    pidRate.I_i.x = 70;
+    pidRate.I_i.x = 80;
     pidRate.D_i.x = 47;
     pidRate.P_i.y = 58;
-    pidRate.I_i.y = 70;
+    pidRate.I_i.y = 80;
     pidRate.D_i.y = 47;
     pidRate.P_i.z = 250;
     pidRate.I_i.z = 0;
@@ -77,8 +77,8 @@ void SetupController(void)
     pidRate.FFdr_i.x = 0;
     pidRate.FFdr_i.y = 0;
     pidRate.FFdr_i.z = 0;
-    pidRate.satI_i = 0x7FFFFFFF;  //int32 close to max
-    pidRate.satPID_i = 10000000;
+    pidRate.satI_i =  500000;
+    pidRate.satPID_i = 3000000;
     pidRate.Ki_i.x = pidRate.I_i.x * pidRate.deltaTicks;
     pidRate.Ki_i.y = pidRate.I_i.y * pidRate.deltaTicks;
     pidRate.Ki_i.z = pidRate.I_i.z * pidRate.deltaTicks;
@@ -963,6 +963,25 @@ void CalcIntegral_int(pid_st* pid)
     if (pid->Iout_i.z == -pid->satI_i && pid->error_i.z < 0) pid->errorSum_i.z -= (int64_t)pid->error_i.z;
 }
 
+void calcIRelaxWeight(pid_st* pidSt)
+{
+    int32_t dX = abs(pidSt->refSigDotPT1_i.x);
+    int32_t dY = abs(pidSt->refSigDotPT1_i.y);
+    int32_t dZ = abs(pidSt->refSigDotPT1_i.z);
+
+    //131,072 >> 7 = 1024
+    //occures when from 0 to ~9500(580dps) stick input
+    pidSt->iRelaxWeight.x = 1024 - minVal(1024, dX >> 7);
+    pidSt->iRelaxWeight.y = 1024 - minVal(1024, dY >> 7);
+    pidSt->iRelaxWeight.z = 1024 - minVal(1024, dZ >> 7);
+
+    // unwind faster
+    if ((pidSt->Iout_i.x ^ pidSt->error_i.x) < 0) pidSt->iRelaxWeight.x = 4096;
+    if ((pidSt->Iout_i.y ^ pidSt->error_i.y) < 0) pidSt->iRelaxWeight.y = 4096;
+    if ((pidSt->Iout_i.z ^ pidSt->error_i.z) < 0) pidSt->iRelaxWeight.z = 4096;
+
+}
+
 void CalcDerivative_int(pid_st* pid)
 {
     //errorDot
@@ -1127,19 +1146,6 @@ int32_t minVal(int32_t value1, int32_t value2)
 float maxVal(float value1, float value2)
 {
     return (value1 < value2) ? value2 : value1;
-}
-
-void calcIRelaxWeight(pid_st* pidSt)
-{
-    int32_t dX = abs(pidSt->refSigDotPT1_i.x);
-    int32_t dY = abs(pidSt->refSigDotPT1_i.y);
-    int32_t dZ = abs(pidSt->refSigDotPT1_i.z);
-
-    //131,072 >> 7 = 1024
-    //occures when from 0 to ~9500(580dps) stick input
-    pidSt->iRelaxWeight.x = 1024 - minVal(1024, dX >> 7);
-    pidSt->iRelaxWeight.y = 1024 - minVal(1024, dY >> 7);
-    pidSt->iRelaxWeight.z = 1024 - minVal(1024, dZ >> 7);
 }
 
 //void calcIRelaxFactor(axis* factor, pid_st* pidSt, uint16_t twoWaySwitch)

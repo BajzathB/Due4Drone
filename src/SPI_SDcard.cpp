@@ -1,5 +1,5 @@
 //SD Card setup in windows
-//Format with 16kb
+//Format with 16kb or 32kb
 //manually create PARAM.txt and save dummy data into it
 //check boot info: block/cluster=64, root=0x2000, FAT=0x25A
 //
@@ -1681,6 +1681,9 @@ void saveMeasData()
 	measureData(meas2Card.measurePIDrefSigDotPT1X, true, pidData->refSigDotPT1_i.x, 0, false, "PIDRefDotPT1Xi: ");
 	measureData(meas2Card.measurePIDrefSigDotPT1Y, true, pidData->refSigDotPT1_i.y, 0, false, "PIDRefDotPT1Yi: ");
 	measureData(meas2Card.measurePIDrefSigDotPT1Z, true, pidData->refSigDotPT1_i.z, 0, false, "PIDRefDotPT1Zi: ");
+	measureData(meas2Card.measurePIDiRelaxWeightX, true, pidData->iRelaxWeight.x, 0, false, "PIDiRelaxWeightX: ");
+	measureData(meas2Card.measurePIDiRelaxWeightY, true, pidData->iRelaxWeight.y, 0, false, "PIDiRelaxWeightY: ");
+	measureData(meas2Card.measurePIDiRelaxWeightZ, true, pidData->iRelaxWeight.z, 0, false, "PIDiRelaxWeightZ: ");
 
 	appendNewLine();
 }
@@ -2021,6 +2024,9 @@ void addMeasHeader(void)
 		addMeasNameHeader(meas2Card.measurePIDrefSigDotPT1X, true, "PIDRefDotPT1Xi", 14);
 		addMeasNameHeader(meas2Card.measurePIDrefSigDotPT1Y, true, "PIDRefDotPT1Yi", 14);
 		addMeasNameHeader(meas2Card.measurePIDrefSigDotPT1Z, true, "PIDRefDotPT1Zi", 14);
+		addMeasNameHeader(meas2Card.measurePIDiRelaxWeightX, true, "PIDiRelaxWeightX", 16);
+		addMeasNameHeader(meas2Card.measurePIDiRelaxWeightY, true, "PIDiRelaxWeightY", 16);
+		addMeasNameHeader(meas2Card.measurePIDiRelaxWeightZ, true, "PIDiRelaxWeightZ", 16);
 
         appendNewLine();
 #ifdef LOG_SAVED_DATA
@@ -2058,8 +2064,8 @@ void writeData(uint16_t measSwitch, uint64_t sysTick)
 			addFileInfo2RootDir(&SDcard.rootDirInfo[1], &SDcard.newFile, sysTick);
             SDcard.rootOrFatWriteTick = sysTick;
 
-            SerialUSB.println("writeData done, write ROOT");
 //#ifdef LOG_SD_WRITE 
+      SerialUSB.println("writeData done, write ROOT");
 			//SerialUSB.print("newfile: "); printFileInfo(&SDcard.newFile);
 //#endif
 
@@ -2115,9 +2121,9 @@ void writeRoot(uint64_t sysTick)
             SDcard.writingMultiFATBlock = addFileFATInfo(&SDcard.FAT1Info[1], &SDcard.newFile, E_SDFATWRITE_FIRST_CALL);
             SDcard.rootOrFatWriteTick = sysTick;
 
+#ifdef LOG_SD_WRITE 
             SerialUSB.println("writeRoot done, write FAT");
-            //#ifdef LOG_SD_WRITE 
-            //#endif
+#endif
 }
         else if (SDWRITE_FAILED == l_writeState)
         {
