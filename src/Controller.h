@@ -58,6 +58,27 @@ typedef struct gyroData_st
 };
 
 // Kalman filter struct
+typedef struct
+{
+    int32_t angle;      // internal angle units (30° = 78747)
+    int32_t bias;       // gyro bias (raw gyro counts)
+
+    int32_t P00;
+    int32_t P01;
+    int32_t P10;
+    int32_t P11;
+}kfAngle_st;
+
+typedef struct
+{
+    kfAngle_st roll;
+    kfAngle_st pitch;
+    //tune
+    int32_t qAngle{ 1 << 8 };
+    int32_t qBias{ 1 << 2 };
+    int32_t rMeas{ 1 << 14 };
+}kfAngle2d_st;
+
 typedef struct 
 {
     double angle{ 0.0 };     // The angle calculated by the Kalman filter
@@ -75,10 +96,13 @@ typedef struct
 
 typedef struct accData_st
 {
-    sigOut PT1;
-    sigOut PT2;
-    float rollAngle;
-    float pitchAngle;
+    int32_t rollPT1_i;
+    int32_t pitchPT1_i;
+
+    int32_t accumulatedGyroRoll_i;
+
+
+
     float rollAnglePT1Acc;
     float pitchAnglePT1Acc;
     float rollAnglePT2Acc;
@@ -101,6 +125,7 @@ typedef struct accData_st
     double r_measure{ 50.0 }; // Measurement noise variance
     kalmanFilterAngle3d_st angleKF;
     kalmanFilterAngle3d_st angleKFPT10;
+
 
 };
 
@@ -173,11 +198,17 @@ gyroData_st* getGyroData();
 // Function to return acc data values
 accData_st* getAccData();
 
+//Method to calculate angle from accelerometer data
+int32_t CalcAccAngle(const int32_t numerator, const int32_t denominator1, const int32_t denominator2);
+
+//Method to calculate kalman filter angle from gyro and acc sources
+void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro);
+
 //Method to calculate kalman filter of acc signal
 void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime);
 
 //Method to calculate complementary filter of acc angle
-void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha);
+//void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha);
 
 //Method to calculate weighted complementary filter of acc angle
 //void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc);

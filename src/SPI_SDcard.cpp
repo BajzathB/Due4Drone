@@ -1624,9 +1624,9 @@ void saveMeasData()
     measureData(meas2Card.measureAccRawX, true, spiData->acc.signals.x, 0, false, "accRawX_i: ");
     measureData(meas2Card.measureAccRawY, true, spiData->acc.signals.y, 0, false, "accRawY_i: ");
     measureData(meas2Card.measureAccRawZ, true, spiData->acc.signals.z, 0, false, "accRawZ_i: ");
-    measureData(meas2Card.measureAccPT1X, true, accData->PT1.signalPT1.x, 0, false, "accPT1X_i: ");
-    measureData(meas2Card.measureAccPT1Y, true, accData->PT1.signalPT1.y, 0, false, "accPT1Y_i: ");
-    measureData(meas2Card.measureAccPT1Z, true, accData->PT1.signalPT1.z, 0, false, "accPT1Z_i: ");
+    measureData(meas2Card.measureAccPT1X, true, spiData->acc.signalsPT1.x, 0, false, "accPT1X_i: ");
+    measureData(meas2Card.measureAccPT1Y, true, spiData->acc.signalsPT1.y, 0, false, "accPT1Y_i: ");
+    measureData(meas2Card.measureAccPT1Z, true, spiData->acc.signalsPT1.z, 0, false, "accPT1Z_i: ");
 	measureData(meas2Card.measureAccRealX, true, calcRealFromInt(&SPI.acc, E_direction::X, false), 3, false, "accRealX: ");
 	measureData(meas2Card.measureAccRealY, true, calcRealFromInt(&SPI.acc, E_direction::Y, false), 3, false, "accRealY: ");
 	measureData(meas2Card.measureAccRealZ, true, calcRealFromInt(&SPI.acc, E_direction::Z, false), 3, false, "accRealZ: ");
@@ -1634,8 +1634,8 @@ void saveMeasData()
 	measureData(meas2Card.measureAccRealPT1Y, true, calcRealFromInt(&SPI.acc, E_direction::Y, true), 3, false, "accRealPT1Y: ");
 	measureData(meas2Card.measureAccRealPT1Z, true, calcRealFromInt(&SPI.acc, E_direction::Z, true), 3, false, "accRealPT1Z: ");
     //angle
-    measureData(meas2Card.measureAngleRawRoll, true, accData->rollAngle, 3, false, "rollAngleRaw: ");
-    measureData(meas2Card.measureAngleRawPitch, true, accData->pitchAngle, 3, false, "pitchAngleRaw: ");
+    //measureData(meas2Card.measureAngleRawRoll, true, accData->rollAngle, 3, false, "rollAngleRaw: ");
+    //measureData(meas2Card.measureAngleRawPitch, true, accData->pitchAngle, 3, false, "pitchAngleRaw: ");
     measureData(meas2Card.measureAnglePT1Roll, true, accData->rollAnglePT1Acc, 3, false, "rollAnglePT1: ");
     measureData(meas2Card.measureAnglePT1Pitch, true, accData->pitchAnglePT1Acc, 3, false, "pitchAnglePT2: ");
     measureData(meas2Card.measureAnglePT2Roll, true, accData->rollAnglePT2Acc, 3, false, "rollAnglePT2: ");
@@ -1978,8 +1978,8 @@ void addMeasHeader(void)
 		addMeasNameHeader(meas2Card.measureAccRealPT1Y, true, "ARealPT1Y", 9);
 		addMeasNameHeader(meas2Card.measureAccRealPT1Z, true, "ARealPT1Z", 9);
         //angle
-        addMeasNameHeader(meas2Card.measureAngleRawRoll, true, "aRawR", 5);
-        addMeasNameHeader(meas2Card.measureAngleRawPitch, true, "aRawP", 5);
+        //addMeasNameHeader(meas2Card.measureAngleRawRoll, true, "aRawR", 5);
+        //addMeasNameHeader(meas2Card.measureAngleRawPitch, true, "aRawP", 5);
         addMeasNameHeader(meas2Card.measureAnglePT1Roll, true, "aPT1R", 5);
         addMeasNameHeader(meas2Card.measureAnglePT1Pitch, true, "aPT1P", 5);
         addMeasNameHeader(meas2Card.measureAnglePT2Roll, true, "aPT2R", 5);

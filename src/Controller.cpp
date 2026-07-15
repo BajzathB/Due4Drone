@@ -46,6 +46,19 @@ const float sinWave[LUT_SIZE] = { 0.0f, 0.3894183f, 0.6816387f, 0.8674232f, 0.96
     -0.8671281f, -0.9633994f, -0.9997712f, -0.9739821f, -0.8876354f, -0.7118896f, -0.4279156f, 0.0f};
 float wobbleTime{ 0.0f };
 
+#define ANGLE30 78747
+#define ANGLE_LUT_SIZE 128
+#define MAX_RATIO2_Q15 10923    // (1/3)*32768
+const int32_t atan30LUT[128] = {
+0,7698,10878,13311,15356,17154,18775,20262,21642,22936,24155,25313,26416,27471,28484,29459,
+30399,31308,32189,33043,33873,34681,35467,36234,36983,37714,38429,39129,39814,40486,41144,41790,
+42424,43047,43658,44260,44851,45433,46006,46570,47125,47673,48212,48743,49268,49785,50295,50799,
+51296,51786,52271,52750,53223,53690,54152,54608,55060,55506,55947,56384,56816,57244,57667,58085,
+58500,58910,59316,59718,60117,60511,60902,61289,61673,62053,62430,62803,63173,63540,63903,64264,
+64621,64976,65327,65676,66022,66365,66705,67043,67378,67710,68040,68367,68692,69014,69334,69652,
+69967,70280,70590,70899,71205,71509,71811,72111,72409,72704,72998,73290,73580,73868,74154,74438,
+74720,75000,75279,75556,75831,76104,76376,76646,76914,77181,77446,77709,77971,78231,78490,78747};
+
 E_armState armState{ DISARMED };
 controllerIn_st controlIn;
 controllerOut_st controlOut;
@@ -55,9 +68,12 @@ pid_st pidRate;
 pid_st pidCascade;
 gyroData_st gyroData;
 accData_st accData;
+kfAngle2d_st angleKF;
 
 float timer1;
 float timer2;
+float timer3;
+float timer4;
 
 void SetupController(void)
 {
@@ -196,30 +212,43 @@ void TC0_Handler(void)
         //if(counter > 12000) //6sec
         //{
         //  controlIn.rcSignals.throttle = 1100;
-        //  controlIn.rcSignals.roll = 1600;
-        //  controlIn.rcSignals.pitch = 1500;
-        //  controlIn.rcSignals.yaw = 1500;
+        //  controlIn.rcSignals.roll = 1300;
+        //  controlIn.rcSignals.pitch = 1000;
+        //  controlIn.rcSignals.yaw = 1000;
         //  controlIn.rcSignals.armStateSwitch = 2000;
-        //  controlIn.rcSignals.measurementSwitch = 2000;
+        //  controlIn.rcSignals.measurementSwitch = 1000;
         //  controlIn.rcSignals.Poti1 = 1500;
         //  controlIn.rcSignals.Poti2 = 1600;
         //  controlIn.rcSignals.flightModeSwitch = 1000;
         //  controlIn.rcSignals.Switch2Way = 1000;
         //}
-        // if(counter > 20000)  //10sec
-        // {
-        //   controlIn.rcSignals.throttle = 1000;
-        //   controlIn.rcSignals.roll = 1500;
-        //   controlIn.rcSignals.pitch = 1500;
-        //   controlIn.rcSignals.yaw = 1500;
-        //   controlIn.rcSignals.armStateSwitch = 1000;
-        //   controlIn.rcSignals.measurementSwitch = 1000;
-        //   controlIn.rcSignals.Poti1 = 1000;
-        //   controlIn.rcSignals.Poti2 = 1000;
-        //   controlIn.rcSignals.flightModeSwitch = 1000;
-        //   controlIn.rcSignals.Switch2Way = 1000;
-        // }
+        //if(counter > 20000)  //10sec
+        //{
+        //controlIn.rcSignals.throttle = 1000;
+        //controlIn.rcSignals.roll = 1500;
+        //controlIn.rcSignals.pitch = 1500;
+        //controlIn.rcSignals.yaw = 1500;
+        //controlIn.rcSignals.armStateSwitch = 1000;
+        //controlIn.rcSignals.measurementSwitch = 1000;
+        //controlIn.rcSignals.Poti1 = 1000;
+        //controlIn.rcSignals.Poti2 = 1000;
+        //controlIn.rcSignals.flightModeSwitch = 1000;
+        //controlIn.rcSignals.Switch2Way = 1000;
+        //}
         //counter++;
+         
+        timer2 = getTimeSinceReset();
+        int32_t accRoll =  atan2(controlIn.acc.signalPT1.y,
+            sqrt(controlIn.acc.signalPT1.x * controlIn.acc.signalPT1.x + controlIn.acc.signalPT1.z * controlIn.acc.signalPT1.z)) * 180 / 3.14;
+        timer3 = getTimeSinceReset();
+        accData.rollPT1_i = CalcAccAngle(controlIn.acc.signalPT1.y, controlIn.acc.signalPT1.x, controlIn.acc.signalPT1.z);
+        timer4 = getTimeSinceReset();
+
+        accData.accumulatedGyroRoll_i = (int32_t)(((int64_t)controlIn.gyro.signalPT1.x * (int64_t)pidRate.deltaTicks) >> 16);
+
+
+
+
 
         RunController(&controlIn, &controlOut);
 
@@ -288,7 +317,14 @@ void ControllerDebug(void)
       //SerialUSB.print(motors.RL_tick); SerialUSB.print("\t");
       //SerialUSB.print(motors.RR_tick); SerialUSB.print("\t");
       //
-      //SerialUSB.println();
+      SerialUSB.print(accData.rollPT1_i); SerialUSB.print("\t");
+      //SerialUSB.print(accData.pitchPT1_i); SerialUSB.print("\t");
+      SerialUSB.print(accData.accumulatedGyroRoll_i); SerialUSB.print("\t");
+
+      //SerialUSB.print("3-2: "); SerialUSB.print(calcDeltaTime(timer2, timer3), 3); SerialUSB.print("\t");
+      //SerialUSB.print("4-3: "); SerialUSB.print(calcDeltaTime(timer3, timer4), 3); SerialUSB.print("\t");
+      //
+      SerialUSB.println();
     }
 }
 
@@ -360,23 +396,20 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 
             break;
         }
-        //case RATE_CTRL_PT1_IRelax_Dmax:
-        //{
-        //    pidRate.refSignal.x = rollScaled;
-        //    pidRate.refSignal.y = -pitchScaled;
-        //    pidRate.refSignal.z = yawScaled;
-        //    pidRate.sensor.signal.x = -gyroData.PT1.signal.x;    //x-y swap/+-1 due to orientation of IMU
-        //    pidRate.sensor.signal.y = gyroData.PT1.signal.y;
-        //    pidRate.sensor.signal.z = -gyroData.PT1.signal.z;
-        //    pidRate.sensor.newData = ctrlIn->gyro.newData;
-        //    pidRate.deltaT = ctrlIn->droneTimes.loopTime;
-        //
-        //    CalcPID_wo_Dkick_FF_IRelax_Dmax(&pidRate, &controlSignal, ctrlIn->rcSignals.Switch2Way);
-        //
-        //    break;
-        //}
-        //case ANGLE_CASCADE_CTRL:
-        //{
+        case ANGLE_CASCADE_CTRL:
+        {
+            //notes
+            //30� = 78747 count
+            accData.rollPT1_i  = CalcAccAngle(ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.z);
+            accData.pitchPT1_i = CalcAccAngle(ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.z);
+
+            //kalman filter
+            //gyro accumulation, shift >>16 gives 30�=78,747 count
+
+            accData.accumulatedGyroRoll_i += (ctrlIn->gyro.signalPT1.x * pidRate.deltaTicks) >> 16;
+            CalcKFAngle(&angleKF.roll, accData.rollPT1_i, gyroData.PT1.signalPT1.x);
+
+
         //    float rollAngle{ LinearInterpol(ctrlIn->rcSignals.roll, 1000u,2000u, -30.0f , 30.0f) };
         //    float pitchAngle{ LinearInterpol(ctrlIn->rcSignals.pitch, 1000u,2000u, 30.0f , -30.0f) };
         //    axis intermidiateSignal;
@@ -403,8 +436,8 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         //
         //    CalcPID_wo_Dkick_FF(&pidRate, &controlSignal);
         //
-        //    break;
-        //}
+            break;
+        }
         case GPS_CTRL:
         {
             break;
@@ -583,7 +616,7 @@ inline int32_t linearScale_8192(uint16_t ch)
 //	else if (u->z < -pidSt->saturationPID) u->z = -pidSt->saturationPID;
 //	else; //do nothing
 //}
-
+//
 //void CalcPID_wo_Dkick(pid_st* pidSt, axis* u)
 //{
 //    //error
@@ -1080,6 +1113,72 @@ accData_st* getAccData()
     return &accData;
 }
 
+int32_t CalcAccAngle(const int32_t numerator, const int32_t denominator1, const int32_t denominator2)
+{
+    uint32_t numAbs = (numerator >= 0) ? numerator : -numerator;
+    uint64_t den12 = (uint64_t)denominator1 * denominator1;
+    uint64_t den22 = (uint64_t)denominator2 * denominator2;
+    uint64_t den = den12 + den22;
+
+    if (den == 0)
+    {
+        return 0;
+    }
+
+    uint32_t ratio2Q15 = (uint32_t)(((uint64_t)numAbs * numAbs << 15) / den);
+
+    if (ratio2Q15 > MAX_RATIO2_Q15) ratio2Q15 = MAX_RATIO2_Q15;
+
+    uint32_t scaled = ratio2Q15 * (ANGLE_LUT_SIZE - 1);
+    uint32_t index = scaled / MAX_RATIO2_Q15;
+    uint32_t frac = scaled % MAX_RATIO2_Q15;
+    int32_t angle;
+
+    if (index >= ANGLE_LUT_SIZE - 1)
+    {
+        angle = ANGLE30;
+    }
+    else
+    {
+        //interpolate
+        int32_t a0 = atan30LUT[index];
+        int32_t a1 = atan30LUT[index + 1];
+
+        angle = a0 + (int32_t)(((int64_t)(a1 - a0) * frac) / MAX_RATIO2_Q15);
+    }
+    //signage
+    return (numerator >= 0) ? angle : -angle;
+}
+
+void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro)
+{
+    //prediction
+    int32_t gyroCorrected = gyro - kf->bias;
+    kf->angle += (int32_t)(((int64_t)gyroCorrected * (int64_t)pidRate.deltaTicks) >> 16);  // 16shift to get into -78747..78747
+
+    //covariance prediction
+    kf->P00 += (int32_t)((int64_t)pidRate.deltaTicks * ((int64_t)pidRate.deltaTicks * kf->P11 - kf->P01 - kf->P10 + angleKF.qAngle));
+    kf->P01 -= pidRate.deltaTicks * kf->P11;
+    kf->P10 -= pidRate.deltaTicks * kf->P11;
+    kf->P11 += pidRate.deltaTicks * angleKF.qBias;
+
+    //kalman gain
+    int32_t S = kf->P00 + angleKF.rMeas;
+    int32_t K0 = kf->P00 / S;
+    int32_t K1 = kf->P10 / S;
+
+    //innovation + update
+    int32_t y = accAngle - kf->angle;
+    kf->angle += K0 * y;
+    kf->bias += K1 * y;
+
+    //covariance update
+    kf->P00 -= K0 * kf->P00;
+    kf->P01 -= K0 * kf->P01;
+    kf->P10 -= K1 * kf->P00;
+    kf->P11 -= K1 * kf->P01;
+}
+
 void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime)
 {
     // Predict
@@ -1113,11 +1212,11 @@ void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const flo
     kf->P[1][1] -= K[1] * P01_temp;
 }
 
-void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha)
-{
-   *yOut = alpha * (*yOut + gyroIn * looptime) + (1 - alpha) * accAngle;
-}
-
+//void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha)
+//{
+//   *yOut = alpha * (*yOut + gyroIn * looptime) + (1 - alpha) * accAngle;
+//}
+//
 //void ComplementryFilterAngleWeighted(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha, const axis* acc)
 //{
 //    float accMag = sqrt(acc->x * acc->x + acc->y * acc->y + acc->z * acc->z);

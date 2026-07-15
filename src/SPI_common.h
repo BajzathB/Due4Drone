@@ -19,7 +19,7 @@ typedef struct sigOut
 {
 	int32_t raw2realMulti;
 	int32_t raw2realDivider;
-    axis_i32 signalPT1;	//-32678...32768
+    axis_i32 signalPT1;	//-32677...32767
 
 	bool newData{ false };
 }sigOut;

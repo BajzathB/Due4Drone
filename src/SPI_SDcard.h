@@ -176,8 +176,8 @@ typedef struct Meas2Card
 	bool measureAccRealPT1Y{ false };
 	bool measureAccRealPT1Z{ false };
     //angle
-    bool measureAngleRawRoll{ false };
-    bool measureAngleRawPitch{ false };
+    //bool measureAngleRawRoll{ false };
+    //bool measureAngleRawPitch{ false };
     bool measureAnglePT1Roll{ false };
     bool measureAnglePT1Pitch{ false };
     bool measureAnglePT2Roll{ false };

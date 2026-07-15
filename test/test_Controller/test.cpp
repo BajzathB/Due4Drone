@@ -38,6 +38,7 @@ TEST(test_Controller, Controller_Call) {
     ScalePIDinput_int(&testPID, 0);
     CalcPIDoutput_int(&testPID, &testU_i32);
     expo(1000);
+    CalcAccAngle(0,0,0);
 }
 
 TEST(test_Controller, EvalArmState_Test)
@@ -796,9 +797,9 @@ TEST(test_Controller, calcIRelaxWeight_Test)
     testPid.error_i.y = -1000;
     testPid.error_i.z = 1000;
     calcIRelaxWeight(&testPid);
-    EXPECT_EQ(testPid.iRelaxWeight.x, 2048);
+    EXPECT_EQ(testPid.iRelaxWeight.x, 4096);
     EXPECT_EQ(testPid.iRelaxWeight.y, 0);
-    EXPECT_EQ(testPid.iRelaxWeight.z, 2048);
+    EXPECT_EQ(testPid.iRelaxWeight.z, 4096);
 }
 
 //TEST(test_Controller, PID_compare_I)
@@ -1002,6 +1003,103 @@ TEST(test_Controller, RunController_Test)
     //testIn.droneTimes.sysTime = 4.0;
     //RunController(&testIn, &testOut);
     //EXPECT_EQ(true, false);
+}
+
+TEST(test_Controller, calcAngle_Test)
+{
+    float ax, ay, az, testAngle;
+    int32_t axi, ayi, azi, angle;
+    accData_st* testAccData = getAccData();
+    float lutAngle;
+
+    //test: y-z small roll
+    ay = 0.1;
+    ax = 0.0;
+    az = 0.9;
+    testAngle = atan2(ay, sqrt(ax* ax + az* az)) * 180 / 3.14;
+    ayi = ay /24*32767;
+    axi = ax / 24 * 32767;
+    azi = az/24*32767;
+    angle = CalcAccAngle(ayi, axi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
+    //test: y-z smaller roll
+    ay = 0.05;
+    ax = 0.0;
+    az = 0.95;
+    testAngle = atan2(ay, sqrt(ax * ax + az * az)) * 180 / 3.14;
+    ayi = ay / 24 * 32767;
+    axi = ax / 24 * 32767;
+    azi = az / 24 * 32767;
+    angle = CalcAccAngle(ayi, axi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
+    //test: y-z 30° roll
+    ay = 0.3661;
+    ax = 0.0;
+    az = 0.6339;
+    testAngle = atan2(ay, sqrt(ax * ax + az * az)) * 180 / 3.14;
+    ayi = ay / 24 * 32767;
+    axi = ax / 24 * 32767;
+    azi = az / 24 * 32767;
+    angle = CalcAccAngle(ayi, axi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
+    //test: x-y-z medium roll
+    ay = 0.2;
+    ax = 0.1;
+    az = 0.7;
+    testAngle = atan2(ay, sqrt(ax * ax + az * az)) * 180 / 3.14;
+    ayi = ay / 24 * 32767;
+    axi = ax / 24 * 32767;
+    azi = az / 24 * 32767;
+    angle = CalcAccAngle(ayi, axi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
+    //test: x-y-z high roll, with pitch as well
+    ay = -0.25;
+    ax = -0.3;
+    az = 0.45;
+    testAngle = atan2(ay, sqrt(ax * ax + az * az)) * 180 / 3.14;
+    ayi = ay / 24 * 32767;
+    axi = ax / 24 * 32767;
+    azi = az / 24 * 32767;
+    angle = CalcAccAngle(ayi, axi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
+    //test: x-y-z, pitch
+    ay = 0;
+    ax = -0.1;
+    az = 0.9;
+    testAngle = atan2(ax, sqrt(ay * ay + az * az)) * 180 / 3.14;
+    ayi = ay / 24 * 32767;
+    axi = ax / 24 * 32767;
+    azi = az / 24 * 32767;
+    angle = CalcAccAngle(axi, ayi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
+    //test: x-y-z, pitch 30°
+    ay = 0;
+    ax = -0.3661;
+    az = 0.6339;
+    testAngle = atan2(ax, sqrt(ay * ay + az * az)) * 180 / 3.14;
+    ayi = ay / 24 * 32767;
+    axi = ax / 24 * 32767;
+    azi = az / 24 * 32767;
+    angle = CalcAccAngle(axi, ayi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
+    //test: x-y-z, pitch with roll
+    ay = -0.12;
+    ax = 0.231;
+    az = 0.649;
+    testAngle = atan2(ax, sqrt(ay * ay + az * az)) * 180 / 3.14;
+    ayi = ay / 24 * 32767;
+    axi = ax / 24 * 32767;
+    azi = az / 24 * 32767;
+    angle = CalcAccAngle(axi, ayi, azi);
+    lutAngle = float(angle) / 78747 * 30;
+    EXPECT_NEAR(testAngle, lutAngle, 0.5);
 }
 
 TEST(test_Controller, KalmanFilterAngle_Test)

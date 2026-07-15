@@ -44,7 +44,7 @@ extern Wdt* WDT;
 
 #endif
 
-#define WATCHDOG_ENABLED
+//#define WATCHDOG_ENABLED
 
 rc_st RC;
 

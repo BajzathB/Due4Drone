@@ -220,6 +220,7 @@ void BTTransmit()
             pid_st* pidRate{ getPIDrates() };
             gyroData_st* gyroData{ getGyroData()};
 			accData_st* accData{ getAccData() };
+			spi_st* spi{ getSPI() };
             MotorSpeeds motorSpeeds;
             getMotorSpeeds(&motorSpeeds);
 
@@ -239,12 +240,12 @@ void BTTransmit()
             if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Y, gyroData->PT1.signalPT1.y);
             if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Z, gyroData->PT1.signalPT1.z);
 
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_X, accData->PT1.signalPT1.x);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Y, accData->PT1.signalPT1.y);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Z, accData->PT1.signalPT1.z);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_X, spi->acc.signalsPT1.x);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Y, spi->acc.signalsPT1.y);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Z, spi->acc.signalsPT1.z);
 
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_roll - ID_bitshift_substracter))) > 0) SetStreamData(ID_roll, accData->rollAngle);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_pitch - ID_bitshift_substracter))) > 0) SetStreamData(ID_pitch, accData->pitchAngle);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_roll - ID_bitshift_substracter))) > 0) SetStreamData(ID_roll, accData->rollPT1_i);
+			if ((BT.txFrame.streamDataFlags & (1 << (ID_pitch - ID_bitshift_substracter))) > 0) SetStreamData(ID_pitch, accData->pitchPT1_i);
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_roll_PT1 - ID_bitshift_substracter))) > 0) SetStreamData(ID_roll_PT1, accData->rollAnglePT1Acc);
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_pitch_PT1 - ID_bitshift_substracter))) > 0) SetStreamData(ID_pitch_PT1, accData->pitchAnglePT1Acc);
 			//flagset2
@@ -383,8 +384,8 @@ void ProcessRxFrame()
 				case ID_meas_2_card_acc_real_PT1_Y: meas2card->measureAccRealPT1Y = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_real_PT1_Z: meas2card->measureAccRealPT1Z = ConvertStrToBool(&BT.input); break;
                 //angle
-				case ID_meas_2_card_angle_raw_roll: meas2card->measureAngleRawRoll = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_raw_pitch: meas2card->measureAngleRawPitch = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_raw_roll: meas2card->measureAngleRawRoll = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_raw_pitch: meas2card->measureAngleRawPitch = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_PT1_roll: meas2card->measureAnglePT1Roll = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_PT1_pitch: meas2card->measureAnglePT1Pitch = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_PT2_roll: meas2card->measureAnglePT2Roll = ConvertStrToBool(&BT.input); break;
@@ -510,8 +511,8 @@ void ProcessRxFrame()
 				case ID_meas_2_card_acc_real_PT1_Y: BT.txFrame.paramData = meas2card->measureAccRealPT1Y; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_real_PT1_Z: BT.txFrame.paramData = meas2card->measureAccRealPT1Z; BT.txFrame.numberOfFrac = 0; break;
                 //angle
-				case ID_meas_2_card_angle_raw_roll: BT.txFrame.paramData = meas2card->measureAngleRawRoll; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleRawPitch; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_raw_roll: BT.txFrame.paramData = meas2card->measureAngleRawRoll; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleRawPitch; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_PT1_roll: BT.txFrame.paramData = meas2card->measureAnglePT1Roll; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_PT1_pitch: BT.txFrame.paramData = meas2card->measureAnglePT1Pitch; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_PT2_roll: BT.txFrame.paramData = meas2card->measureAnglePT2Roll; BT.txFrame.numberOfFrac = 0; break;

@@ -492,7 +492,7 @@ void SetupAcc(void)
     SPI.acc.offset.y = -5;
     SPI.acc.offset.z = 0;
 	//raw to real parameters
-    SPI.acc.raw2realMultiplier = 235;	//~235.44
+    SPI.acc.raw2realMultiplier = 24;	//in g, 1g=9,81m/s2
     SPI.acc.raw2realDivider = 32768;
 
     SPI.acc.offsetCalcDone = true;  //this is done manually
