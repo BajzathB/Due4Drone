@@ -90,6 +90,16 @@ typedef struct date
 	uint8_t sec{ 0 };
 }date;
 
+typedef struct block_st
+{
+    uint8_t block[512];
+}block_st;
+
+typedef struct cluster_st
+{
+    block_st block[8];
+}cluster_st;
+
 typedef struct SpiSDcard_st
 {
 	uint32_t SdCtr{ 0 };
@@ -143,6 +153,10 @@ typedef struct SpiSDcard_st
 
     uint64_t rootOrFatWriteTick{ 0 };
 
+    //cluster_st measBuffer[100];
+    //uint32_t bufferCtr{ 0 };
+
+
 }SpiSDcard_st;
 
 typedef struct Meas2Card
@@ -153,7 +167,7 @@ typedef struct Meas2Card
     bool measureGyroRawX{ false };
     bool measureGyroRawY{ false };
     bool measureGyroRawZ{ false };
-    bool measureGyroPT1X{ false };
+    bool measureGyroPT1X{ true };
     bool measureGyroPT1Y{ false };
     bool measureGyroPT1Z{ false };
     bool measureGyroRealX{ false };
@@ -178,30 +192,30 @@ typedef struct Meas2Card
     //angle
     //bool measureAngleRawRoll{ false };
     //bool measureAngleRawPitch{ false };
-    bool measureAnglePT1Roll{ false };
+    bool measureAnglePT1Roll{ true };
     bool measureAnglePT1Pitch{ false };
-    bool measureAnglePT2Roll{ false };
-    bool measureAnglePT2Pitch{ false };
-    bool measureAngleKFRawRoll{ false };
-    bool measureAngleKFRawPitch{ false };
-    bool measureAngleKFPT10Roll{ false };
-    bool measureAngleKFPT10Pitch{ false };
-    bool measureAngleCFRawRoll{ false };
-    bool measureAngleCFRawPitch{ false };
-	bool measureAngleCFPT10Roll{ false };
-	bool measureAngleCFPT10Pitch{ false };
-	bool measureAngleCFPT11Roll{ false };
-	bool measureAngleCFPT11Pitch{ false };
-	bool measureAngleCFWeightedRawRoll{ false };
-	bool measureAngleCFWeightedRawPitch{ false };
-	bool measureAngleCFWeightedPT01Roll{ false };
-	bool measureAngleCFWeightedPT01Pitch{ false };
+ //   bool measureAnglePT2Roll{ false };
+ //   bool measureAnglePT2Pitch{ false };
+ //   bool measureAngleKFRawRoll{ false };
+ //   bool measureAngleKFRawPitch{ false };
+    bool measureAngleKFPT11Roll{ true };
+    bool measureAngleKFPT11Pitch{ false };
+ //   bool measureAngleCFRawRoll{ false };
+ //   bool measureAngleCFRawPitch{ false };
+	//bool measureAngleCFPT10Roll{ false };
+	//bool measureAngleCFPT10Pitch{ false };
+	//bool measureAngleCFPT11Roll{ false };
+	//bool measureAngleCFPT11Pitch{ false };
+	//bool measureAngleCFWeightedRawRoll{ false };
+	//bool measureAngleCFWeightedRawPitch{ false };
+	//bool measureAngleCFWeightedPT01Roll{ false };
+	//bool measureAngleCFWeightedPT01Pitch{ false };
     //PID control
 	bool measurePIDRefsigX{ true };
-	bool measurePIDRefsigY{ true };
+	bool measurePIDRefsigY{ false };
 	bool measurePIDRefsigZ{ false };
 	bool measurePIDSensorX{ true };
-	bool measurePIDSensorY{ true };
+	bool measurePIDSensorY{ false };
 	bool measurePIDSensorZ{ false };
 	bool measurePIDPoutX{ true };
 	bool measurePIDPoutY{ false };
@@ -212,7 +226,7 @@ typedef struct Meas2Card
 	bool measurePIDDoutX{ true };
 	bool measurePIDDoutY{ false };
 	bool measurePIDDoutZ{ false };
-	bool measurePIDFFoutX{ false };
+	bool measurePIDFFoutX{ true };
 	bool measurePIDFFoutY{ false };
 	bool measurePIDFFoutZ{ false };
 	bool measurePIDUX{ true };
@@ -228,10 +242,10 @@ typedef struct Meas2Card
     bool measurePIDerrorDotPT1X{ false };
     bool measurePIDerrorDotPT1Y{ false };
     bool measurePIDerrorDotPT1Z{ false };
-    bool measurePIDrefSigDotPT1X{ true };
+    bool measurePIDrefSigDotPT1X{ false };
     bool measurePIDrefSigDotPT1Y{ false };
     bool measurePIDrefSigDotPT1Z{ false };
-    bool measurePIDiRelaxWeightX{ true };
+    bool measurePIDiRelaxWeightX{ false };
     bool measurePIDiRelaxWeightY{ false };
     bool measurePIDiRelaxWeightZ{ false };
 

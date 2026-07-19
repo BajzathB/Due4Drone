@@ -68,7 +68,6 @@ pid_st pidRate;
 pid_st pidCascade;
 gyroData_st gyroData;
 accData_st accData;
-kfAngle2d_st angleKF;
 
 float timer1;
 float timer2;
@@ -90,7 +89,7 @@ void SetupController(void)
     pidRate.FFr_i.x = 0;
     pidRate.FFr_i.y = 0;
     pidRate.FFr_i.z = 0;
-    pidRate.FFdr_i.x = 0;
+    pidRate.FFdr_i.x = 10;
     pidRate.FFdr_i.y = 0;
     pidRate.FFdr_i.z = 0;
     pidRate.satI_i =  500000;
@@ -236,19 +235,6 @@ void TC0_Handler(void)
         //controlIn.rcSignals.Switch2Way = 1000;
         //}
         //counter++;
-         
-        timer2 = getTimeSinceReset();
-        int32_t accRoll =  atan2(controlIn.acc.signalPT1.y,
-            sqrt(controlIn.acc.signalPT1.x * controlIn.acc.signalPT1.x + controlIn.acc.signalPT1.z * controlIn.acc.signalPT1.z)) * 180 / 3.14;
-        timer3 = getTimeSinceReset();
-        accData.rollPT1_i = CalcAccAngle(controlIn.acc.signalPT1.y, controlIn.acc.signalPT1.x, controlIn.acc.signalPT1.z);
-        timer4 = getTimeSinceReset();
-
-        accData.accumulatedGyroRoll_i = (int32_t)(((int64_t)controlIn.gyro.signalPT1.x * (int64_t)pidRate.deltaTicks) >> 16);
-
-
-
-
 
         RunController(&controlIn, &controlOut);
 
@@ -271,60 +257,22 @@ void ControllerDebug(void)
 {
     static uint64_t lastTime{0};
 
-    if(getSysTick() - lastTime > 10500) //1ms
+    if(getSysTick() - lastTime > 525000) //100ms
     {
       lastTime = getSysTick();
 
       //SerialUSB.print("T21: ");
       //SerialUSB.print(calcDeltaTime(timer1, timer2), 3); SerialUSB.print("\t");
-      ////SerialUSB.print("gyro: ");
-      //SerialUSB.print((float)controlIn.gyro.signalPT1.x); SerialUSB.print("\t");
-      ////SerialUSB.print("acc: ");
-      //SerialUSB.print((float)controlIn.acc.signalPT1.x); SerialUSB.print("\t");
-      //SerialUSB.print("ctrl: ");
-      //SerialUSB.print((float)pidRate.refSig_i.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.sensor.signalPT1.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.error_i.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.errorSum_i.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.errorDot_i.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.errorDotPT1_i.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.Pout_i.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.Iout_i.x); SerialUSB.print("\t");
-      //SerialUSB.print((float)pidRate.Dout_i.x); SerialUSB.print("\t");
-      ////SerialUSB.print("u: ");
-      //SerialUSB.print((float)controlOut.U_i.x); SerialUSB.print("\t");
-      ////SerialUSB.print("params: ");
-      //SerialUSB.print(pidRate.P_i.x); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.I_i.x); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.D_i.x); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.Ki_i.x); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.Kd_i.x); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.P_i.y); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.I_i.y); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.D_i.y); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.Ki_i.y); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.Kd_i.y); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.P_i.z); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.I_i.z); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.D_i.z); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.Ki_i.z); SerialUSB.print("\t");
-      //SerialUSB.print(pidRate.Kd_i.z); SerialUSB.print("\t");
-      //
-      //MotorSpeeds motors;
-      //getMotorSpeeds(&motors);
-      //SerialUSB.print(motors.FL_tick); SerialUSB.print("\t");
-      //SerialUSB.print(motors.FR_tick); SerialUSB.print("\t");
-      //SerialUSB.print(motors.RL_tick); SerialUSB.print("\t");
-      //SerialUSB.print(motors.RR_tick); SerialUSB.print("\t");
-      //
-      SerialUSB.print(accData.rollPT1_i); SerialUSB.print("\t");
+
+      //SerialUSB.print(accData.rollPT1_i); SerialUSB.print("\t");
       //SerialUSB.print(accData.pitchPT1_i); SerialUSB.print("\t");
-      SerialUSB.print(accData.accumulatedGyroRoll_i); SerialUSB.print("\t");
+
+      //SerialUSB.print(accData.angleKF.roll.angle); SerialUSB.print("\t");
 
       //SerialUSB.print("3-2: "); SerialUSB.print(calcDeltaTime(timer2, timer3), 3); SerialUSB.print("\t");
       //SerialUSB.print("4-3: "); SerialUSB.print(calcDeltaTime(timer3, timer4), 3); SerialUSB.print("\t");
       //
-      SerialUSB.println();
+      //SerialUSB.println();
     }
 }
 
@@ -334,7 +282,19 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
 
     E_armState armStatus = EvalArmState(&ctrlIn->rcSignals);
 
-    //{
+    {
+
+        //timer2 = getTimeSinceReset();
+        //accRoll = atan2(controlIn.acc.signalPT1.y,
+        //    sqrt(controlIn.acc.signalPT1.x * controlIn.acc.signalPT1.x + controlIn.acc.signalPT1.z * controlIn.acc.signalPT1.z)) * 180 / 3.14;
+        //timer3 = getTimeSinceReset();
+        accData.rollPT1_i  = CalcAccAngle(ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.z);
+        accData.pitchPT1_i = CalcAccAngle(ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.z);
+        //timer4 = getTimeSinceReset();
+
+
+
+
     //    accData.rollAngle =  atan2(ctrlIn->acc.signal.y,  
     //        sqrt(ctrlIn->acc.signal.x * ctrlIn->acc.signal.x + ctrlIn->acc.signal.z * ctrlIn->acc.signal.z)) * 180 / 3.14;
     //    accData.pitchAngle = atan2(-ctrlIn->acc.signal.x, 
@@ -350,15 +310,18 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
     //        sqrt(accData.PT2.signal.y * accData.PT2.signal.y + accData.PT2.signal.z * accData.PT2.signal.z)) * 180 / 3.14;
     //    //SerialUSB.print(accData.rollAngle); SerialUSB.print('\t');
     //    //SerialUSB.println(accData.pitchAngle);
-    //}
+    }
     ////kalman filter angle
-    //{
+    {
+        //accData.accumulatedGyroRoll_i = (int32_t)(((int64_t)controlIn.gyro.signalPT1.x * (int64_t)pidRate.deltaTicks) >> 16);
+        CalcKFAngle(&accData.angleKF.roll, accData.rollPT1_i, gyroData.PT1.signalPT1.x);
+
     //    KalmanFilterAngle(&accData.angleKF.roll, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime);
     //    KalmanFilterAngle(&accData.angleKF.pitch, accData.pitchAngle, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime);
     //
     //    KalmanFilterAngle(&accData.angleKFPT10.roll, accData.rollAnglePT1Acc, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime);
     //    KalmanFilterAngle(&accData.angleKFPT10.pitch, accData.pitchAnglePT1Acc, ctrlIn->gyro.signal.y, ctrlIn->droneTimes.loopTime);
-    //}
+    }
     ////complementary filter angle
     //{
     //    ComplementryFilterAngle(&accData.rollAngleCF, accData.rollAngle, ctrlIn->gyro.signal.x, ctrlIn->droneTimes.loopTime, accData.alpha);
@@ -400,14 +363,13 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         {
             //notes
             //30� = 78747 count
-            accData.rollPT1_i  = CalcAccAngle(ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.z);
-            accData.pitchPT1_i = CalcAccAngle(ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.z);
+            //accData.rollPT1_i  = CalcAccAngle(ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.z);
+            //accData.pitchPT1_i = CalcAccAngle(ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.z);
 
             //kalman filter
             //gyro accumulation, shift >>16 gives 30�=78,747 count
 
-            accData.accumulatedGyroRoll_i += (ctrlIn->gyro.signalPT1.x * pidRate.deltaTicks) >> 16;
-            CalcKFAngle(&angleKF.roll, accData.rollPT1_i, gyroData.PT1.signalPT1.x);
+            //CalcKFAngle(&angleKF.roll, accData.rollPT1_i, gyroData.PT1.signalPT1.x);
 
 
         //    float rollAngle{ LinearInterpol(ctrlIn->rcSignals.roll, 1000u,2000u, -30.0f , 30.0f) };
@@ -1066,9 +1028,9 @@ void CalcFeedforward_int(pid_st* pid)
 void CalcPIDoutput_int(pid_st* pid, axis_i32* u)
 {
     //PID
-    pid->u_i.x = /*pid->FFout.x + */pid->Pout_i.x + pid->Iout_i.x - pid->Dout_i.x;
-    pid->u_i.y = /*pid->FFout.y + */pid->Pout_i.y + pid->Iout_i.y - pid->Dout_i.y;
-    pid->u_i.z = /*pid->FFout.z + */pid->Pout_i.z + pid->Iout_i.z - pid->Dout_i.z;
+    pid->u_i.x = /*pid->FFout_i.x + */pid->Pout_i.x + pid->Iout_i.x - pid->Dout_i.x;
+    pid->u_i.y = /*pid->FFout_i.y + */pid->Pout_i.y + pid->Iout_i.y - pid->Dout_i.y;
+    pid->u_i.z = /*pid->FFout_i.z + */pid->Pout_i.z + pid->Iout_i.z - pid->Dout_i.z;
     //PID clamp    
     pid->u_i.x = clamp_i32(pid->u_i.x, -pid->satPID_i, pid->satPID_i);
     pid->u_i.y = clamp_i32(pid->u_i.y, -pid->satPID_i, pid->satPID_i);
@@ -1154,63 +1116,67 @@ void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro)
 {
     //prediction
     int32_t gyroCorrected = gyro - kf->bias;
-    kf->angle += (int32_t)(((int64_t)gyroCorrected * (int64_t)pidRate.deltaTicks) >> 16);  // 16shift to get into -78747..78747
+    kf->angle += (int32_t)(((int64_t)gyroCorrected * pidRate.deltaTicks) >> 16);  // 16shift to get into -78747..78747
 
     //covariance prediction
-    kf->P00 += (int32_t)((int64_t)pidRate.deltaTicks * ((int64_t)pidRate.deltaTicks * kf->P11 - kf->P01 - kf->P10 + angleKF.qAngle));
-    kf->P01 -= pidRate.deltaTicks * kf->P11;
-    kf->P10 -= pidRate.deltaTicks * kf->P11;
-    kf->P11 += pidRate.deltaTicks * angleKF.qBias;
+    int32_t dP01 = (int32_t)(((int64_t)pidRate.deltaTicks * kf->P11) >> 15);
+    kf->P00 += dP01 - kf->P01 - kf->P10 + accData.angleKF.qAngleTick * (int32_t)pidRate.deltaTicks;
+    kf->P01 -= dP01;
+    kf->P10 -= dP01;
+    kf->P11 += accData.angleKF.qBiasTick * (int32_t)pidRate.deltaTicks;
 
     //kalman gain
-    int32_t S = kf->P00 + angleKF.rMeas;
-    int32_t K0 = kf->P00 / S;
-    int32_t K1 = kf->P10 / S;
+    int32_t S = kf->P00 + accData.angleKF.rMeasTick;
+    if (S <= 0) return;
+    int32_t K0 = (int32_t)(((int64_t)kf->P00 << 15) / S);
+    int32_t K1 = (int32_t)(((int64_t)kf->P10 << 15) / S);
 
     //innovation + update
     int32_t y = accAngle - kf->angle;
-    kf->angle += K0 * y;
-    kf->bias += K1 * y;
+    kf->angle += (int32_t)(((int64_t)K0 * y) >> 15);
+    kf->bias += (int32_t)(((int64_t)K1 * y) >> 15);
 
     //covariance update
-    kf->P00 -= K0 * kf->P00;
-    kf->P01 -= K0 * kf->P01;
-    kf->P10 -= K1 * kf->P00;
-    kf->P11 -= K1 * kf->P01;
+    int32_t P00 = kf->P00;
+    int32_t P01 = kf->P01;
+    kf->P00 -= (int32_t)(((int64_t)K0 * P00) >> 15);
+    kf->P01 -= (int32_t)(((int64_t)K0 * P01) >> 15);
+    kf->P10 -= (int32_t)(((int64_t)K1 * P00) >> 15);
+    kf->P11 -= (int32_t)(((int64_t)K1 * P01) >> 15);
 }
 
-void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime)
-{
-    // Predict
-    kf->rate = gyroIn - kf->bias;
-    kf->angle += looptime * kf->rate;
-
-    // Update error covariance matrix
-    kf->P[0][0] += looptime * (looptime * kf->P[1][1] - kf->P[0][1] - kf->P[1][0] + accData.q_angle);
-    kf->P[0][1] -= looptime * kf->P[1][1];
-    kf->P[1][0] -= looptime * kf->P[1][1];
-    kf->P[1][1] += accData.q_bias * looptime;
-
-    // Compute Kalman gain
-    double S = kf->P[0][0] + accData.r_measure;
-    double K[2];
-    K[0] = kf->P[0][0] / S;
-    K[1] = kf->P[1][0] / S;
-
-    // Update estimate with measurement
-    double y = accAngle - kf->angle;
-    kf->angle += K[0] * y;
-    kf->bias += K[1] * y;
-
-    // Update error covariance matrix
-    double P00_temp = kf->P[0][0];
-    double P01_temp = kf->P[0][1];
-
-    kf->P[0][0] -= K[0] * P00_temp;
-    kf->P[0][1] -= K[0] * P01_temp;
-    kf->P[1][0] -= K[1] * P00_temp;
-    kf->P[1][1] -= K[1] * P01_temp;
-}
+//void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime)
+//{
+//    // Predict
+//    kf->rate = gyroIn - kf->bias;
+//    kf->angle += looptime * kf->rate;
+//
+//    // Update error covariance matrix
+//    kf->P[0][0] += looptime * (looptime * kf->P[1][1] - kf->P[0][1] - kf->P[1][0] + accData.q_angle);
+//    kf->P[0][1] -= looptime * kf->P[1][1];
+//    kf->P[1][0] -= looptime * kf->P[1][1];
+//    kf->P[1][1] += accData.q_bias * looptime;
+//
+//    // Compute Kalman gain
+//    double S = kf->P[0][0] + accData.r_measure;
+//    double K[2];
+//    K[0] = kf->P[0][0] / S;
+//    K[1] = kf->P[1][0] / S;
+//
+//    // Update estimate with measurement
+//    double y = accAngle - kf->angle;
+//    kf->angle += K[0] * y;
+//    kf->bias += K[1] * y;
+//
+//    // Update error covariance matrix
+//    double P00_temp = kf->P[0][0];
+//    double P01_temp = kf->P[0][1];
+//
+//    kf->P[0][0] -= K[0] * P00_temp;
+//    kf->P[0][1] -= K[0] * P01_temp;
+//    kf->P[1][0] -= K[1] * P00_temp;
+//    kf->P[1][1] -= K[1] * P01_temp;
+//}
 
 //void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha)
 //{

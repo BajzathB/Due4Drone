@@ -246,15 +246,15 @@ void BTTransmit()
 
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_roll - ID_bitshift_substracter))) > 0) SetStreamData(ID_roll, accData->rollPT1_i);
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_pitch - ID_bitshift_substracter))) > 0) SetStreamData(ID_pitch, accData->pitchPT1_i);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_roll_PT1 - ID_bitshift_substracter))) > 0) SetStreamData(ID_roll_PT1, accData->rollAnglePT1Acc);
-			if ((BT.txFrame.streamDataFlags & (1 << (ID_pitch_PT1 - ID_bitshift_substracter))) > 0) SetStreamData(ID_pitch_PT1, accData->pitchAnglePT1Acc);
+			//if ((BT.txFrame.streamDataFlags & (1 << (ID_roll_PT1 - ID_bitshift_substracter))) > 0) SetStreamData(ID_roll_PT1, accData->rollAnglePT1Acc);
+			//if ((BT.txFrame.streamDataFlags & (1 << (ID_pitch_PT1 - ID_bitshift_substracter))) > 0) SetStreamData(ID_pitch_PT1, accData->pitchAnglePT1Acc);
 			//flagset2
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_PT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_PT2, accData->rollAnglePT2Acc);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_PT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_PT2, accData->pitchAnglePT2Acc);
+			//if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_PT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_PT2, accData->rollAnglePT2Acc);
+			//if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_PT2 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_PT2, accData->pitchAnglePT2Acc);
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF, accData->angleKF.roll.angle);
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF, accData->angleKF.pitch.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF_AccPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF_AccPT1, accData->angleKFPT10.roll.angle);
-			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT1, accData->angleKFPT10.pitch.angle);
+			//if ((BT.txFrame.streamDataFlags2 & (1 << (ID_roll_KF_AccPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_roll_KF_AccPT1, accData->angleKFPT10.roll.angle);
+			//if ((BT.txFrame.streamDataFlags2 & (1 << (ID_pitch_KF_AccPT1 - ID_bitshift_substracter2))) > 0) SetStreamData(ID_pitch_KF_AccPT1, accData->angleKFPT10.pitch.angle);
 
 			if ((BT.txFrame.streamDataFlags2 & (1 << (ID_loop_tick - ID_bitshift_substracter2))) > 0) SetStreamData(ID_loop_tick, (float)getSysTick()/10.5);
 
@@ -328,9 +328,9 @@ void ProcessRxFrame()
 				//case ID_control_PID_rate_D_max_Y: pidRateSet->Dmax.y = ConvertStrToDouble(&BT.input); break;
 				//case ID_control_PID_rate_D_max_Z: pidRateSet->Dmax.z = ConvertStrToDouble(&BT.input); break;
 				case ID_complementary_filter_alpha: accDataSet->alpha = ConvertStrToDouble(&BT.input); break;
-				case ID_acc_kalman_filter_q_angle: accDataSet->q_angle = ConvertStrToDouble(&BT.input);	break;
-				case ID_acc_kalman_filter_q_bias: accDataSet->q_bias = ConvertStrToDouble(&BT.input);	break;
-				case ID_acc_kalman_filter_r: accDataSet->r_measure = ConvertStrToDouble(&BT.input);	break;
+				case ID_acc_kalman_filter_q_angle: accDataSet->angleKF.qAngleTick = ConvertStrToInt32(&BT.input);	break;
+				case ID_acc_kalman_filter_q_bias: accDataSet->angleKF.qBiasTick = ConvertStrToInt32(&BT.input);	break;
+				case ID_acc_kalman_filter_r: accDataSet->angleKF.rMeasTick = ConvertStrToInt32(&BT.input);	break;
 				case ID_spi_acc_offset_x: spi->acc.offset.x = ConvertStrToInt32(&BT.input);	break;
 				case ID_spi_acc_offset_y: spi->acc.offset.y = ConvertStrToInt32(&BT.input);	break;
 				case ID_spi_acc_offset_z: spi->acc.offset.z = ConvertStrToInt32(&BT.input);	break;
@@ -388,22 +388,22 @@ void ProcessRxFrame()
 				//case ID_meas_2_card_angle_raw_pitch: meas2card->measureAngleRawPitch = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_PT1_roll: meas2card->measureAnglePT1Roll = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_angle_PT1_pitch: meas2card->measureAnglePT1Pitch = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_PT2_roll: meas2card->measureAnglePT2Roll = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_PT2_pitch: meas2card->measureAnglePT2Pitch = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_KF_raw_roll: meas2card->measureAngleKFRawRoll = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_KF_raw_pitch: meas2card->measureAngleKFRawPitch = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT10_roll: meas2card->measureAngleKFPT10Roll = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_KF_PT10_pitch: meas2card->measureAngleKFPT10Pitch = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_CF_raw_roll: meas2card->measureAngleCFRawRoll = ConvertStrToBool(&BT.input); break;
-                case ID_meas_2_card_angle_CF_raw_pitch: meas2card->measureAngleCFRawPitch = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_PT10_roll: meas2card->measureAngleCFPT10Roll = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_PT10_pitch: meas2card->measureAngleCFPT10Pitch = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_PT11_roll: meas2card->measureAngleCFPT11Roll = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_PT11_pitch: meas2card->measureAngleCFPT11Pitch = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_weighted_raw_roll: meas2card->measureAngleCFWeightedRawRoll = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_weighted_raw_pitch: meas2card->measureAngleCFWeightedRawPitch = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_weighted_PT01_roll: meas2card->measureAngleCFWeightedPT01Roll = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_angle_CF_weighted_PT01_pitch: meas2card->measureAngleCFWeightedPT01Pitch = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_PT2_roll: meas2card->measureAnglePT2Roll = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_PT2_pitch: meas2card->measureAnglePT2Pitch = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_KF_raw_roll: meas2card->measureAngleKFRawRoll = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_KF_raw_pitch: meas2card->measureAngleKFRawPitch = ConvertStrToBool(&BT.input); break;
+    //            case ID_meas_2_card_angle_KF_PT10_roll: meas2card->measureAngleKFPT10Roll = ConvertStrToBool(&BT.input); break;
+    //            case ID_meas_2_card_angle_KF_PT10_pitch: meas2card->measureAngleKFPT10Pitch = ConvertStrToBool(&BT.input); break;
+    //            case ID_meas_2_card_angle_CF_raw_roll: meas2card->measureAngleCFRawRoll = ConvertStrToBool(&BT.input); break;
+    //            case ID_meas_2_card_angle_CF_raw_pitch: meas2card->measureAngleCFRawPitch = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_PT10_roll: meas2card->measureAngleCFPT10Roll = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_PT10_pitch: meas2card->measureAngleCFPT10Pitch = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_PT11_roll: meas2card->measureAngleCFPT11Roll = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_PT11_pitch: meas2card->measureAngleCFPT11Pitch = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_weighted_raw_roll: meas2card->measureAngleCFWeightedRawRoll = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_weighted_raw_pitch: meas2card->measureAngleCFWeightedRawPitch = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_weighted_PT01_roll: meas2card->measureAngleCFWeightedPT01Roll = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_angle_CF_weighted_PT01_pitch: meas2card->measureAngleCFWeightedPT01Pitch = ConvertStrToBool(&BT.input); break;
                 //PID control
                 case ID_meas_2_card_PID_refsig_X: meas2card->measurePIDRefsigX = ConvertStrToBool(&BT.input); break;
                 case ID_meas_2_card_PID_refsig_Y: meas2card->measurePIDRefsigY = ConvertStrToBool(&BT.input); break;
@@ -452,9 +452,9 @@ void ProcessRxFrame()
 				//case ID_control_PID_rate_D_max_Y: BT.txFrame.paramData = pidRateGet->Dmax.y; BT.txFrame.numberOfFrac = 1; break;
 				//case ID_control_PID_rate_D_max_Z: BT.txFrame.paramData = pidRateGet->Dmax.z; BT.txFrame.numberOfFrac = 1; break;
 				case ID_complementary_filter_alpha: BT.txFrame.paramData = accDataSet->alpha; BT.txFrame.numberOfFrac = 3; break;
-				case ID_acc_kalman_filter_q_angle: BT.txFrame.paramData = accDataSet->q_angle; BT.txFrame.numberOfFrac = 6; break;
-				case ID_acc_kalman_filter_q_bias: BT.txFrame.paramData = accDataSet->q_bias; BT.txFrame.numberOfFrac = 6; break;
-				case ID_acc_kalman_filter_r: BT.txFrame.paramData = accDataSet->r_measure; BT.txFrame.numberOfFrac = 2; break;
+				case ID_acc_kalman_filter_q_angle: BT.txFrame.paramData = accDataSet->angleKF.qAngleTick; BT.txFrame.numberOfFrac = 6; break;
+				case ID_acc_kalman_filter_q_bias: BT.txFrame.paramData = accDataSet->angleKF.qBiasTick; BT.txFrame.numberOfFrac = 6; break;
+				case ID_acc_kalman_filter_r: BT.txFrame.paramData = accDataSet->angleKF.rMeasTick; BT.txFrame.numberOfFrac = 2; break;
 
                 case ID_SDCARD_MAINSTATE: BT.txFrame.paramData = sdcard->MainState; BT.txFrame.numberOfFrac = 0; break;
                 case ID_SDCARD_RESET_MEASRUEMENT: BT.txFrame.paramData = ResetMeasurement(); BT.txFrame.numberOfFrac = 0; break;
@@ -515,22 +515,22 @@ void ProcessRxFrame()
 				//case ID_meas_2_card_angle_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleRawPitch; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_PT1_roll: BT.txFrame.paramData = meas2card->measureAnglePT1Roll; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_angle_PT1_pitch: BT.txFrame.paramData = meas2card->measureAnglePT1Pitch; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_PT2_roll: BT.txFrame.paramData = meas2card->measureAnglePT2Roll; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_PT2_pitch: BT.txFrame.paramData = meas2card->measureAnglePT2Pitch; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_raw_roll: BT.txFrame.paramData = meas2card->measureAngleKFRawRoll; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleKFRawPitch; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT10_roll: BT.txFrame.paramData = meas2card->measureAngleKFPT10Roll; BT.txFrame.numberOfFrac = 0; break;
-                case ID_meas_2_card_angle_KF_PT10_pitch: BT.txFrame.paramData = meas2card->measureAngleKFPT10Pitch; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_raw_roll: BT.txFrame.paramData = meas2card->measureAngleCFRawRoll; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleCFRawPitch; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_PT10_roll: BT.txFrame.paramData = meas2card->measureAngleCFPT10Roll; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_PT10_pitch: BT.txFrame.paramData = meas2card->measureAngleCFPT10Pitch; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_PT11_roll: BT.txFrame.paramData = meas2card->measureAngleCFPT11Roll; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_PT11_pitch: BT.txFrame.paramData = meas2card->measureAngleCFPT11Pitch; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_weighted_raw_roll: BT.txFrame.paramData = meas2card->measureAngleCFWeightedRawRoll; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_weighted_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleCFWeightedRawPitch; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_weighted_PT01_roll: BT.txFrame.paramData = meas2card->measureAngleCFWeightedPT01Roll; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_angle_CF_weighted_PT01_pitch: BT.txFrame.paramData = meas2card->measureAngleCFWeightedPT01Pitch; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_PT2_roll: BT.txFrame.paramData = meas2card->measureAnglePT2Roll; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_PT2_pitch: BT.txFrame.paramData = meas2card->measureAnglePT2Pitch; BT.txFrame.numberOfFrac = 0; break;
+    //            case ID_meas_2_card_angle_KF_raw_roll: BT.txFrame.paramData = meas2card->measureAngleKFRawRoll; BT.txFrame.numberOfFrac = 0; break;
+    //            case ID_meas_2_card_angle_KF_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleKFRawPitch; BT.txFrame.numberOfFrac = 0; break;
+    //            case ID_meas_2_card_angle_KF_PT10_roll: BT.txFrame.paramData = meas2card->measureAngleKFPT10Roll; BT.txFrame.numberOfFrac = 0; break;
+    //            case ID_meas_2_card_angle_KF_PT10_pitch: BT.txFrame.paramData = meas2card->measureAngleKFPT10Pitch; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_raw_roll: BT.txFrame.paramData = meas2card->measureAngleCFRawRoll; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleCFRawPitch; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_PT10_roll: BT.txFrame.paramData = meas2card->measureAngleCFPT10Roll; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_PT10_pitch: BT.txFrame.paramData = meas2card->measureAngleCFPT10Pitch; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_PT11_roll: BT.txFrame.paramData = meas2card->measureAngleCFPT11Roll; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_PT11_pitch: BT.txFrame.paramData = meas2card->measureAngleCFPT11Pitch; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_weighted_raw_roll: BT.txFrame.paramData = meas2card->measureAngleCFWeightedRawRoll; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_weighted_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleCFWeightedRawPitch; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_weighted_PT01_roll: BT.txFrame.paramData = meas2card->measureAngleCFWeightedPT01Roll; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_angle_CF_weighted_PT01_pitch: BT.txFrame.paramData = meas2card->measureAngleCFWeightedPT01Pitch; BT.txFrame.numberOfFrac = 0; break;
                 //PID sensor
                 case ID_meas_2_card_PID_refsig_X: BT.txFrame.paramData = meas2card->measurePIDRefsigX; BT.txFrame.numberOfFrac = 0; break;
                 case ID_meas_2_card_PID_refsig_Y: BT.txFrame.paramData = meas2card->measurePIDRefsigY; BT.txFrame.numberOfFrac = 0; break;
