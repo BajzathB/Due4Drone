@@ -49,7 +49,9 @@ typedef enum pid
 {
 	P,
 	I,
-	D
+	D,
+    FFr,
+    FFdr
 }E_pid;
 
 //enum for chip select targets
@@ -79,6 +81,8 @@ typedef struct spi_st
 	volatile uint8_t sensorRx[20];
 	volatile E_SPIActivity spiActivityGyro{ INACTIVE };
 	volatile E_SPIActivity spiActivityAcc{ INACTIVE };
+    volatile bool isGyroIntEnabled{ true };
+    volatile bool isAccIntEnabled{ true };
 
 	volatile signal gyro;
 	volatile signal acc;

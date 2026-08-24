@@ -1,7 +1,7 @@
 clear all, clc
 
 %reading files from folder
-directory = "2026_06_28";
+directory = "2026_08_21";
 files = dir(directory);
 files = files(3:end);
 % fileList = strings(1, length(files));
@@ -23,11 +23,20 @@ fileList = [
 % "MEAS377.txt"
 % "MEAS379.txt"
 
-"MEAS2.txt"
-"MEAS3.txt"
-"MEAS4.txt"
-"MEAS5.txt"
-"MEAS7.txt"
+% "MEAS2.txt"
+% "MEAS3.txt"
+% "MEAS4.txt"
+% "MEAS5.txt"
+% "MEAS7.txt"
+
+"MEAS27.txt"
+% "MEAS28.txt"
+"MEAS29.txt"
+% "MEAS30.txt"
+"MEAS31.txt"
+% "MEAS33.txt"
+"MEAS34.txt"
+% "MEAS36.txt"
 
 ];
 
@@ -46,7 +55,7 @@ for n = 1:length(fileList)
     meas{n} = readtable(file, opts);
 end
 
-trim = 750;
+trim = 1;
 wnd = 512;
 % figure(1)
 % clf(1)
@@ -57,7 +66,7 @@ wnd = 512;
 measSize = size(meas);
 for s = 1:measSize(2)
     stepResp{1,s} = calcStepResponse(meas{1,s}.PIDRefXi(trim:end-trim), meas{1,s}.PIDSensXi(trim:end-trim), wnd);
-    stepResp{2,s} = calcStepResponse(meas{1,s}.PIDRefYi(trim:end-trim), meas{1,s}.PIDSensYi(trim:end-trim), wnd);
+%     stepResp{2,s} = calcStepResponse(meas{1,s}.PIDRefYi(trim:end-trim), meas{1,s}.PIDSensYi(trim:end-trim), wnd);
 %     stepResp{3,s} = calcStepResponse(meas{1,s}.PIDRefZi(trim:end-trim), meas{1,s}.PIDSensZi(trim:end-trim), wnd);
 end
 
@@ -108,11 +117,12 @@ for p = 1:measSize(2)
     fileName = erase(fileList(p), ".txt");
     
 %     labelX = sprintf('%s(%g,%g,%g)(%g,%g)', ...
-    labelX = sprintf('%s(%g,%g,%g)', ...
+    labelX = sprintf('%s(%g,%g,%g,%g)', ...
         fileName, ...
         headers{1,p}.Px, ...
         headers{1,p}.Ix, ...
-        headers{1,p}.Dx);
+        headers{1,p}.Dx, ...
+        headers{1,p}.FFdrx);
 %         , ...
 %         headers{1,p}.IRelaxR, ...
 %         headers{1,p}.IRelaxE);
@@ -128,7 +138,7 @@ for p = 1:measSize(2)
 %         headers{1,p}.Iz);
     
     plot(ax1, stepResp{1,p}, 'DisplayName', labelX);
-    plot(ax2, stepResp{2,p}, 'DisplayName', labelY);
+%     plot(ax2, stepResp{2,p}, 'DisplayName', labelY);
 %     plot(ax2, stepResp{3,p}, 'DisplayName', labelZ);
     
     figure(2)
@@ -138,7 +148,7 @@ for p = 1:measSize(2)
     title("gyro" + newline + "ROLL");
     legend('Ref', 'Sens');
     subplot(2,1,2);
-    plot(meas{1,p}.sysTickMs(trim:end-trim), [meas{1,p}.PIDRefYi(trim:end-trim) meas{1,p}.PIDSensYi(trim:end-trim)]);
+%     plot(meas{1,p}.sysTickMs(trim:end-trim), [meas{1,p}.PIDRefYi(trim:end-trim) meas{1,p}.PIDSensYi(trim:end-trim)]);
     title("PITCH");
     legend('Ref', 'Sens');
 end

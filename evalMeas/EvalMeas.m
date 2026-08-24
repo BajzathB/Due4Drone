@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_06_28";
-fileNumber = 9; %1 is ., 2 is ..
+directory = "2026_08_24";
+fileNumber = 8; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -385,29 +385,39 @@ Pout = P*error;
 
 figure(12);
 clf(12);
-usedParams = "PIDtoolbox" + newline ...
+usedParams = "PID" + newline ...
     + sprintf("rate: %.f", header.Px) ...
     + sprintf(", %.f", header.Ix) ...
-    + sprintf(", %.f", header.Dx);
+    + sprintf(", %.f", header.Dx) ...
+    + sprintf(", %.f", header.FFrx) ...
+    + sprintf(", %.f", header.FFdrx);
 h(1) = subplot(2,2,1);
 plot(meas.sysTickMs, [meas.PIDRefXi meas.PIDSensXi]);
 title(usedParams, 'Interpreter', 'none');
 legend("ref", "gyro");
 h(2) = subplot(2,2,3);
-plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
-legend("Pout", "Iout", "Dout");
+plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDUXi]);
+% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
+% legend("Pout", "Iout", "Dout");
+legend("Pout", "U");
 
 
 h(3) = subplot(2,2,2);
-plot(meas.sysTickMs, [meas.PIDIoutXi meas.PIDiRelaxWeightX*100]);
-legend("Iout", "iRelaxW", "RefDot")
-h(4) = subplot(2,2,4);
-plot(meas.sysTickMs, [ meas.PIDUXi]);
-legend("Uout");
-max(abs(meas.PIDIoutXi))
-max(abs(meas.PIDUXi))
+plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDFFoutXi]);
+legend("Pout", "FFout")
+% h(4) = subplot(2,2,4);
+% plot(meas.sysTickMs, [ meas.PIDUXi]);
+% legend("Uout");
+
+fprintf("maxPout: %.2fM\n", max(abs(meas.PIDPoutXi))/1000000);
+% max(abs(meas.PIDUXi))
+% disp("maxIout: " + max(abs(meas.PIDIoutXi)));
+% disp("maxDout: " + max(abs(meas.PIDDoutXi)));
+fprintf("maxFFout: %.2fM\n", max(abs(meas.PIDFFoutXi))/1000000);
+fprintf("maxU: %.2fM\n", max(abs(meas.PIDUXi))/1000000);
 
 linkaxes(h, 'x');
+xlim(h(1), [meas.sysTickMs(1), meas.sysTickMs(end)]);
 
 
 

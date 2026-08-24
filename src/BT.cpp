@@ -343,10 +343,10 @@ void ProcessRxFrame()
 				case ID_control_PID_rate_P_Z: setPIDParam(ConvertStrToInt32(&BT.input), E_pid::P, E_direction::Z); break;
 				case ID_control_PID_rate_I_Z: setPIDParam(ConvertStrToInt32(&BT.input), E_pid::I, E_direction::Z); break;
 				case ID_control_PID_rate_D_Z: setPIDParam(ConvertStrToInt32(&BT.input), E_pid::D, E_direction::Z); break;
-				case ID_control_PID_rate_FF_X: pidRateSet->FFr_i.x = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_FF_Y: pidRateSet->FFr_i.y = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_FF_DX: pidRateSet->FFdr_i.x = ConvertStrToInt32(&BT.input); break;
-				case ID_control_PID_rate_FF_DY: pidRateSet->FFdr_i.y = ConvertStrToInt32(&BT.input); break;
+				case ID_control_PID_rate_FF_X: setPIDParam(ConvertStrToInt32(&BT.input), E_pid::FFr, E_direction::X); break;
+				case ID_control_PID_rate_FF_Y: setPIDParam(ConvertStrToInt32(&BT.input), E_pid::FFr, E_direction::Y); break;
+                case ID_control_PID_rate_FF_DX: setPIDParam(ConvertStrToInt32(&BT.input), E_pid::FFdr, E_direction::X); break;
+				case ID_control_PID_rate_FF_DY: setPIDParam(ConvertStrToInt32(&BT.input), E_pid::FFdr, E_direction::Y); break;
 				case ID_control_PID_rate_sat_I: pidRateSet->satI_i = ConvertStrToInt32(&BT.input); break;
 				case ID_control_PID_rate_sat_PID: pidRateSet->satPID_i = ConvertStrToInt32(&BT.input); break;
 

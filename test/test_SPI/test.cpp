@@ -624,19 +624,6 @@ TEST(test_SPI, IsRxDone_Test)
     EXPECT_EQ(IsRxDone(), true);
 }
 
-TEST(test_SPI, RunSPI_Test)
-{
-    //sd card not finished
-    getSPISdCard()->sdCardInitFinished = false;
-    RunSPI();
-    EXPECT_EQ(getSPISdCard()->sdCardInitFinished, false);
-
-    //sd card finished
-    getSPISdCard()->sdCardInitFinished = true;
-    RunSPI();
-    EXPECT_EQ(getSPISdCard()->sdCardInitFinished, false);
-}
-
 TEST(test_SPI, gyroPT1_133Hz_Test)
 {
     EXPECT_EQ(PT1_133Hz(100,150), 103);

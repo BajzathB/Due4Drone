@@ -77,10 +77,13 @@ extern Dmac* DMAC;
 #define POSITION_SECTOR_PER_FAT    0X024
 #define POSITION_FIRST_SECTOR      0x1C6
 
-#define WRITE_BLOCK_TIMEOUT 3150000 //0.3sec
-#define DATA_SAVE_DELAY 52500u //5ms
+#define WRITE_BLOCK_TIMEOUT 3150000 //300ms
+#define DATA_SAVE_DELAY 105000u //10ms
 #define ROOT_FAT_WRITE_DELAY 525000u //50ms
+#define POST_INIT_DELAY 105000  //10ms
+#define INIT_TIMEOUT 10500 //1ms
 
+//#define LOG_MEAS_DATA
 //#define LOG_SD_INIT
 //#define LOG_SD_WRITE
 //#define LOG_SAVED_DATA
@@ -113,26 +116,28 @@ void RunSdCard()
 
 	getRcChannels(&rcSig);
 
-	//if (getSysTick() > (4.5 * 10500000))
+	//if (getSysTick() > (3.2 * 10500000))
 	//{
 	//	rcSig.measurementSwitch = 1000;
 	//}
-	//if (getSysTick() > (5.5 * 10500000))
+	//if (getSysTick() > (3.5 * 10500000))
 	//{
 	//	rcSig.measurementSwitch = 2000;
 	//}
-	//if (getSysTick() > (10.5 * 10500000))
+	//if (getSysTick() > (5.5 * 10500000))
 	//{
 	//	rcSig.measurementSwitch = 1000;
 	//}
 
+    DetectReInitAndWrite(rcSig.Switch2Way);
+
 	switch (SDcard.MainState)
 	{
-		case SD_INIT:
+		case SD_PRE_INIT:
 		{
-			SDcard.MainState = SetupSdCard();
+			//SDcard.MainState = SetupSdCard();
 
-			break;
+			//break;
 		}
 		case SD_WAIT_4_MEASUREMENT:
 		{
@@ -153,17 +158,79 @@ void RunSdCard()
 			if (getSysTick() - SDcard.measTickPrev >= DATA_SAVE_DELAY)
 			{
 				SDcard.measTickPrev = getSysTick();
-				
+
+#ifdef LOG_MEAS_DATA
+                SerialUSB.print("measBufferCtr: "); SerialUSB.println(SDcard.measBufferCtr);
+#endif
+
 				saveMeasData();
 			}
 
-			if (SDcard.writeMeasData)
-			{
-				writeData(rcSig.measurementSwitch, getSysTick());
-			}
+            //set to slow blink if buffer ctr at max
+            if (checkCtrs() < 0)
+            {
+#ifdef LOG_MEAS_DATA
+                SerialUSB.println("measBufferCtr limit reached!");
+#endif
+                LEDSDBlinkSlow();
+            }
+
+            //finish measurement
+            if (rcSig.measurementSwitch < 1500 && rcSig.armStateSwitch < 1500)
+            {
+#ifdef LOG_MEAS_DATA
+                SerialUSB.print("measBufferCtr: "); SerialUSB.println(SDcard.measBufferCtr);
+                SerialUSB.print("measDataCtr before append: "); SerialUSB.println(SDcard.measDataCtr);
+#endif
+                
+                //todo: if last byte is not \n delete chars back to last \n
+                //set trailing 0 to leftover bytes
+                for (uint16_t i = SDcard.measDataCtr; i < 512; i++)
+                {
+                    appendChar(0x00);
+                }
+
+                SDcard.MainState = SD_POST_INIT;
+                SDcard.SDInitStatus = SDINIT_CMD0; 
+                SDcard.SDCommandState = SDCOMMAND_SEND;
+                SDcard.acmd41TryCtr = 0;
+
+                LEDSDOn();
+
+                //disable gyro/acc interrupt while sd init and write
+                DisableGyroAccInt();
+
+                SDcard.postInitTick = getSysTick();
+
+#ifdef LOG_MEAS_DATA
+                for (uint8_t i = 0; i < SDcard.measBufferCtr; i++)
+                {
+                    for (uint16_t j = 0; j < 512; j++)
+                    {
+                        SerialUSB.print(char(SDcard.measBuffer[i].data[j]));
+                    }
+                }
+#endif
+            }
 
 			break;
 		}
+        case SD_POST_INIT:
+        {
+            if (getSysTick() - SDcard.postInitTick > POST_INIT_DELAY)
+            {
+                SDcard.MainState = SetupSdCard();
+            }
+
+            break;
+        }
+        case SD_WRITE_DATA:
+        {
+            //TODO: use multi block write CMD25
+            writeData(getSysTick());
+
+            break;
+        }
 		case SD_WRITE_ROOT:
 		{
 			writeRoot(getSysTick());
@@ -191,7 +258,7 @@ void RunSdCard()
 
 E_SDMainStates SetupSdCard(void)
 {
-	E_SDMainStates returnVal{ SD_INIT };
+	E_SDMainStates returnVal{ SD_POST_INIT };
 
 	switch (SDcard.SDInitStatus)
 	{
@@ -276,17 +343,19 @@ E_SDMainStates SetupSdCard(void)
 	}
 	case SDINIT_SUCCESS:
 	{
-		LEDSDOff();
-		returnVal = SD_WAIT_4_MEASUREMENT;
+		returnVal = SD_WRITE_DATA;
+
+        SDcard.sendBufferIndex = 0;
+        prepSendingBuffer();
+        SDcard.SDWriteState = SDWRITE_START;
+
 		break;
 	}
 	case SDINIT_FAILURE:
 	{
 		LEDSDBlink();
-
-        //allow gyro and acc to run even if card setup failed
-        SDcard.sdCardInitFinished = true;
-
+        EnableGyroAccInt();
+        
 		returnVal = SD_DO_NOTHING;
 		break;
 	}
@@ -340,9 +409,6 @@ E_SDInitStates CMD0(void)
 
 	if (SDCOMMAND_SEND == SDcard.SDCommandState)
 	{
-		//reset init flag
-		SDcard.sdCardInitFinished = false;
-
 		SDcard.SdCtr = 0;
 		//clock sync data
 		for (SDcard.SdCtr = 0; SDcard.SdCtr < 80; SDcard.SdCtr++)
@@ -380,9 +446,6 @@ E_SDInitStates CMD0(void)
 			{
 				returnValCMD0 = SDINIT_FAILURE;
                 
-                //allow gyro and acc to run even if no card
-                SDcard.sdCardInitFinished = true;
-
 #ifdef LOG_SD_INIT 
 				SerialUSB.println("CMD0 failed");
 #endif
@@ -506,31 +569,52 @@ E_SDInitStates CMD55(void)
 		SDcard.SdTx[SDcard.SdCtr++] = 0x00 | SPI_TDR_PCS(CS_SDCARD);
 		SDcard.SdTx[SDcard.SdCtr++] = 0x00 | SPI_TDR_PCS(CS_SDCARD); //CRC
 		SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //wait
-		SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //should receive answer
+		SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //should receive answer here
 
 		intSafeTriggerSDRxTx(SDcard.SdTx, SDcard.SdRx, SDcard.SdCtr);
 		//set command state to waiting
 		SDcard.SDCommandState = SDCOMMAND_WAIT4RX;
+        //set timeout time
+        SDcard.timeoutTick = getSysTick();
 	}
 	else
 	{
 		if (INACTIVE == SDcard.spiActivitySDCard)
 		{
-			if (1 == SDcard.SdRx[SDcard.SdCtr - 1])
-			{
-				SDcard.SDCommandState = SDCOMMAND_SEND;
-				returnValCMD55 = SDINIT_ACMD41;
+            if (1 == SDcard.SdRx[SDcard.SdCtr - 1])
+            {
+                SDcard.SDCommandState = SDCOMMAND_SEND;
+                returnValCMD55 = SDINIT_ACMD41;
+            }
+            else if (getSysTick() - SDcard.timeoutTick > INIT_TIMEOUT)
+            {
+                returnValCMD55 = SDINIT_FAILURE;
+            }
+            else
+            {
+                //send dummy to check for response
+                SDcard.SdCtr = 0;
+                SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //response
+                intSafeTriggerSDRxTx(SDcard.SdTx, SDcard.SdRx, SDcard.SdCtr);
+
+
+                //SDcard.SDCommandState = SDCOMMAND_SEND;
+            }
+
 #ifdef LOG_SD_INIT 
+			if (returnValCMD55 == SDINIT_ACMD41)
+			{
 				SerialUSB.println("CMD55 done");
-#endif
 			}
+            else if (returnValCMD55 == SDINIT_CMD55)
+            {
+                SerialUSB.println("CMD55 waiting");
+            }
 			else
 			{
-				returnValCMD55 = SDINIT_FAILURE;
-#ifdef LOG_SD_INIT 
 				SerialUSB.println("CMD55 failed");
-#endif
 			}
+#endif
 		}
 	}
 
@@ -553,6 +637,11 @@ E_SDInitStates ACMD41(void)
 		SDcard.SdTx[SDcard.SdCtr++] = 0x00 | SPI_TDR_PCS(CS_SDCARD); //CRC
 		SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //wait
 		SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //should receive answer
+        SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //space
+        SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //space
+        SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //space
+        SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //space
+        SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //space
 
 		intSafeTriggerSDRxTx(SDcard.SdTx, SDcard.SdRx, SDcard.SdCtr);
 		//set command state to waiting
@@ -562,23 +651,38 @@ E_SDInitStates ACMD41(void)
 	{
 		if (INACTIVE == SDcard.spiActivitySDCard)
 		{
-			if (0 == SDcard.SdRx[SDcard.SdCtr - 1])
-			{
-				SDcard.SDCommandState = SDCOMMAND_SEND;
-				returnValACMD41 = SDINIT_READ_00;
-#ifdef LOG_SD_INIT 
-				SerialUSB.println("ACMD41 done");
-#endif
-			}
-			else
-			{
+            if (0 == SDcard.SdRx[SDcard.SdCtr - 6])
+            {
+                SDcard.SDCommandState = SDCOMMAND_SEND;
+                returnValACMD41 = SDINIT_READ_00;
+            }
+            else
+            {
 				//instead go back to 55 and retry
 				SDcard.SDCommandState = SDCOMMAND_SEND;
-				returnValACMD41 = SDINIT_CMD55;
+                returnValACMD41 = SDINIT_CMD55;
+            }
+
+            //stop if in 100x none was successful
+            if (SDcard.acmd41TryCtr++ > 100)
+            {
+                returnValACMD41 = SDINIT_FAILURE;
+            }
+
 #ifdef LOG_SD_INIT 
-				SerialUSB.println("ACMD41 failed, back to CMD55");
-#endif
+			if (returnValACMD41 == SDINIT_READ_00)
+			{
+				SerialUSB.println("ACMD41 done");
 			}
+            else if(returnValACMD41 == SDINIT_FAILURE)
+            {
+                SerialUSB.println("ACMD41 failed 100x, stopping");
+            }
+			else
+			{
+				SerialUSB.println("ACMD41 failed, back to CMD55");
+			}
+#endif
 		}
 	}
 
@@ -635,6 +739,7 @@ E_SDInitStates readBoot(void)
 			//go and read root dir
 			SDcard.SDReadState = SDREAD_START;
 			returnValBootState = SDINIT_READ_ROOTDIR;
+
 #ifdef LOG_SD_INIT 
 			SerialUSB.println("readBoot done");
 #endif
@@ -643,6 +748,7 @@ E_SDInitStates readBoot(void)
 	else if (SDREAD_FAILED == readStateBoot)
 	{
 		returnValBootState = SDINIT_FAILURE;
+        LEDSDBlink();
 #ifdef LOG_SD_INIT 
 		SerialUSB.println("readBoot failed");
 #endif
@@ -668,17 +774,6 @@ E_SDInitStates readRoot(void)
 
 	if (SDREAD_FINISHED == readStateRoot)
 	{
-		//testing
-#if 1==SD_DELETE_ROOT_ON_READ
-		if (SDcard.rootDirEmptyBlockNumber == 1)
-		{
-			for (uint16_t i = 0 * 32; i < 3 * 32; i++)
-			{
-				SDcard.rootDirInfo_8b[i] = 0;
-			}
-		}
-#endif              
-
 		//find 1st 0x00 entry within a block
 		bool emptySlotFound = true;
 
@@ -745,6 +840,7 @@ E_SDInitStates readRoot(void)
 	else if (SDREAD_FAILED == readStateRoot)
 	{
 		returnValRootState = SDINIT_FAILURE;
+        LEDSDBlink();
 #ifdef LOG_SD_INIT 
 		SerialUSB.println("readRoot failed");
 #endif
@@ -765,12 +861,6 @@ E_SDInitStates readFAT(void)
 
 	if (SDREAD_FINISHED == readStateFAT)
 	{
-		//testing
-		//for (uint16_t i = 119 * 4; i < 128 * 4; i++)
-		//{
-		//    FAT1Info_8b[i] = 0;
-		//}
-
 		if (true == getAllFileClusters(SDcard.FAT1Info_8b, &SDcard.lastFile))
 		{
 			//copy FAT1Info info from 8bit to 32bit and set SD card CS
@@ -800,9 +890,9 @@ E_SDInitStates readFAT(void)
 			}
 			else
 			{
-#ifdef LOG_SD_INIT 
-			SerialUSB.println("readFAT, did not find the last file");
-#endif
+                // if deleted file or failure
+			    SerialUSB.println("readFAT, did not find the last file");
+                return SDINIT_FAILURE;
 			}
 
 			//set name
@@ -817,7 +907,6 @@ E_SDInitStates readFAT(void)
 			SDcard.newFile.size = 0;
 
 			returnValFATState = SDINIT_SUCCESS;
-			SDcard.sdCardInitFinished = true;
 
 #ifdef LOG_SD_INIT 
 			SerialUSB.println("readFAT done");
@@ -838,6 +927,7 @@ E_SDInitStates readFAT(void)
 	else if (SDREAD_FAILED == readStateFAT)
 	{
 		returnValFATState = SDINIT_FAILURE;
+        LEDSDBlink();
 #ifdef LOG_SD_INIT 
 		SerialUSB.println("readFAT failed");
 #endif
@@ -864,7 +954,7 @@ E_SDReadStates readBlock(uint32_t blockaddr, volatile uint8_t* rxBuf)
 			SDcard.SdTx[SDcard.SdCtr++] = ((blockaddr & 0x000000FF)) | SPI_TDR_PCS(CS_SDCARD);
 			SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //CRC
 			SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //wait
-			SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //answer
+			SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //response maybe here
 			//send read command
 			intSafeTriggerSDRxTx(SDcard.SdTx, SDcard.SdRx, SDcard.SdCtr);
 			//go to wait state
@@ -878,16 +968,19 @@ E_SDReadStates readBlock(uint32_t blockaddr, volatile uint8_t* rxBuf)
 			{
 				if (0x00 == SDcard.SdRx[SDcard.SdCtr-1])
 				{
-					//send dummy to check for response
+					//send dummy to check for 0xFE
 					SDcard.SdCtr = 0;
 					SDcard.SdTx[SDcard.SdCtr++] = 0xFF | SPI_TDR_PCS(CS_SDCARD); //response
 					intSafeTriggerSDRxTx(SDcard.SdTx, SDcard.SdRx, SDcard.SdCtr);
 					//go to wait state
 					SDcard.SDReadState = SDREAD_WAIT_FE;
+                    //set timeout time
+                    SDcard.timeoutTick = getSysTick();
 				}
 				else
 				{
 					SDcard.SDReadState = SDREAD_FAILED;
+                    LEDSDBlink();
 #ifdef LOG_SD_INIT 
 					SerialUSB.println("readBlock failed");
 #endif
@@ -906,6 +999,10 @@ E_SDReadStates readBlock(uint32_t blockaddr, volatile uint8_t* rxBuf)
 					intSafeTriggerSDRxTx(NULL, &rxBuf[0], 514);
 					SDcard.SDReadState = SDREAD_WAIT_DATA;
 				}
+                else if (getSysTick() - SDcard.timeoutTick > INIT_TIMEOUT)
+                {
+                    SDcard.SDReadState = SDREAD_FAILED;
+                }
 				else
 				{
 					//send dummy to check for response
@@ -990,7 +1087,7 @@ void SDWriteWaitData(void)
         {
             SDcard.SDWriteState = SDWRITE_FAILED;
 #ifdef LOG_SD_WRITE
-            SerialUSB.print("writeBlock failed, wrong data end flag timed out: ");
+            SerialUSB.print("writeBlock failed, wrong data end flag or timed out: ");
             SerialUSB.println(SDcard.SdRx[SDcard.SdCtr - 1]);
 #endif
         }
@@ -1373,7 +1470,6 @@ void addFileInfo2RootDir(volatile uint32_t* block, fileInfo* file, uint64_t sysT
 	setFileTime(block, sysTick);
 
 	//low byte set
-	//size set
 	//set position-low and high
 	block[SDcard.rootDirEmptySlotNumber * 32 + 21] = (file->clusters[0] & 0xFF000000) >> 24;
 	block[SDcard.rootDirEmptySlotNumber * 32 + 20] = (file->clusters[0] & 0x00FF0000) >> 16;
@@ -1553,7 +1649,7 @@ void printFileInfo(fileInfo* fileInfo)
 		SerialUSB.print(" - numberofClusters: "); SerialUSB.print(fileInfo->numberOfClusters);
 		SerialUSB.print(" - blockcount: "); SerialUSB.print(fileInfo->blockCount);
 		SerialUSB.print(" - size: "); SerialUSB.print(fileInfo->size);
-		SerialUSB.print(" - clusters: ");
+		SerialUSB.print(" - clusters number(s): ");
 		SerialUSB.print(fileInfo->clusters[0]);
 		for (uint16_t i = 1; i < fileInfo->numberOfClusters; i++)
 		{
@@ -1571,25 +1667,38 @@ void appendCsSdCard(volatile uint32_t* block, uint16_t blockSize)
 	}
 }
 
-void appendComma(void)
+int8_t checkCtrs(void)
 {
-	SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = ',';
+    if (SDcard.measBufferCtr >= MAX_MEAS_BUFFER_SIZE)
+        return -1;
+
+    if (SDcard.measDataCtr >= 512)
+    {
+        SDcard.measDataCtr = 0;
+
+        if (++SDcard.measBufferCtr >= MAX_MEAS_BUFFER_SIZE)
+            return -1;
+    }
+    return 0;
 }
 
-void appendNewLine(void)
+void appendChar(const char c)
 {
-	SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
+    if (checkCtrs() < 0) 
+        return;
+
+    SDcard.measBuffer[SDcard.measBufferCtr].data[SDcard.measDataCtr++] = c;
 }
 
 void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFrac, bool isExplicitPlus, char* debugName)
 {
     if (isMeasured)
     {
-        uint32_t tempBuffer[30];
+        uint8_t tempBuffer[30];
         uint8_t numberOfCharacters{ 0 };
 
-        if(isCommaed) appendComma();
-        convert2String(tempBuffer, &numberOfCharacters, data, numberOfFrac, isExplicitPlus);
+        if(isCommaed) appendChar(',');
+        convert2CharStream(tempBuffer, &numberOfCharacters, data, numberOfFrac, isExplicitPlus);
         loadData2Buffer(tempBuffer, numberOfCharacters);
 
 #ifdef LOG_SAVED_DATA
@@ -1685,10 +1794,10 @@ void saveMeasData()
 	measureData(meas2Card.measurePIDiRelaxWeightY, true, pidData->iRelaxWeight.y, 0, false, "PIDiRelaxWeightY: ");
 	measureData(meas2Card.measurePIDiRelaxWeightZ, true, pidData->iRelaxWeight.z, 0, false, "PIDiRelaxWeightZ: ");
 
-	appendNewLine();
+	appendChar('\n');
 }
 
-void convert2String(uint32_t* buffer, uint8_t* numberOfChar, float value, uint8_t numberOfFractions, bool explicitPlusSign)
+void convert2CharStream(uint8_t* buffer, uint8_t* numberOfChar, float value, uint8_t numberOfFractions, bool explicitPlusSign)
 {
 	if (value < 0)
 	{
@@ -1733,75 +1842,42 @@ void convert2String(uint32_t* buffer, uint8_t* numberOfChar, float value, uint8_
 	}
 }
 
-void loadData2Buffer(uint32_t* chars2Add, uint8_t numberOfChar)
+void loadData2Buffer(uint8_t* chars2Add, uint8_t numberOfChar)
 {
-	//if data can fit into loadingDataBuffer
-	if (SDcard.loadingDataCounter <= (513 - numberOfChar))    //1+512-8
-	{
-		//load data over
-		for (uint16_t ctr = 0; ctr < numberOfChar; ctr++)
-		{
-			SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = chars2Add[ctr];
-		}
+    while (numberOfChar)
+    {
+        if (SDcard.measBufferCtr >= MAX_MEAS_BUFFER_SIZE)
+            return;
 
-		if (SDcard.loadingDataCounter == 513)
-		{
-			swapDataBufferPointers();
-		}
-	}
-	else  //if data needs to be split
-	{
-		uint8_t l_remainingSize = 513 - SDcard.loadingDataCounter;
+        uint16_t space = 512 - SDcard.measDataCtr;
+        uint16_t count = (numberOfChar < space) ? numberOfChar : space;
 
-		//fill remaining data spots
-		for (uint16_t ctr = 0; ctr < l_remainingSize; ctr++)
-		{
-			SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = chars2Add[ctr];
-		}
+        memcpy(
+            &SDcard.measBuffer[SDcard.measBufferCtr].data[SDcard.measDataCtr],
+            chars2Add,
+            count
+        );
 
-		swapDataBufferPointers();
+        SDcard.measDataCtr += count;
+        chars2Add += count;
+        numberOfChar -= count;
 
-		//fill remaining data to fresh buffer
-		for (uint16_t ctrRemaining = l_remainingSize; ctrRemaining < numberOfChar; ctrRemaining++)
-		{
-			SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = chars2Add[ctrRemaining];
-		}
-	}
-}
-
-void swapDataBufferPointers(void)
-{
-	uint32_t* l_tempDataPointer = SDcard.loadingDataPointer;
-
-	SDcard.loadingDataPointer = SDcard.sendingDataPointer;
-	SDcard.sendingDataPointer = l_tempDataPointer;
-	SDcard.loadingDataCounter = 1;	//0th is start token
-
-	//check if blockcount reached the limit of blockPerCluster(64)
-	//check is done before the increment as blockcount is used later for writing into SD!
-	if (SDcard.newFile.blockCount >= SDcard.blockPerCluster)
-	{
-		SDcard.newFile.clusters[SDcard.newFile.numberOfClusters] = SDcard.newFile.clusters[SDcard.newFile.numberOfClusters - 1] + 1;
-		SDcard.newFile.blockCount = 0;
-		SDcard.newFile.numberOfClusters++;
-	}
-
-	SDcard.newFile.size += 512;
-	SDcard.newFile.blockCount++;
-
-	//reset for write
-	SDcard.writeMeasData = true;
-	SDcard.SDWriteState = SDWRITE_START;
+        if (SDcard.measDataCtr == 512)
+        {
+            SDcard.measDataCtr = 0;
+            SDcard.measBufferCtr++;
+        }
+    }
 }
 
 void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numberOfChar)
 {
     if (isMeasured)
     {
-        uint32_t tempBuffer[30];
+        uint8_t tempBuffer[30];
         uint8_t numberOfCharacters{ 0 };
 
-        if (isCommaed) appendComma();
+        if (isCommaed) appendChar(',');
 
         for (uint8_t i = 0; i < numberOfChar; i++)
         {
@@ -1825,10 +1901,11 @@ void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numb
 //xth line: header for measured signals, example: sysTick,Grawx,Gpt1x,Gpt2x,Accrawx,Accpt1x,Accpt2x,Akfx,Akfaccpt1x\n
 void addMeasHeader(void)
 {
+    SDcard.measDataCtr = 0;
+    SDcard.measBufferCtr = 0;
 	//1st line
-	SDcard.loadingDataCounter = 1;	//0th is start token($)
-	SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = 'R';
-	SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
+	SDcard.measBuffer[SDcard.measBufferCtr].data[SDcard.measDataCtr++] = 'R';
+	SDcard.measBuffer[SDcard.measBufferCtr].data[SDcard.measDataCtr++] = '\n';
 	//2nd line
 	{
         addMeasNameHeader(true, false,"Px", 2);
@@ -1863,83 +1940,83 @@ void addMeasHeader(void)
 		addMeasNameHeader(true, true, "DmaxE", 5);
 		addMeasNameHeader(true, true, "DMx", 3);
 		addMeasNameHeader(true, true, "DMy", 3);
-		SDcard.loadingDataPointer[SDcard.loadingDataCounter++] = '\n';
+        appendChar('\n');
 #ifdef LOG_SAVED_DATA
 		SerialUSB.print("End of 2nd line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
 #endif
 	}
 	//3rd line
 	{
-		uint32_t tempBuffer[500];
+		uint8_t tempBuffer[500];
 		uint8_t numberOfCharacters{ 0 };
 		pid_st* pidRate{ getPIDrates() };
 		pid_st* pidCascade{ getPIDcascade() };
         gyroData_st* gyro{ getGyroData() };
         accData_st* acc{ getAccData() };
 
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->P_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->I_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->D_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->P_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->I_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->D_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->D_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->P_i.z, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->P_i.z, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->I_i.z, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->I_i.z, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->FFr_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFr_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->FFr_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->FFdr_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->FFdr_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->FFdr_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->satI_i, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->satI_i, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->satPID_i, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->satPID_i, 0, false);
         tempBuffer[numberOfCharacters++] = ',';
-        convert2String(tempBuffer, &numberOfCharacters, acc->angleKF.qAngleTick, 0, false);
+        convert2CharStream(tempBuffer, &numberOfCharacters, acc->angleKF.qAngleTick, 0, false);
         tempBuffer[numberOfCharacters++] = ',';
-        convert2String(tempBuffer, &numberOfCharacters, acc->angleKF.qBiasTick, 0, false);
+        convert2CharStream(tempBuffer, &numberOfCharacters, acc->angleKF.qBiasTick, 0, false);
         tempBuffer[numberOfCharacters++] = ',';
-        convert2String(tempBuffer, &numberOfCharacters, acc->angleKF.rMeasTick, 0, false);
+        convert2CharStream(tempBuffer, &numberOfCharacters, acc->angleKF.rMeasTick, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->P_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->P_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->I_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->I_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->P_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->P_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->I_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->I_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->satI_i, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->satI_i, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->satPID_i, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->satPID_i, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->FFdr_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidCascade->FFdr_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidCascade->FFdr_i.y, 0, false);
         tempBuffer[numberOfCharacters++] = ',';
-        convert2String(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
+        convert2CharStream(tempBuffer, &numberOfCharacters, acc->alpha, 3, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxWeight.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->iRelaxWeight.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->iRelaxWeight.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->iRelaxWeight.y, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxRefThold_i, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->dMaxRefThold_i, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->dMaxErrThold_i, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->dMaxErrThold_i, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax_i.x, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->Dmax_i.x, 0, false);
 		tempBuffer[numberOfCharacters++] = ',';
-		convert2String(tempBuffer, &numberOfCharacters, pidRate->Dmax_i.y, 0, false);
+		convert2CharStream(tempBuffer, &numberOfCharacters, pidRate->Dmax_i.y, 0, false);
 		tempBuffer[numberOfCharacters++] = '\n';
 
 		loadData2Buffer(tempBuffer, numberOfCharacters);
@@ -1978,14 +2055,8 @@ void addMeasHeader(void)
 		addMeasNameHeader(meas2Card.measureAccRealPT1Y, true, "ARealPT1Y", 9);
 		addMeasNameHeader(meas2Card.measureAccRealPT1Z, true, "ARealPT1Z", 9);
         //angle
-        //addMeasNameHeader(meas2Card.measureAngleRawRoll, true, "aRawR", 5);
-        //addMeasNameHeader(meas2Card.measureAngleRawPitch, true, "aRawP", 5);
         addMeasNameHeader(meas2Card.measureAnglePT1Roll, true, "aPT1R", 5);
         addMeasNameHeader(meas2Card.measureAnglePT1Pitch, true, "aPT1P", 5);
-  //      addMeasNameHeader(meas2Card.measureAnglePT2Roll, true, "aPT2R", 5);
-  //      addMeasNameHeader(meas2Card.measureAnglePT2Pitch, true, "aPT2P", 5);
-  //      addMeasNameHeader(meas2Card.measureAngleKFRawRoll, true, "aKFRawR", 7);
-  //      addMeasNameHeader(meas2Card.measureAngleKFRawPitch, true, "aKFRawP", 7);
         addMeasNameHeader(meas2Card.measureAngleKFPT11Roll, true, "aKFPT11R", 8);
         addMeasNameHeader(meas2Card.measureAngleKFPT11Pitch, true, "aKFPT11P", 8);
   //      addMeasNameHeader(meas2Card.measureAngleCFRawRoll, true, "aCFRawR", 7);
@@ -2028,27 +2099,48 @@ void addMeasHeader(void)
 		addMeasNameHeader(meas2Card.measurePIDiRelaxWeightY, true, "PIDiRelaxWeightY", 16);
 		addMeasNameHeader(meas2Card.measurePIDiRelaxWeightZ, true, "PIDiRelaxWeightZ", 16);
 
-        appendNewLine();
+        appendChar('\n');
 #ifdef LOG_SAVED_DATA
 				SerialUSB.print("End of 4th line, loadingDataCounter: ");SerialUSB.println(SDcard.loadingDataCounter);
 #endif
 	}
 }
 
-void writeData(uint16_t measSwitch, uint64_t sysTick)
+void prepSendingBuffer()
+{
+    //SDcard.sendingBuffer[0] = 0xFE //start token
+    for (uint16_t i = 0; i < 512; i++)
+    {
+        SDcard.sendingBuffer[i + 1] = SDcard.measBuffer[SDcard.sendBufferIndex].data[i];
+    }
+    SDcard.sendBufferIndex++;
+}
+
+void writeData(uint64_t sysTick)
 {
 	//desired block? = 0x4000 + cluster*64 + blockcount
-	//6th block is set in root, found data in 4th pos, a hardcoded -2 offset is here --------------------------------------------->|<-
-    E_SDWriteStates l_writeState = writeBlock(SDcard.rootDirAddr + (SDcard.newFile.clusters[SDcard.newFile.numberOfClusters - 1] - 2) * SDcard.blockPerCluster + SDcard.newFile.blockCount - 1, SDcard.sendingDataPointer);
+	//6th block is set in root, found data in 4th pos, a hardcoded -2 offset is here
+    E_SDWriteStates l_writeState = writeBlock(
+        SDcard.rootDirAddr + 
+        (SDcard.newFile.clusters[SDcard.newFile.numberOfClusters - 1] - 2) * SDcard.blockPerCluster + 
+        SDcard.newFile.blockCount, 
+        SDcard.sendingBuffer);
 
 	if (SDWRITE_FINISHED == l_writeState)
 	{
-		//reset meas data flag
-		SDcard.writeMeasData = false;
-
 		//if more data
-		if (measSwitch > 1800)
+		if (SDcard.sendBufferIndex < SDcard.measBufferCtr)
 		{
+            SDcard.newFile.blockCount++;
+            SDcard.newFile.size += 512;
+            if (SDcard.newFile.blockCount >= SDcard.blockPerCluster)
+            {
+                SDcard.newFile.clusters[SDcard.newFile.numberOfClusters] = SDcard.newFile.clusters[SDcard.newFile.numberOfClusters - 1] + 1;
+                SDcard.newFile.blockCount = 0;
+                SDcard.newFile.numberOfClusters++;
+            }
+            prepSendingBuffer();
+
 			SDcard.SDWriteState = SDWRITE_START;
 #ifdef LOG_SD_WRITE 
 			SerialUSB.println("writeData done, write more MEAS");
@@ -2064,29 +2156,19 @@ void writeData(uint16_t measSwitch, uint64_t sysTick)
 			addFileInfo2RootDir(&SDcard.rootDirInfo[1], &SDcard.newFile, sysTick);
             SDcard.rootOrFatWriteTick = sysTick;
 
-//#ifdef LOG_SD_WRITE 
-      SerialUSB.println("writeData done, write ROOT");
-			//SerialUSB.print("newfile: "); printFileInfo(&SDcard.newFile);
-//#endif
+#ifdef LOG_SD_WRITE 
+            SerialUSB.println("writeData done, write ROOT");
+			SerialUSB.print("newfile: "); printFileInfo(&SDcard.newFile);
+#endif
 
 			//testing
 			//SDcard.MainState = SD_DO_NOTHING;
-
-#if 1==SD_DELETE_ROOT_ON_WRITE
-			for (uint16_t i = 0 * 32; i < 3 * 32; i++)
-			{
-				rootDirInfo[i+1] = 0 | SPI_TDR_PCS(CS_SDCARD);
-			}
-#endif
 		}
 	}
 	else if (SDWRITE_FAILED == l_writeState)
 	{
 		//if data write failed finish, go next hoping it will be fine, 1 empty block
-
-		//reset meas data flag
-		SDcard.writeMeasData = false;
-
+        
 		SDcard.SDWriteState = SDWRITE_START;
 #ifdef LOG_SD_WRITE 
 		SerialUSB.println("writeData failed, skip this and continue");
@@ -2107,15 +2189,7 @@ void writeRoot(uint64_t sysTick)
         if (SDWRITE_FINISHED == l_writeState)
         {
             SDcard.MainState = SD_WRITE_FAT;
-                SDcard.SDWriteState = SDWRITE_START;
-
-                //testing
-#if 1==SD_DELETE_FAT_ON_WRITE
-                for (uint16_t i = 0 * 4; i < 10 * 4; i++)
-                {
-                    FAT1Info[i + 1] = 0 | SPI_TDR_PCS(CS_SDCARD);
-        }
-#endif
+            SDcard.SDWriteState = SDWRITE_START;
 
             //add newfile to FAT
             SDcard.writingMultiFATBlock = addFileFATInfo(&SDcard.FAT1Info[1], &SDcard.newFile, E_SDFATWRITE_FIRST_CALL);
@@ -2129,6 +2203,7 @@ void writeRoot(uint64_t sysTick)
         {
             SDcard.MainState = SD_DO_NOTHING;
             LEDSDBlink();
+            EnableGyroAccInt();
 #ifdef LOG_SD_WRITE 
             SerialUSB.println("writeRoot failed");
 #endif
@@ -2157,9 +2232,9 @@ void writeFAT(uint64_t sysTick)
                 //SerialUSB.print("FATBlockOffset after: "); SerialUSB.println(FATBlockOffset);
 
                 SDcard.SDWriteState = SDWRITE_START;
-                //#ifdef LOG_SD_WRITE
+#ifdef LOG_SD_WRITE
                 SerialUSB.println("writeFAT done, write next block");
-                //#endif
+#endif
             }
             else
             {
@@ -2172,22 +2247,23 @@ void writeFAT(uint64_t sysTick)
                 SDcard.newFile.numberOfClusters = 1;
                 SDcard.newFile.blockCount = 0;
                 SDcard.newFile.size = 0;
+                //reset variables
+                SDcard.measBufferCtr = 0;
+                SDcard.measDataCtr = 0;
+                SDcard.sendBufferIndex = 0;
+                SDcard.rootDirEmptyBlockNumber = 0;
+                SDcard.rootDirEmptySlotNumber = 0;
+                SDcard.FATBlockOffset = 0;
+
                 //go back to wait meas
                 SDcard.MainState = SD_WAIT_4_MEASUREMENT;
-                //reset variables for safety
-                SDcard.loadingDataCounter = 1;
-                for (uint16_t i = 1; i < 517; i++)
-                {
-                    SDcard.loadingDataPointer[i] = 0xFF;
-                    SDcard.sendingDataPointer[i] = 0xFF;
-                }
+                LEDSDOff();
+                EnableGyroAccInt();
 
 #ifdef LOG_SD_WRITE
                 SerialUSB.print("newfile info after reset: "); printFileInfo(&SDcard.newFile);
                 SerialUSB.println("writeFAT done, go wait4Meas");
 #endif
-
-                LEDSDOff();
 
                 //testing
                 //SDcard.MainState = SD_DO_NOTHING;
@@ -2197,6 +2273,7 @@ void writeFAT(uint64_t sysTick)
         {
             SDcard.MainState = SD_DO_NOTHING;
             LEDSDBlink();
+            EnableGyroAccInt();
 #ifdef LOG_SD_WRITE
             SerialUSB.println("writeFAT failed");
 #endif
@@ -2236,10 +2313,12 @@ E_SDMainStates ResetMeasurement(void)
 
 E_SDMainStates ReinitSDCard(void)
 {
-    SDcard.MainState = SD_INIT;
+    SDcard.MainState = SD_POST_INIT;
     SDcard.SDInitStatus = SDINIT_CMD0;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_START;
+
+    SDcard.acmd41TryCtr = 0;
 
     return SDcard.MainState;
 }
@@ -2258,4 +2337,25 @@ void setGlobalDate(const date newTime)
 	SDcard.globalDateAndTime.year = newTime.year;
 	SDcard.globalDateAndTime.month = newTime.month;
 	SDcard.globalDateAndTime.day = newTime.day;
+}
+
+void DetectReInitAndWrite(const uint16_t switch2way)
+{
+    //detect switching down
+    if (switch2way < 1500 && SDcard.lastSwitch2Way > 1500)
+    {
+        SDcard.MainState = SD_POST_INIT;
+        SDcard.SDInitStatus = SDINIT_CMD0;
+        SDcard.SDCommandState = SDCOMMAND_SEND;
+        SDcard.acmd41TryCtr = 0;
+
+        LEDSDOn();
+
+        //disable gyro/acc interrupt while sd init and write
+        DisableGyroAccInt();
+
+        SDcard.postInitTick = getSysTick();
+    }
+
+    SDcard.lastSwitch2Way = switch2way;
 }

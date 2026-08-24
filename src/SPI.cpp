@@ -63,7 +63,7 @@ extern Dmac* DMAC;
 
 #endif
 
-#define THREE_SECOND 31500000u //3sec in ticks
+#define ONE_SECOND 10500000u //1sec in ticks
 
 //#define DEBUG_GYRO_INT
 //#define DEBUG_ACC_INT
@@ -103,6 +103,9 @@ void SetupSPI(void)
 
 	SetupAcc();
 
+    SetupGyroIntPin();
+    SetupAccIntPin();
+
 	EnableIntHandling();
 
 	InitSDCard();
@@ -118,15 +121,7 @@ void SetupSPI(void)
 
 void RunSPI()
 {
-	if (getSPISdCard()->sdCardInitFinished)
-	{
-		SetupGyroIntPin();
-		SetupAccIntPin();
-
-		getSPISdCard()->sdCardInitFinished = false;
-	}
-
-	if (getSysTick() > THREE_SECOND)
+	if (getSysTick() > ONE_SECOND)
 	{
 		RunSdCard();
 	}
@@ -182,7 +177,7 @@ void PIOC_Handler(void)
 	//reading pioa status
 	uint32_t status_pioc = PIOC->PIO_ISR;
 	
-	if (status_pioc & PIO_ISR_P19)
+	if (SPI.isGyroIntEnabled && (status_pioc & PIO_ISR_P19))
 	{
 		if (ACTIVE == SPI.spiActivityAcc)
 		{
@@ -220,7 +215,7 @@ void PIOA_Handler(void)
 	//reading pioa status
 	uint32_t status_pioa = PIOA->PIO_ISR;
 
-	if (status_pioa & PIO_ISR_P19)
+	if (SPI.isAccIntEnabled && (status_pioa & PIO_ISR_P19))
 	{
 		if (ACTIVE == SPI.spiActivityGyro)
 		{
@@ -369,7 +364,7 @@ void SetupSPIPins(void)
 	SPI0->SPI_MR |= SPI_MR_MSTR | SPI_MR_PS | SPI_MR_MODFDIS | SPI_MR_DLYBCS(6);
 	SPI0->SPI_CSR[0] |= SPI_CSR_NCPHA | SPI_CSR_SCBR(9) | SPI_CSR_DLYBS(1) | SPI_CSR_DLYBCT(1); //10 -> ~8.4MHz clock, 9 -> 9.3333MHz, delay between transmission needed for gyro
 	SPI0->SPI_CSR[1] |= SPI_CSR_NCPHA | SPI_CSR_SCBR(9) | SPI_CSR_DLYBS(1) | SPI_CSR_DLYBCT(0); //10 -> ~8.4MHz clock, 9 -> 9.3333MHz
-	SPI0->SPI_CSR[3] |= SPI_CSR_NCPHA | SPI_CSR_SCBR(5) | SPI_CSR_DLYBS(1) | SPI_CSR_DLYBCT(1); //? -> ~?MHz clock
+	SPI0->SPI_CSR[3] |= SPI_CSR_NCPHA | SPI_CSR_SCBR(9) | SPI_CSR_DLYBS(1) | SPI_CSR_DLYBCT(1); //? -> ~?MHz clock
 	SPI0->SPI_WPMR = 0x53504901; //reenable write protection
 	SPI0->SPI_CR |= SPI_CR_SPIEN; //SPI enable
 }
@@ -571,6 +566,9 @@ void SetupAccIntPin(void)
 
 void EnableIntHandling(void)
 {
+    SPI.isGyroIntEnabled = true;
+    SPI.isAccIntEnabled = true;
+
 	//clear DMAC, PIOC and PIOA interrupt status registers by read
 	uint32_t status_dma = DMAC->DMAC_EBCISR;
 	uint32_t status_pioc = PIOC->PIO_ISR;
@@ -759,4 +757,33 @@ void getGyroAndAcc(sigOut* sigGyro, sigOut* sigAcc)
 spi_st* getSPI()
 {
   return &SPI;
+}
+
+void DisableGyroAccInt(void)
+{
+    NVIC_DisableIRQ(PIOC_IRQn);
+    NVIC_DisableIRQ(PIOA_IRQn);
+
+    SPI.spiActivityGyro = INACTIVE;
+    SPI.spiActivityAcc = INACTIVE;
+
+    SPI.isGyroIntEnabled = false;
+    SPI.isAccIntEnabled = false;
+}
+
+void EnableGyroAccInt(void)
+{
+    SPI.isGyroIntEnabled = true;
+    SPI.isAccIntEnabled = true;
+
+    uint32_t status_pioc = PIOC->PIO_ISR;
+    uint32_t status_pioa = PIOA->PIO_ISR;
+
+    //clear random pending interrupts
+    NVIC_ClearPendingIRQ(PIOC_IRQn);
+    NVIC_ClearPendingIRQ(PIOA_IRQn);
+
+    //enable interrupts
+    NVIC_EnableIRQ(PIOC_IRQn);
+    NVIC_EnableIRQ(PIOA_IRQn);
 }

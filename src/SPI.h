@@ -39,6 +39,12 @@ void SetupAccIntPin(void);
 // Method to enable interrupt handling of SPI
 void EnableIntHandling(void);
 
+// Method to disable gyro and acc interrupts
+void DisableGyroAccInt(void);
+
+// Method to enable gyro and acc interrupts
+void EnableGyroAccInt(void);
+
 // Method to run SPI related functions cyclically
 void RunSPI();
 

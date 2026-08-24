@@ -78,10 +78,10 @@ void SetupController(void)
 {
     //RATE
     pidRate.P_i.x = 58;
-    pidRate.I_i.x = 80;
+    pidRate.I_i.x = 70;
     pidRate.D_i.x = 47;
     pidRate.P_i.y = 58;
-    pidRate.I_i.y = 80;
+    pidRate.I_i.y = 70;
     pidRate.D_i.y = 47;
     pidRate.P_i.z = 250;
     pidRate.I_i.z = 0;
@@ -89,11 +89,11 @@ void SetupController(void)
     pidRate.FFr_i.x = 0;
     pidRate.FFr_i.y = 0;
     pidRate.FFr_i.z = 0;
-    pidRate.FFdr_i.x = 10;
-    pidRate.FFdr_i.y = 0;
+    pidRate.FFdr_i.x = 100;
+    pidRate.FFdr_i.y = 100;
     pidRate.FFdr_i.z = 0;
     pidRate.satI_i =  500000;
-    pidRate.satPID_i = 3000000;
+    pidRate.satPID_i = 15000000;
     pidRate.Ki_i.x = pidRate.I_i.x * pidRate.deltaTicks;
     pidRate.Ki_i.y = pidRate.I_i.y * pidRate.deltaTicks;
     pidRate.Ki_i.z = pidRate.I_i.z * pidRate.deltaTicks;
@@ -272,6 +272,8 @@ void ControllerDebug(void)
       //SerialUSB.print("3-2: "); SerialUSB.print(calcDeltaTime(timer2, timer3), 3); SerialUSB.print("\t");
       //SerialUSB.print("4-3: "); SerialUSB.print(calcDeltaTime(timer3, timer4), 3); SerialUSB.print("\t");
       //
+      //SerialUSB.print(pidRate.FFout_i.x); SerialUSB.print("\t");
+
       //SerialUSB.println();
     }
 }
@@ -1019,16 +1021,16 @@ void CalcFeedforward_int(pid_st* pid)
     pid->refSigDotPT1_i.z = PT1_133Hz(pid->refSigDotPT1_i.z, pid->refSigDot_i.z);
     //FF
     //FFrFactor  = 1024
-    //FFdrFactor = 8192
-    pid->FFout_i.x = ((pid->Kffr_i.x * pid->refSig_i.x) >> 10) + ((pid->Kffdr_i.x * pid->refSigDotPT1_i.x) >> 13);
-    pid->FFout_i.y = ((pid->Kffr_i.y * pid->refSig_i.y) >> 10) + ((pid->Kffdr_i.y * pid->refSigDotPT1_i.y) >> 13);
-    pid->FFout_i.z = ((pid->Kffr_i.z * pid->refSig_i.z) >> 10) + ((pid->Kffdr_i.z * pid->refSigDotPT1_i.z) >> 13);
+    //FFdrFactor = 8192 + scaling
+    pid->FFout_i.x = (int32_t)(((int64_t)pid->Kffr_i.x * (int64_t)pid->refSig_i.x) >> 20) + (int32_t)(((int64_t)pid->Kffdr_i.x * (int64_t)pid->refSigDotPT1_i.x) >> 16);
+    pid->FFout_i.y = (int32_t)(((int64_t)pid->Kffr_i.y * (int64_t)pid->refSig_i.y) >> 20) + (int32_t)(((int64_t)pid->Kffdr_i.y * (int64_t)pid->refSigDotPT1_i.y) >> 16);
+    pid->FFout_i.z = (int32_t)(((int64_t)pid->Kffr_i.z * (int64_t)pid->refSig_i.z) >> 20) + (int32_t)(((int64_t)pid->Kffdr_i.z * (int64_t)pid->refSigDotPT1_i.z) >> 16);
 }
 
 void CalcPIDoutput_int(pid_st* pid, axis_i32* u)
 {
     //PID
-    pid->u_i.x = /*pid->FFout_i.x + */pid->Pout_i.x + pid->Iout_i.x - pid->Dout_i.x;
+    pid->u_i.x = pid->FFout_i.x + pid->Pout_i.x + pid->Iout_i.x - pid->Dout_i.x;
     pid->u_i.y = /*pid->FFout_i.y + */pid->Pout_i.y + pid->Iout_i.y - pid->Dout_i.y;
     pid->u_i.z = /*pid->FFout_i.z + */pid->Pout_i.z + pid->Iout_i.z - pid->Dout_i.z;
     //PID clamp    
@@ -1383,6 +1385,64 @@ void setPIDParam(int32_t value, E_pid pid, E_direction dir)
         {
             pidRate.D_i.z = value;
             pidRate.Kd_i.z = pidRate.D_i.z * pidRate.inverseDt;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+        }
+        break;
+    }
+    case E_pid::FFr:
+    {
+        switch (dir)
+        {
+        case E_direction::X:
+        {
+            pidRate.FFr_i.x = value;
+            pidRate.Kffr_i.x = pidRate.FFr_i.x * pidRate.inverseDt;
+            break;
+        }
+        case E_direction::Y:
+        {
+            pidRate.FFr_i.y = value;
+            pidRate.Kffr_i.y = pidRate.FFr_i.y * pidRate.inverseDt;
+            break;
+        }
+        case E_direction::Z:
+        {
+            pidRate.FFr_i.z = value;
+            pidRate.Kffr_i.z = pidRate.FFr_i.z * pidRate.inverseDt;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+        }
+        break;
+    }
+    case E_pid::FFdr:
+    {
+        switch (dir)
+        {
+        case E_direction::X:
+        {
+            pidRate.FFdr_i.x = value;
+            pidRate.Kffdr_i.x = pidRate.FFdr_i.x * pidRate.inverseDt;
+            break;
+        }
+        case E_direction::Y:
+        {
+            pidRate.FFdr_i.y = value;
+            pidRate.Kffdr_i.y = pidRate.FFdr_i.y * pidRate.inverseDt;
+            break;
+        }
+        case E_direction::Z:
+        {
+            pidRate.FFdr_i.z = value;
+            pidRate.Kffdr_i.z = pidRate.FFdr_i.z * pidRate.inverseDt;
             break;
         }
         default:

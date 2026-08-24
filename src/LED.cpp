@@ -141,8 +141,6 @@ void LEDAccOff(void)
     TC2->TC_WPMR = 0x504D4300;  //disable write protection mode
     TC2->TC_CHANNEL[0].TC_RB = 656251; //RA will not be reached due to RC resets earlier
     TC2->TC_WPMR = 0x504D4301;  //reenable write protection mode
-
-    //TODO: disable TC channel if both gyro and acc set to off
 }
 
 void LEDAccBlink(void)
@@ -179,34 +177,40 @@ void LEDSDOn(void)
 {
   TC2->TC_WPMR = 0x504D4300;  //disable write protection mode
   TC2->TC_CHANNEL[2].TC_RA = 1;
-  TC2->TC_CHANNEL[2].TC_RC = 656250; //1sec cycle
+  TC2->TC_CHANNEL[2].TC_RC = 656250; //1sec
   TC2->TC_WPMR = 0x504D4301;  //reenable write protection mode
+
+  //SerialUSB.println("sdON");
 }
 
 void LEDSDOff(void)
 {
     TC2->TC_WPMR = 0x504D4300;  //disable write protection mode
     TC2->TC_CHANNEL[2].TC_RA = 656251; //RA will not be reached due to RC resets earlier
-	TC2->TC_CHANNEL[2].TC_RC = 656250; //1sec cycle
+    TC2->TC_CHANNEL[2].TC_RC = 656250; //1sec
     TC2->TC_WPMR = 0x504D4301;  //reenable write protection mode
 
-    //TODO: disable TC channel if both gyro and acc set to off
+    //SerialUSB.println("sdOFF");
 }
 
 void LEDSDBlink(void)
 {
     TC2->TC_WPMR = 0x504D4300;  //disable write protection mode
-    TC2->TC_CHANNEL[2].TC_RA = 328125; //half of RC value, 0.5sec blink
-	TC2->TC_CHANNEL[2].TC_RC = 656250; //1sec cycle
+    TC2->TC_CHANNEL[2].TC_RA = 218750; //1/3 of RC value, 0.?sec blink
+    TC2->TC_CHANNEL[2].TC_RC = 656250; //1sec
     TC2->TC_WPMR = 0x504D4301;  //reenable write protection mode
+
+    //SerialUSB.println("sdBLINK");
 }
 
 void LEDSDBlinkSlow(void)
 {
 	TC2->TC_WPMR = 0x504D4300;  //disable write protection mode
 	TC2->TC_CHANNEL[2].TC_RA = 328125*3; //half of RC value, 0.5sec blink
-	TC2->TC_CHANNEL[2].TC_RC = 656250*2; //1sec cycle
+	TC2->TC_CHANNEL[2].TC_RC = 656250*2; //2sec cycle
 	TC2->TC_WPMR = 0x504D4301;  //reenable write protection mode
+
+    //SerialUSB.println("sdBLINKslow");
 }
 
 void LEDGPSOn(void)
@@ -219,7 +223,7 @@ void LEDGPSOn(void)
 void LEDGPSOff(void)
 {
     TC2->TC_WPMR = 0x504D4300;  //disable write protection mode
-    TC2->TC_CHANNEL[2].TC_RB = 656251; //RA will not be reached due to RC resets earlier
+    TC2->TC_CHANNEL[2].TC_RB = 656251*3; //RB will not be reached due to RC resets earlier
     TC2->TC_WPMR = 0x504D4301;  //reenable write protection mode
 
     //TODO: disable TC channel if both gyro and acc set to off

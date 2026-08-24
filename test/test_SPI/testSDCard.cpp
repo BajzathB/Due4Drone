@@ -117,38 +117,54 @@ uint8_t FAT1Base2[514] = { 0xF8,0xFF,0xFF,0x0F, 0xFF,0xFF,0xFF,0x7F,  0xFF,0xFF,
 void ResetMeasDataFlags(void)
 {
     meas2Card.measureSysTick = true;
+
     meas2Card.measureGyroRawX = false;
     meas2Card.measureGyroRawY = false;
     meas2Card.measureGyroRawZ = false;
     meas2Card.measureGyroPT1X = false;
     meas2Card.measureGyroPT1Y = false;
     meas2Card.measureGyroPT1Z = false;
+    meas2Card.measureGyroRealX = false;
+    meas2Card.measureGyroRealY = false;
+    meas2Card.measureGyroRealZ = false;
+    meas2Card.measureGyroRealPT1X = false;
+    meas2Card.measureGyroRealPT1Y = false;
+    meas2Card.measureGyroRealPT1Z = false;
+
     meas2Card.measureAccRawX = false;
     meas2Card.measureAccRawY = false;
     meas2Card.measureAccRawZ = false;
     meas2Card.measureAccPT1X = false;
     meas2Card.measureAccPT1Y = false;
     meas2Card.measureAccPT1Z = false;
-    meas2Card.measureAngleRawRoll = false;
-    meas2Card.measureAngleRawPitch = false;
+    meas2Card.measureAccRealX = false;
+    meas2Card.measureAccRealY = false;
+    meas2Card.measureAccRealZ = false;
+    meas2Card.measureAccRealPT1X = false;
+    meas2Card.measureAccRealPT1Y = false;
+    meas2Card.measureAccRealPT1Z = false;
+
+    //meas2Card.measureAngleRawRoll = false;
+    //meas2Card.measureAngleRawPitch = false;
     meas2Card.measureAnglePT1Roll = false;
     meas2Card.measureAnglePT1Pitch = false;
-    meas2Card.measureAnglePT2Roll = false;
-    meas2Card.measureAnglePT2Pitch = false;
-    meas2Card.measureAngleKFRawRoll = false;
-    meas2Card.measureAngleKFRawPitch = false;
-    meas2Card.measureAngleKFPT10Roll = false;
-    meas2Card.measureAngleKFPT10Pitch = false;
-    meas2Card.measureAngleCFRawRoll = false;
-    meas2Card.measureAngleCFRawPitch = false;
-    meas2Card.measureAngleCFPT10Roll = false;
-    meas2Card.measureAngleCFPT10Pitch = false;
-    meas2Card.measureAngleCFPT11Roll = false;
-    meas2Card.measureAngleCFPT11Pitch = false;
-    meas2Card.measureAngleCFWeightedRawRoll = false;
-    meas2Card.measureAngleCFWeightedRawPitch = false;
-    meas2Card.measureAngleCFWeightedPT01Roll = false;
-    meas2Card.measureAngleCFWeightedPT01Pitch = false;
+    //meas2Card.measureAnglePT2Roll = false;
+    //meas2Card.measureAnglePT2Pitch = false;
+    //meas2Card.measureAngleKFRawRoll = false;
+    //meas2Card.measureAngleKFRawPitch = false;
+    meas2Card.measureAngleKFPT11Roll = false;
+    meas2Card.measureAngleKFPT11Pitch = false;
+    //meas2Card.measureAngleCFRawRoll = false;
+    //meas2Card.measureAngleCFRawPitch = false;
+    //meas2Card.measureAngleCFPT10Roll = false;
+    //meas2Card.measureAngleCFPT10Pitch = false;
+    //meas2Card.measureAngleCFPT11Roll = false;
+    //meas2Card.measureAngleCFPT11Pitch = false;
+    //meas2Card.measureAngleCFWeightedRawRoll = false;
+    //meas2Card.measureAngleCFWeightedRawPitch = false;
+    //meas2Card.measureAngleCFWeightedPT01Roll = false;
+    //meas2Card.measureAngleCFWeightedPT01Pitch = false;
+
     meas2Card.measurePIDRefsigX = false;
     meas2Card.measurePIDRefsigY = false;
     meas2Card.measurePIDRefsigZ = false;
@@ -170,6 +186,7 @@ void ResetMeasDataFlags(void)
     meas2Card.measurePIDUX = false;
     meas2Card.measurePIDUY = false;
     meas2Card.measurePIDUZ = false;
+
     meas2Card.measurePIDerrorX = false;
     meas2Card.measurePIDerrorY = false;
     meas2Card.measurePIDerrorZ = false;
@@ -182,6 +199,9 @@ void ResetMeasDataFlags(void)
     meas2Card.measurePIDrefSigDotPT1X = false;
     meas2Card.measurePIDrefSigDotPT1Y = false;
     meas2Card.measurePIDrefSigDotPT1Z = false;
+    meas2Card.measurePIDiRelaxWeightX = false;
+    meas2Card.measurePIDiRelaxWeightY = false;
+    meas2Card.measurePIDiRelaxWeightZ = false;
 }
 
 TEST(test_BT_SDcard, SDcard_Call)
@@ -216,18 +236,17 @@ TEST(test_BT_SDcard, SDcard_Call)
     uint16_t testblockSize{ 0 };
     volatile uint32_t testblock[514];
     appendCsSdCard(testblock, testblockSize);
-    swapDataBufferPointers();
-    uint32_t testbuffer[514];
+    uint8_t testbuffer[514];
     uint8_t testNumber{ 1 };
-    convert2String(testbuffer, &testNumber, 1, 0, false);
+    convert2CharStream(testbuffer, &testNumber, 1, 0, false);
     measureData(false, false, 1.000f, 0, false, "test");
     saveMeasData();
     loadData2Buffer(testbuffer, 1);
-    appendComma();
-    appendNewLine();
+    checkCtrs();
+    appendChar(' ');
     addMeasNameHeader(false, false, "test", 4);
     addMeasHeader();
-    writeData(1000, testTime);
+    writeData(testTime);
     writeRoot(testTime);
     writeFAT(testTime);
     RunSdCard();
@@ -238,6 +257,7 @@ TEST(test_BT_SDcard, SDcard_Call)
     date testDate{};
     setGlobalTime(testDate, testTime);
     setGlobalDate(testDate);
+    DetectReInitAndWrite(1000);
 }
 
 TEST(test_BT_SDcard, CMD0_Test)
@@ -247,11 +267,9 @@ TEST(test_BT_SDcard, CMD0_Test)
     SPI.spiActivityAcc = INACTIVE;
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    SDcard.sdCardInitFinished = true;
     EXPECT_EQ(CMD0(), SDINIT_CMD0);
     EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_WAIT4RX);
     EXPECT_EQ(SDcard.spiActivitySDCard, ACTIVE);
-    EXPECT_EQ(SDcard.sdCardInitFinished, false);
 
     //2nd: trigger CMD0, gyro active read
     SPI.spiActivityGyro = ACTIVE;
@@ -288,7 +306,6 @@ TEST(test_BT_SDcard, CMD0_Test)
     SDcard.SdRx[0] = 0;
     EXPECT_EQ(CMD0(), SDINIT_FAILURE);
     EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_WAIT4RX);
-    EXPECT_EQ(SDcard.sdCardInitFinished, true);
 }
 
 TEST(test_BT_SDcard, CMD8_Test)
@@ -402,9 +419,11 @@ TEST(test_BT_SDcard, CMD55_Test)
     SPI.spiActivityAcc = INACTIVE;
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SDCommandState = SDCOMMAND_SEND;
+    sysTimer.sysTick = 10;
     EXPECT_EQ(CMD55(), SDINIT_CMD55);
     EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_WAIT4RX);
     EXPECT_EQ(SDcard.spiActivitySDCard, PENDING);
+    EXPECT_NE(SDcard.timeoutTick, 0);
 
     //3rd: wait for CMD55 finish, 
     SPI.spiActivityGyro = INACTIVE;
@@ -424,19 +443,33 @@ TEST(test_BT_SDcard, CMD55_Test)
     EXPECT_EQ(CMD55(), SDINIT_ACMD41);
     EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_SEND);
 
-    //5th: CMD55 finished incorrectly
+    //5th: CMD55 not ok yet, trigger new read
     SPI.spiActivityGyro = INACTIVE;
     SPI.spiActivityAcc = INACTIVE;
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SDCommandState = SDCOMMAND_WAIT4RX;
     SDcard.SdRx[0] = 0;
     SDcard.SdCtr = 1;
+    EXPECT_EQ(CMD55(), SDINIT_CMD55);
+    EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_WAIT4RX);
+    EXPECT_EQ(SDcard.spiActivitySDCard, ACTIVE);
+
+    //6th: CMD55 timed out
+    SPI.spiActivityGyro = INACTIVE;
+    SPI.spiActivityAcc = INACTIVE;
+    SDcard.spiActivitySDCard = INACTIVE;
+    SDcard.SDCommandState = SDCOMMAND_WAIT4RX;
+    SDcard.SdRx[0] = 0;
+    SDcard.SdCtr = 1;
+    SDcard.timeoutTick = 10;
+    sysTimer.sysTick = 15000;
     EXPECT_EQ(CMD55(), SDINIT_FAILURE);
     EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_WAIT4RX);
 }
 
 TEST(test_BT_SDcard, ACMD41_Test)
 {
+    SDcard.acmd41TryCtr = 0;
     //1st: trigger ACMD41, no active read
     SPI.spiActivityGyro = INACTIVE;
     SPI.spiActivityAcc = INACTIVE;
@@ -478,9 +511,19 @@ TEST(test_BT_SDcard, ACMD41_Test)
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SDCommandState = SDCOMMAND_WAIT4RX;
     SDcard.SdRx[0] = 1;
-    SDcard.SdCtr = 1;
+    SDcard.SdCtr = 6;
     EXPECT_EQ(ACMD41(), SDINIT_CMD55);
     EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_SEND);
+
+    //6th: ACMD41 failure
+    SPI.spiActivityGyro = INACTIVE;
+    SPI.spiActivityAcc = INACTIVE;
+    SDcard.spiActivitySDCard = INACTIVE;
+    SDcard.SDCommandState = SDCOMMAND_WAIT4RX;
+    SDcard.SdRx[0] = 1;
+    SDcard.SdCtr = 1;
+    SDcard.acmd41TryCtr = 101;
+    EXPECT_EQ(ACMD41(), SDINIT_FAILURE);
 }
 
 TEST(test_BT_SDcard, TriggerSDRxTx_Test)
@@ -938,144 +981,173 @@ TEST(test_BT_SDcard, setupSdCard_Test)
     //CMD0 not ok
     SDcard.SDInitStatus = SDINIT_CMD0;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD0);
     SDcard.spiActivitySDCard = ACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD0);
     SDcard.SdRx[88] = 0;
     SDcard.spiActivitySDCard = INACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //CMD0 ok
     SDcard.SDInitStatus = SDINIT_CMD0;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD0);
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SdRx[87] = 1;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD8);
 
     //CMD8 not ok
     SDcard.SDInitStatus = SDINIT_CMD8;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD8);
     SDcard.spiActivitySDCard = ACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD8);
     SDcard.SdRx[7] = 0;
     SDcard.spiActivitySDCard = INACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //CMD8 ok
     SDcard.SDInitStatus = SDINIT_CMD8;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD8);
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SdRx[7] = 1;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD58);
 
     //CMD58 not ok
     SDcard.SDInitStatus = SDINIT_CMD58;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD58);
     SDcard.spiActivitySDCard = ACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD58);
     SDcard.SdRx[7] = 0;
     SDcard.spiActivitySDCard = INACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //CMD58 ok
     SDcard.SDInitStatus = SDINIT_CMD58;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD58);
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SdRx[7] = 1;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD55);
 
     //CMD55 not ok
     SDcard.SDInitStatus = SDINIT_CMD55;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD55);
     SDcard.spiActivitySDCard = ACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD55);
     SDcard.SdRx[7] = 0;
     SDcard.spiActivitySDCard = INACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
+    EXPECT_EQ(SDcard.spiActivitySDCard, ACTIVE);
+    //CMD55 timed out
+    SDcard.SDInitStatus = SDINIT_CMD55;
+    SDcard.SDCommandState = SDCOMMAND_SEND;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD55);
+    SDcard.spiActivitySDCard = ACTIVE;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD55);
+    SDcard.SdRx[7] = 0;
+    SDcard.spiActivitySDCard = INACTIVE;
+    SDcard.timeoutTick = 10;
+    sysTimer.sysTick = 15000;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //CMD55 ok
     SDcard.SDInitStatus = SDINIT_CMD55;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD55);
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SdRx[7] = 1;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_ACMD41);
 
     //ACMD41 not ok
     SDcard.SDInitStatus = SDINIT_ACMD41;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_ACMD41);
     SDcard.spiActivitySDCard = ACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_ACMD41);
     SDcard.SdRx[7] = 1;
     SDcard.spiActivitySDCard = INACTIVE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    SDcard.acmd41TryCtr = 0;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD55);
+    //ACMD41 not ok
+    SDcard.SDInitStatus = SDINIT_ACMD41;
+    SDcard.SDCommandState = SDCOMMAND_SEND;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_ACMD41);
+    SDcard.spiActivitySDCard = ACTIVE;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_ACMD41);
+    SDcard.SdRx[7] = 1;
+    SDcard.spiActivitySDCard = INACTIVE;
+    SDcard.acmd41TryCtr = 101;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //ACMD41 ok
     SDcard.SDInitStatus = SDINIT_ACMD41;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_ACMD41);
     SDcard.spiActivitySDCard = INACTIVE;
     SDcard.SdRx[7] = 0;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    SDcard.acmd41TryCtr = 0;
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_00);
 
     //read 00 ok
     SDcard.SDInitStatus = SDINIT_READ_00;
     SDcard.SDCommandState = SDCOMMAND_SEND;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_BOOT);
 
     //read boot
     SDcard.SDInitStatus = SDINIT_READ_BOOT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_START;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_BOOT);
     SDcard.SDInitStatus = SDINIT_READ_BOOT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_RESPONSE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_BOOT);
     SDcard.SDInitStatus = SDINIT_READ_BOOT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_FE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_BOOT);
     SDcard.SDInitStatus = SDINIT_READ_BOOT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_DATA;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_BOOT);
     SDcard.SDInitStatus = SDINIT_READ_BOOT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_FAILED;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     SDcard.SDInitStatus = SDINIT_READ_BOOT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
@@ -1088,7 +1160,7 @@ TEST(test_BT_SDcard, setupSdCard_Test)
     SDcard.SdRx[37] = 0x00;
     SDcard.SdRx[38] = 0x00;
     SDcard.SdRx[39] = 0x00;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //read boot ok
     SDcard.SDInitStatus = SDINIT_READ_BOOT;
@@ -1102,34 +1174,34 @@ TEST(test_BT_SDcard, setupSdCard_Test)
     SDcard.SdRx[37] = 0x0E;
     SDcard.SdRx[38] = 0x00;
     SDcard.SdRx[39] = 0x00;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_ROOTDIR);
 
     //read root
     SDcard.SDInitStatus = SDINIT_READ_ROOTDIR;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_START;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_ROOTDIR);
     SDcard.SDInitStatus = SDINIT_READ_ROOTDIR;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_RESPONSE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_ROOTDIR);
     SDcard.SDInitStatus = SDINIT_READ_ROOTDIR;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_FE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_ROOTDIR);
     SDcard.SDInitStatus = SDINIT_READ_ROOTDIR;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_DATA;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_ROOTDIR);
     SDcard.SDInitStatus = SDINIT_READ_ROOTDIR;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_FAILED;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //read root need next cluster
     SDcard.SDInitStatus = SDINIT_READ_ROOTDIR;
@@ -1139,41 +1211,41 @@ TEST(test_BT_SDcard, setupSdCard_Test)
         SDcard.rootDirInfo_8b[i] = rootDirBase[i];
     }
     SDcard.SDReadState = SDREAD_FINISHED;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_ROOTDIR);
     //read root ok
     SDcard.SDInitStatus = SDINIT_READ_ROOTDIR;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.rootDirInfo_8b[192] = 0x00;
     SDcard.SDReadState = SDREAD_FINISHED;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_FAT);
 
     //read FAT
     SDcard.SDInitStatus = SDINIT_READ_FAT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_START;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_FAT);
     SDcard.SDInitStatus = SDINIT_READ_FAT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_RESPONSE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_FAT);
     SDcard.SDInitStatus = SDINIT_READ_FAT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_FE;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_FAT);
     SDcard.SDInitStatus = SDINIT_READ_FAT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_WAIT_DATA;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_FAT);
     SDcard.SDInitStatus = SDINIT_READ_FAT;
     SDcard.SDCommandState = SDCOMMAND_SEND;
     SDcard.SDReadState = SDREAD_FAILED;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_FAILURE);
     //read FAT need next cluster
     SDcard.SDInitStatus = SDINIT_READ_FAT;
@@ -1185,7 +1257,7 @@ TEST(test_BT_SDcard, setupSdCard_Test)
     }
     SDcard.lastFile.numberOfClusters = 1;
     SDcard.lastFile.clusters[0] = 119;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_READ_FAT);
     EXPECT_EQ(SDcard.SDReadState, SDREAD_START);
     //reed FAT ok
@@ -1201,55 +1273,13 @@ TEST(test_BT_SDcard, setupSdCard_Test)
     SDcard.lastFile.clusters[0] = 196;
     SDcard.lastFile.clusters[1] = 0;
     SDcard.lastFile.clusters[2] = 0;
-    EXPECT_EQ(SetupSdCard(), SD_INIT);
+    EXPECT_EQ(SetupSdCard(), SD_POST_INIT);
     EXPECT_EQ(SDcard.SDInitStatus, SDINIT_SUCCESS);
-    EXPECT_EQ(SetupSdCard(), SD_WAIT_4_MEASUREMENT);
+    EXPECT_EQ(SetupSdCard(), SD_WRITE_DATA);
 
     //failed
     SDcard.SDInitStatus = SDINIT_FAILURE;
     EXPECT_EQ(SetupSdCard(), SD_DO_NOTHING);
-
-}
-
-TEST(test_BT_SDcard, swapDataBufferPointers_Test)
-{
-    SDcard.newFile.size = 0;
-    SDcard.newFile.blockCount = 0;
-    SDcard.blockPerCluster = 64;
-    SDcard.loadingDataPointer = SDcard.dataBuffer1;
-    SDcard.sendingDataPointer = SDcard.dataBuffer2;
-    EXPECT_EQ(SDcard.loadingDataPointer[0] & 0xFF, 0xFE);
-    EXPECT_EQ(SDcard.sendingDataPointer[0] & 0xFF, 0xFE);
-    //1
-    SDcard.writeMeasData = false;
-    swapDataBufferPointers();
-    EXPECT_EQ(SDcard.loadingDataPointer, SDcard.dataBuffer2);
-    EXPECT_EQ(SDcard.sendingDataPointer, SDcard.dataBuffer1);
-    EXPECT_EQ(SDcard.newFile.size, 512);
-    EXPECT_EQ(SDcard.newFile.blockCount, 1);
-    EXPECT_EQ(SDcard.writeMeasData, true);
-    //2
-    SDcard.newFile.size = 512 * 20;
-    SDcard.newFile.blockCount = 50;
-    swapDataBufferPointers();
-    EXPECT_EQ(SDcard.loadingDataPointer, SDcard.dataBuffer1);
-    EXPECT_EQ(SDcard.sendingDataPointer, SDcard.dataBuffer2);
-    EXPECT_EQ(SDcard.newFile.size, 512 * 21);
-    EXPECT_EQ(SDcard.newFile.blockCount, 51);
-    //3
-    SDcard.newFile.size = 512 * 127;
-    SDcard.newFile.blockCount = 63;
-    swapDataBufferPointers();
-    EXPECT_EQ(SDcard.loadingDataPointer, SDcard.dataBuffer2);
-    EXPECT_EQ(SDcard.sendingDataPointer, SDcard.dataBuffer1);
-    EXPECT_EQ(SDcard.newFile.size, 512 * 128);
-    EXPECT_EQ(SDcard.newFile.blockCount, 64);
-    //4
-    swapDataBufferPointers();
-    EXPECT_EQ(SDcard.loadingDataPointer, SDcard.dataBuffer1);
-    EXPECT_EQ(SDcard.sendingDataPointer, SDcard.dataBuffer2);
-    EXPECT_EQ(SDcard.newFile.size, 512 * 129);
-    EXPECT_EQ(SDcard.newFile.blockCount, 1);
 
 }
 
@@ -1305,46 +1335,46 @@ TEST(test_BT_SDcard, appendCsSdCard_Test)
     EXPECT_NE(testblock[9], 9);
 }
 
-TEST(test_BT_SDcard, convert2String_Test)
+TEST(test_BT_SDcard, convert2CharStream_Test)
 {
-    uint32_t testBuffer[30];
+    uint8_t testBuffer[30];
     uint8_t testNumberOfChar{ 0 };
 
     //int, 1digit
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 5, 0, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, 5, 0, false);
     EXPECT_EQ(testBuffer[0], '5');
     EXPECT_EQ(testNumberOfChar, 1);
     //int, 2digit
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 23, 0, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, 23, 0, false);
     EXPECT_EQ(testBuffer[0], '2');
     EXPECT_EQ(testBuffer[1], '3');
     EXPECT_EQ(testNumberOfChar, 2);
     //int, 3digit
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 346, 0, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, 346, 0, false);
     EXPECT_EQ(testBuffer[0], '3');
     EXPECT_EQ(testBuffer[1], '4');
     EXPECT_EQ(testBuffer[2], '6');
     EXPECT_EQ(testNumberOfChar, 3);
     //int, negative
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, -89, 0, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, -89, 0, false);
     EXPECT_EQ(testBuffer[0], '-');
     EXPECT_EQ(testBuffer[1], '8');
     EXPECT_EQ(testBuffer[2], '9');
     EXPECT_EQ(testNumberOfChar, 3);
     //int, explicit + sign
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 43, 0, true);
+    convert2CharStream(testBuffer, &testNumberOfChar, 43, 0, true);
     EXPECT_EQ(testBuffer[0], '+');
     EXPECT_EQ(testBuffer[1], '4');
     EXPECT_EQ(testBuffer[2], '3');
     EXPECT_EQ(testNumberOfChar, 3);
     //int, explicit + sign, negative
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, -145, 0, true);
+    convert2CharStream(testBuffer, &testNumberOfChar, -145, 0, true);
     EXPECT_EQ(testBuffer[0], '-');
     EXPECT_EQ(testBuffer[1], '1');
     EXPECT_EQ(testBuffer[2], '4');
@@ -1352,19 +1382,19 @@ TEST(test_BT_SDcard, convert2String_Test)
     EXPECT_EQ(testNumberOfChar, 4);
     //float, just int part
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 1.5, 0, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, 1.5, 0, false);
     EXPECT_EQ(testBuffer[0], '1');
     EXPECT_EQ(testNumberOfChar, 1);
     //float, 1 fractional
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 1.5, 1, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, 1.5, 1, false);
     EXPECT_EQ(testBuffer[0], '1');
     EXPECT_EQ(testBuffer[1], '.');
     EXPECT_EQ(testBuffer[2], '5');
     EXPECT_EQ(testNumberOfChar, 3);
     //float, 3 fractional
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 791.546, 3, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, 791.546, 3, false);
     EXPECT_EQ(testBuffer[0], '7');
     EXPECT_EQ(testBuffer[1], '9');
     EXPECT_EQ(testBuffer[2], '1');
@@ -1375,7 +1405,7 @@ TEST(test_BT_SDcard, convert2String_Test)
     EXPECT_EQ(testNumberOfChar, 7);
     //float, negative, 5 fractional
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, -18.46875, 5, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, -18.46875, 5, false);
     EXPECT_EQ(testBuffer[0], '-');
     EXPECT_EQ(testBuffer[1], '1');
     EXPECT_EQ(testBuffer[2], '8');
@@ -1388,7 +1418,7 @@ TEST(test_BT_SDcard, convert2String_Test)
     EXPECT_EQ(testNumberOfChar, 9);
     //float, explict +sign, 3 fractional
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 6.731, 3, true);
+    convert2CharStream(testBuffer, &testNumberOfChar, 6.731, 3, true);
     EXPECT_EQ(testBuffer[0], '+');
     EXPECT_EQ(testBuffer[1], '6');
     EXPECT_EQ(testBuffer[2], '.');
@@ -1398,7 +1428,7 @@ TEST(test_BT_SDcard, convert2String_Test)
     EXPECT_EQ(testNumberOfChar, 6);
     //float, smaller than 1
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 0.942, 3, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, 0.942, 3, false);
     EXPECT_EQ(testBuffer[0], '0');
     EXPECT_EQ(testBuffer[1], '.');
     EXPECT_EQ(testBuffer[2], '9');
@@ -1407,7 +1437,7 @@ TEST(test_BT_SDcard, convert2String_Test)
     EXPECT_EQ(testNumberOfChar, 5);
     //float, smaller than 1, explicit sign
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, 0.681, 3, true);
+    convert2CharStream(testBuffer, &testNumberOfChar, 0.681, 3, true);
     EXPECT_EQ(testBuffer[0], '+');
     EXPECT_EQ(testBuffer[1], '0');
     EXPECT_EQ(testBuffer[2], '.');
@@ -1417,7 +1447,7 @@ TEST(test_BT_SDcard, convert2String_Test)
     EXPECT_EQ(testNumberOfChar, 6);
     //float, smaller than 1, 
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, -0.123, 3, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, -0.123, 3, false);
     EXPECT_EQ(testBuffer[0], '-');
     EXPECT_EQ(testBuffer[1], '0');
     EXPECT_EQ(testBuffer[2], '.');
@@ -1427,75 +1457,116 @@ TEST(test_BT_SDcard, convert2String_Test)
     EXPECT_EQ(testNumberOfChar, 6);
     //float, smaller than 1, 0 fractional, negative
     testNumberOfChar = 0;
-    convert2String(testBuffer, &testNumberOfChar, -0.123, 0, false);
+    convert2CharStream(testBuffer, &testNumberOfChar, -0.123, 0, false);
     EXPECT_EQ(testBuffer[0], '-');
     EXPECT_EQ(testBuffer[1], '0');
     EXPECT_EQ(testNumberOfChar, 2);
 }
 
-TEST(test_BT_SDcard, appendComma_Test)
+TEST(test_BT_SDcard, checkCtrs_Test)
 {
     //
-    SDcard.loadingDataPointer[1] = '1';
-    SDcard.loadingDataCounter = 2;
-    appendComma();
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], ',');
-    EXPECT_EQ(SDcard.loadingDataCounter, 3);
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    EXPECT_EQ((checkCtrs() == 0), true);
+    EXPECT_EQ(SDcard.measBufferCtr, 0);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
+    //
+    SDcard.measBufferCtr = 11;
+    SDcard.measDataCtr = 50;
+    EXPECT_EQ((checkCtrs() == 0), true);
+    EXPECT_EQ(SDcard.measBufferCtr, 11);
+    EXPECT_EQ(SDcard.measDataCtr, 50);
+    //
+    SDcard.measBufferCtr = 50;
+    SDcard.measDataCtr = 512;
+    EXPECT_EQ((checkCtrs() == 0), true);
+    EXPECT_EQ(SDcard.measBufferCtr, 51);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
+    //
+    SDcard.measBufferCtr = 149;
+    SDcard.measDataCtr = 512;
+    EXPECT_EQ((checkCtrs() == -1), true);
+    EXPECT_EQ(SDcard.measBufferCtr, 150);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
+    //
+    SDcard.measBufferCtr = 150;
+    SDcard.measDataCtr = 0;
+    EXPECT_EQ((checkCtrs() == -1), true);
+    EXPECT_EQ(SDcard.measBufferCtr, 150);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
 }
 
-TEST(test_BT_SDcard, appendNewLine_Test)
+TEST(test_BT_SDcard, appendChar_Test)
 {
-    //
-    SDcard.loadingDataPointer[1] = '5';
-    SDcard.loadingDataCounter = 2;
-    appendNewLine();
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 3);
+    //      
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    appendChar('1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(SDcard.measBufferCtr, 0);
+    EXPECT_EQ(SDcard.measDataCtr, 1);
+    //      
+    SDcard.measBufferCtr = 10;
+    SDcard.measDataCtr = 75;
+    appendChar(',');
+    EXPECT_EQ(SDcard.measBuffer[10].data[75], ',');
+    EXPECT_EQ(SDcard.measBufferCtr, 10);
+    EXPECT_EQ(SDcard.measDataCtr, 76);
+    //      
+    SDcard.measBufferCtr = 54;
+    SDcard.measDataCtr = 511;
+    appendChar('\n');
+    EXPECT_EQ(SDcard.measBuffer[54].data[511], '\n');
+    EXPECT_EQ(SDcard.measBufferCtr, 54);
+    EXPECT_EQ(SDcard.measDataCtr, 512);
+    appendChar('?');
+    EXPECT_EQ(SDcard.measBuffer[55].data[0], '?');
+    EXPECT_EQ(SDcard.measBufferCtr, 55);
+    EXPECT_EQ(SDcard.measDataCtr, 1);
 }
 
 TEST(test_BT_SDcard, loadData2Buffer_Test)
 {
-    uint32_t testBuffer[30];
+    uint8_t testBuffer[30];
     uint8_t testNumber{ 0 };
 
     //int 1 char
-    SDcard.loadingDataCounter = 1;
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
     testNumber = 0;
     testBuffer[testNumber++] = '6';
     loadData2Buffer(testBuffer, testNumber);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '6');
-    EXPECT_EQ(SDcard.loadingDataCounter, 2);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '6');
+    EXPECT_EQ(SDcard.measBufferCtr, 0);
+    EXPECT_EQ(SDcard.measDataCtr, 1);
     //int additional 2 char
+    SDcard.measDataCtr = 1;
     testNumber = 0;
     testBuffer[testNumber++] = '2';
     testBuffer[testNumber++] = '7';
     loadData2Buffer(testBuffer, testNumber);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '7');
-    EXPECT_EQ(SDcard.loadingDataCounter, 4);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '6');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '7');
+    EXPECT_EQ(SDcard.measBufferCtr, 0);
+    EXPECT_EQ(SDcard.measDataCtr, 3);
     //int 4 char
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 1;
     testNumber = 0;
     testBuffer[testNumber++] = '1';
     testBuffer[testNumber++] = '2';
     testBuffer[testNumber++] = '3';
     testBuffer[testNumber++] = '4';
     loadData2Buffer(testBuffer, testNumber);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '4');
-    EXPECT_EQ(SDcard.loadingDataCounter, 5);
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '4');
+    EXPECT_EQ(SDcard.measBufferCtr, 0);
+    EXPECT_EQ(SDcard.measDataCtr, 5);
     //float 3 fractional
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 0;
     testNumber = 0;
     testBuffer[testNumber++] = '5';
     testBuffer[testNumber++] = '.';
@@ -1503,15 +1574,15 @@ TEST(test_BT_SDcard, loadData2Buffer_Test)
     testBuffer[testNumber++] = '3';
     testBuffer[testNumber++] = '2';
     loadData2Buffer(testBuffer, testNumber);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '2');
-    EXPECT_EQ(SDcard.loadingDataCounter, 6);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '.');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '2');
+    EXPECT_EQ(SDcard.measBufferCtr, 0);
+    EXPECT_EQ(SDcard.measDataCtr, 5);
     //float 3 fractional, negative, less than 1
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 0;
     testNumber = 0;
     testBuffer[testNumber++] = '-';
     testBuffer[testNumber++] = '0';
@@ -1520,33 +1591,28 @@ TEST(test_BT_SDcard, loadData2Buffer_Test)
     testBuffer[testNumber++] = '5';
     testBuffer[testNumber++] = '4';
     loadData2Buffer(testBuffer, testNumber);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '-');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '0');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], '4');
-    EXPECT_EQ(SDcard.loadingDataCounter, 7);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '-');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '0');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '.');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '8');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], '4');
+    EXPECT_EQ(SDcard.measBufferCtr, 0);
+    EXPECT_EQ(SDcard.measDataCtr, 6);
     // filling the buffer
-    SDcard.sendingDataPointer[510] = 0;
-    SDcard.sendingDataPointer[511] = 0;
-    SDcard.loadingDataCounter = 510;
+    SDcard.measDataCtr = 509;
     testNumber = 0;
     testBuffer[testNumber++] = '1';
     testBuffer[testNumber++] = '5';
     testBuffer[testNumber++] = '7';
     loadData2Buffer(testBuffer, testNumber);
-    EXPECT_EQ(SDcard.sendingDataPointer[510], '1');
-    EXPECT_EQ(SDcard.sendingDataPointer[511], '5');
-    EXPECT_EQ(SDcard.sendingDataPointer[512], '7');
-    EXPECT_EQ(SDcard.loadingDataCounter, 1);
+    EXPECT_EQ(SDcard.measBuffer[0].data[509], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[510], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[511], '7');
+    EXPECT_EQ(SDcard.measBufferCtr, 1);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
     // split data
-    SDcard.sendingDataPointer[510] = 0;
-    SDcard.sendingDataPointer[511] = 0;
-    SDcard.sendingDataPointer[1] = 0;
-    SDcard.sendingDataPointer[2] = 0;
-    SDcard.loadingDataCounter = 510;
+    SDcard.measDataCtr = 509;
     testNumber = 0;
     testBuffer[testNumber++] = '4';
     testBuffer[testNumber++] = '.';
@@ -1554,58 +1620,56 @@ TEST(test_BT_SDcard, loadData2Buffer_Test)
     testBuffer[testNumber++] = '3';
     testBuffer[testNumber++] = '1';
     loadData2Buffer(testBuffer, testNumber);
-    EXPECT_EQ(SDcard.sendingDataPointer[510], '4');
-    EXPECT_EQ(SDcard.sendingDataPointer[511], '.');
-    EXPECT_EQ(SDcard.sendingDataPointer[512], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '1');
-    EXPECT_EQ(SDcard.loadingDataCounter, 3);
+    EXPECT_EQ(SDcard.measBuffer[1].data[509], '4');
+    EXPECT_EQ(SDcard.measBuffer[1].data[510], '.');
+    EXPECT_EQ(SDcard.measBuffer[1].data[511], '8');
+    EXPECT_EQ(SDcard.measBuffer[2].data[0], '3');
+    EXPECT_EQ(SDcard.measBuffer[2].data[1], '1');
+    EXPECT_EQ(SDcard.measBufferCtr, 2);
+    EXPECT_EQ(SDcard.measDataCtr, 2);
 }
 
 TEST(test_BT_SDcard, measureData_Test)
 {
     //not measured
-    SDcard.loadingDataCounter = 1;
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
     measureData(false, false, 1.000f, 0, false, "test");
-    EXPECT_EQ(SDcard.loadingDataCounter, 1);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
     //integer
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 0;
     measureData(true, false, 1.234f, 0, false, "test");
-    EXPECT_EQ(SDcard.loadingDataCounter, 2);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
+    EXPECT_EQ(SDcard.measDataCtr, 1);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
     //float 3 fractional
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 0;
     measureData(true, false, 1.234f, 3, false, "test");
-    EXPECT_EQ(SDcard.loadingDataCounter, 6);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '4');
+    EXPECT_EQ(SDcard.measDataCtr, 5);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '.');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '4');
     //float 3 fractional negative
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 0;
     measureData(true, false, -9.876f, 3, false, "test");
-    EXPECT_EQ(SDcard.loadingDataCounter, 7);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '-');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '9');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], '6');
+    EXPECT_EQ(SDcard.measDataCtr, 6);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '-');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '9');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '.');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '8');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], '6');
     //commaed float 3 fractional explicit sign
     measureData(true, true, 6.543f, 3, true, "test");
-    EXPECT_EQ(SDcard.loadingDataCounter, 14);
-    EXPECT_EQ(SDcard.loadingDataPointer[7], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[8], '+');
-    EXPECT_EQ(SDcard.loadingDataPointer[9], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[10], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[11], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[12], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[13], '3');
+    EXPECT_EQ(SDcard.measDataCtr, 13);
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], '+');
+    EXPECT_EQ(SDcard.measBuffer[0].data[8], '6');
+    EXPECT_EQ(SDcard.measBuffer[0].data[9], '.');
+    EXPECT_EQ(SDcard.measBuffer[0].data[10], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[11], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[12], '3');
 }
 
 TEST(test_BT_SDcard, saveMeasData_Test)
@@ -1623,35 +1687,34 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     spiData->gyro.signals.x = 2345;
     spiData->gyro.signals.y = 456;
     spiData->gyro.signals.z = -129;
-    SDcard.loadingDataCounter = 1;
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
     saveMeasData();
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 6);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '\n');
+    EXPECT_EQ(SDcard.measDataCtr, 5);
     // systime+gyroX measured
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = true;
     meas2Card.measureGyroRawY = false;
     meas2Card.measureGyroRealZ = false;
     sysTimer.sysTick = 5.678 * 10500000;
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 0;
     saveMeasData();
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[7], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[8], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[9], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[10], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 11);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '6');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '8');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[8], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[9], '\n');
+    EXPECT_EQ(SDcard.measDataCtr, 10);
     // systime+gyroY+gyroZ measured
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = false;
@@ -1659,23 +1722,23 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     meas2Card.measureGyroRealZ = true;
     sysTimer.sysTick = 8.271 * 10500000;
     saveMeasData();
-    EXPECT_EQ(SDcard.loadingDataPointer[11], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[12], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[13], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[14], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[15], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[16], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[17], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[18], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[19], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[20], '-');
-    EXPECT_EQ(SDcard.loadingDataPointer[21], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[22], '.');
-    EXPECT_EQ(SDcard.loadingDataPointer[23], '8');
-    EXPECT_EQ(SDcard.loadingDataPointer[24], '7');
-    EXPECT_EQ(SDcard.loadingDataPointer[25], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[26], '\n');
-    EXPECT_EQ(SDcard.loadingDataCounter, 27);
+    EXPECT_EQ(SDcard.measBuffer[0].data[10], '8');
+    EXPECT_EQ(SDcard.measBuffer[0].data[11], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[12], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[13], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[14], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[15], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[16], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[17], '6');
+    EXPECT_EQ(SDcard.measBuffer[0].data[18], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[19], '-');
+    EXPECT_EQ(SDcard.measBuffer[0].data[20], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[21], '.');
+    EXPECT_EQ(SDcard.measBuffer[0].data[22], '8');
+    EXPECT_EQ(SDcard.measBuffer[0].data[23], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[24], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[25], '\n');
+    EXPECT_EQ(SDcard.measDataCtr, 26);
 }
 
 TEST(test_BT_SDcard, saveMeasData_Getpid_Test)
@@ -1685,9 +1748,25 @@ TEST(test_BT_SDcard, saveMeasData_Getpid_Test)
     ResetMeasDataFlags();
 
     //
-    pid->refSig_i.x = -10000;
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    sysTimer.sysTick = 9.876 * 10500000;
+    pid->refSig_i.x = -12345;
     meas2Card.measurePIDRefsigX = true;
-    saveMeasData();
+    saveMeasData(); 
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '9');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '8');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '6');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], '-');
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[8], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[9], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[10], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[11], '\n');
+    EXPECT_EQ(SDcard.measDataCtr, 12);
 }
 
 TEST(test_BT_SDcard, writeBlock_Test)
@@ -2345,83 +2424,102 @@ TEST(test_BT_SDcard, addFileFATInfo_Test)
 
 TEST(test_BT_SDcard, writeData_Test)
 {
-    uint16_t testSwitch{ 0 };
     float testTime{ 0 };
     //wait
-    SDcard.writeMeasData = true;
+    SDcard.measDataCtr = 1;
     SDcard.SDWriteState = SDWRITE_START;
-    writeData(testSwitch, testTime);
-    EXPECT_EQ(SDcard.writeMeasData, true);
+    writeData(testTime);
+    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_RESPONSE);
     SDcard.SDWriteState = SDWRITE_WAIT_RESPONSE;
-    writeData(testSwitch, testTime);
-    EXPECT_EQ(SDcard.writeMeasData, true);
+    writeData(testTime);
+    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_RESPONSE);
     SDcard.SDWriteState = SDWRITE_WAIT_DATA;
-    writeData(testSwitch, testTime);
-    EXPECT_EQ(SDcard.writeMeasData, true);
+    writeData(testTime);
+    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_DATA);
     SDcard.SDWriteState = SDWRITE_WAIT_WRITE_FINISH;
-    writeData(testSwitch, testTime);
-    EXPECT_EQ(SDcard.writeMeasData, true);
+    writeData(testTime);
+    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_WRITE_FINISH);
 
     //failed
     SDcard.SDWriteState = SDWRITE_FAILED;
-    writeData(testSwitch, testTime);
-    EXPECT_EQ(SDcard.writeMeasData, false);
-
-    //finished
-    SDcard.SDWriteState = SDWRITE_FINISHED;
-    testSwitch = 2000;
-    writeData(testSwitch, testTime);
-    EXPECT_EQ(SDcard.writeMeasData, false);
+    writeData(testTime);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
-    //
+
+    //finished, more data
+    SDcard.SDWriteState = SDWRITE_FINISHED;
+    SDcard.sendBufferIndex = 5;
+    SDcard.measBufferCtr = 6;
+    writeData(testTime);
+    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
+    SDcard.SDWriteState = SDWRITE_FINISHED;
+    writeData(testTime);
+    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
+    //finished, write root next
     SDcard.SDWriteState = SDWRITE_FINISHED;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
-    testSwitch = 1000;
-    writeData(testSwitch, testTime);
-    EXPECT_EQ(SDcard.writeMeasData, false);
+    SDcard.sendBufferIndex = 6;
+    SDcard.measBufferCtr = 6;
+    writeData(testTime);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
 
+    //blockCount-cluster incremeting
+    SDcard.sendBufferIndex = 0;
+    SDcard.measBufferCtr = 130;
+    SDcard.newFile.blockCount = 0;
+    SDcard.newFile.numberOfClusters = 1;
+    SDcard.newFile.clusters[0] = 5;
+    SDcard.blockPerCluster = 64;
+    for (uint16_t i = 0; i < 131; i++)
+    {
+        SDcard.SDWriteState = SDWRITE_FINISHED;
+        writeData(testTime);
+    }
+    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
+    EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
 }
 
 TEST(test_BT_SDcard, addMeasNameHeader_Test)
 {
     //not measured
-    SDcard.loadingDataCounter = 1;
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
     addMeasNameHeader(false, false, "test", 4);
-    EXPECT_EQ(SDcard.loadingDataCounter, 1);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
     //measured
-    SDcard.loadingDataCounter = 1;
+    SDcard.measDataCtr = 0;
     addMeasNameHeader(true, false, "test", 4);
-    EXPECT_EQ(SDcard.loadingDataCounter, 5);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], 't');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], 'e');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], 's');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], 't');
+    EXPECT_EQ(SDcard.measDataCtr, 4);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], 't');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], 'e');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], 's');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], 't');
     //measured + comma
     addMeasNameHeader(true, true, "sysTime", 7);
-    EXPECT_EQ(SDcard.loadingDataCounter, 13);
-    EXPECT_EQ(SDcard.loadingDataPointer[5], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], 's');
-    EXPECT_EQ(SDcard.loadingDataPointer[7], 'y');
-    EXPECT_EQ(SDcard.loadingDataPointer[8], 's');
-    EXPECT_EQ(SDcard.loadingDataPointer[9], 'T');
-    EXPECT_EQ(SDcard.loadingDataPointer[10], 'i');
-    EXPECT_EQ(SDcard.loadingDataPointer[11], 'm');
-    EXPECT_EQ(SDcard.loadingDataPointer[12], 'e');
+    EXPECT_EQ(SDcard.measDataCtr, 12);
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], 's');
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], 'y');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], 's');
+    EXPECT_EQ(SDcard.measBuffer[0].data[8], 'T');
+    EXPECT_EQ(SDcard.measBuffer[0].data[9], 'i');
+    EXPECT_EQ(SDcard.measBuffer[0].data[10], 'm');
+    EXPECT_EQ(SDcard.measBuffer[0].data[11], 'e');
     //
     addMeasNameHeader(true, true, "°RawR", 5);
-    EXPECT_EQ(SDcard.loadingDataCounter, 19);
-    EXPECT_EQ(SDcard.loadingDataPointer[13], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[14], '°');
-    EXPECT_EQ(SDcard.loadingDataPointer[15], 'R');
-    EXPECT_EQ(SDcard.loadingDataPointer[16], 'a');
-    EXPECT_EQ(SDcard.loadingDataPointer[17], 'w');
-    EXPECT_EQ(SDcard.loadingDataPointer[18], 'R');
+    EXPECT_EQ(SDcard.measDataCtr, 18);
+    EXPECT_EQ(SDcard.measBuffer[0].data[12], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[13], 0xB0);//°
+    EXPECT_EQ(SDcard.measBuffer[0].data[14], 'R');
+    EXPECT_EQ(SDcard.measBuffer[0].data[15], 'a');
+    EXPECT_EQ(SDcard.measBuffer[0].data[16], 'w');
+    EXPECT_EQ(SDcard.measBuffer[0].data[17], 'R');
 }
 
 TEST(test_BT_SDcard, addMeasHeader_Test)
 {
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
     pidRate.P_i.x = 150;
     pidRate.I_i.x = 40;
     pidRate.D_i.x = 1600;
@@ -2431,38 +2529,37 @@ TEST(test_BT_SDcard, addMeasHeader_Test)
     meas2Card.measureGyroRawZ = true;
     addMeasHeader();
     //1st line
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], 'R');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '\n');
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], 'R');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '\n');
     //2nd line
-    EXPECT_EQ(SDcard.loadingDataPointer[3], 'P');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], 'x');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], 'I');
-    EXPECT_EQ(SDcard.loadingDataPointer[7], 'x');
-    EXPECT_EQ(SDcard.loadingDataPointer[8], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[9], 'D');
-    EXPECT_EQ(SDcard.loadingDataPointer[10], 'x');
-    EXPECT_EQ(SDcard.loadingDataPointer[11], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], 'P');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], 'x');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], 'I');
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], 'x');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[8], 'D');
+    EXPECT_EQ(SDcard.measBuffer[0].data[9], 'x');
+    EXPECT_EQ(SDcard.measBuffer[0].data[10], ',');
     //...
-    EXPECT_EQ(SDcard.loadingDataPointer[27], 'F');
-    EXPECT_EQ(SDcard.loadingDataPointer[28], 'F');
-    EXPECT_EQ(SDcard.loadingDataPointer[29], 'r');
-    EXPECT_EQ(SDcard.loadingDataPointer[30], 'x');
-    EXPECT_EQ(SDcard.loadingDataPointer[31], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[32], 'F');
-    EXPECT_EQ(SDcard.loadingDataPointer[33], 'F');
-    EXPECT_EQ(SDcard.loadingDataPointer[34], 'r');
-    EXPECT_EQ(SDcard.loadingDataPointer[35], 'y');
-    EXPECT_EQ(SDcard.loadingDataPointer[36], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[26], 'F');
+    EXPECT_EQ(SDcard.measBuffer[0].data[27], 'F');
+    EXPECT_EQ(SDcard.measBuffer[0].data[28], 'r');
+    EXPECT_EQ(SDcard.measBuffer[0].data[29], 'x');
+    EXPECT_EQ(SDcard.measBuffer[0].data[30], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[31], 'F');
+    EXPECT_EQ(SDcard.measBuffer[0].data[32], 'F');
+    EXPECT_EQ(SDcard.measBuffer[0].data[33], 'r');
+    EXPECT_EQ(SDcard.measBuffer[0].data[34], 'y');
+    EXPECT_EQ(SDcard.measBuffer[0].data[35], ',');
     //...
-    EXPECT_EQ(SDcard.loadingDataPointer[54], 's');
-    EXPECT_EQ(SDcard.loadingDataPointer[55], 'a');
-    EXPECT_EQ(SDcard.loadingDataPointer[56], 't');
-    EXPECT_EQ(SDcard.loadingDataPointer[57], 'P');
-    EXPECT_EQ(SDcard.loadingDataPointer[58], 'I');
-    EXPECT_EQ(SDcard.loadingDataPointer[59], 'D');
-    EXPECT_EQ(SDcard.loadingDataPointer[60], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[53], 's');
+    EXPECT_EQ(SDcard.measBuffer[0].data[54], 'a');
+    EXPECT_EQ(SDcard.measBuffer[0].data[55], 't');
+    EXPECT_EQ(SDcard.measBuffer[0].data[56], 'P');
+    EXPECT_EQ(SDcard.measBuffer[0].data[57], 'I');
+    EXPECT_EQ(SDcard.measBuffer[0].data[58], 'D');
+    EXPECT_EQ(SDcard.measBuffer[0].data[59], ',');
     //...
     //EXPECT_EQ(SDcard.loadingDataPointer[76], 'A');
     //EXPECT_EQ(SDcard.loadingDataPointer[77], 'p');
@@ -2528,8 +2625,8 @@ TEST(test_BT_SDcard, addMeasHeader_Test)
     //EXPECT_EQ(SDcard.loadingDataPointer[259], 'a');
     //EXPECT_EQ(SDcard.loadingDataPointer[260], 'w');
     //EXPECT_EQ(SDcard.loadingDataPointer[261], 'Z');
-    EXPECT_EQ(SDcard.loadingDataPointer[SDcard.loadingDataCounter-1], '\n');
-    std::cout << "Header counter value: " << (SDcard.loadingDataCounter - 1) << "\n";
+    EXPECT_EQ(SDcard.measBuffer[0].data[SDcard.measDataCtr -1], '\n');
+    std::cout << "Header counter value: " << (SDcard.measDataCtr - 1) << "\n";
 }
 
 TEST(test_BT_SDcard, writeRoot_Test)
@@ -2610,7 +2707,7 @@ TEST(test_BT_SDcard, writeFAT_Test)
     SDcard.newFile.clusters[1] = 5;
     SDcard.newFile.blockCount = 1;
     SDcard.newFile.size = 235;
-    SDcard.loadingDataCounter = 3;
+    SDcard.measDataCtr = 3;
     writeFAT(1000);
     EXPECT_EQ(SDcard.MainState, SD_WAIT_4_MEASUREMENT);
     EXPECT_EQ(SDcard.newFile.numberInName, 4);
@@ -2618,63 +2715,42 @@ TEST(test_BT_SDcard, writeFAT_Test)
     EXPECT_EQ(SDcard.newFile.clusters[0], 6);
     EXPECT_EQ(SDcard.newFile.blockCount, 0);
     EXPECT_EQ(SDcard.newFile.size, 0);
-    EXPECT_EQ(SDcard.loadingDataCounter, 1);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], 0xFF);
-    EXPECT_EQ(SDcard.loadingDataPointer[513], 0xFF);
-    EXPECT_EQ(SDcard.loadingDataPointer[516], 0xFF);
-    EXPECT_EQ(SDcard.sendingDataPointer[0] & 0xFF, 0xFE);
-    EXPECT_EQ(SDcard.sendingDataPointer[1], 0xFF);
-    EXPECT_EQ(SDcard.sendingDataPointer[513], 0xFF);
-    EXPECT_EQ(SDcard.sendingDataPointer[516], 0xFF);
+    EXPECT_EQ(SDcard.measDataCtr, 0);
 }
 
 TEST(test_BT_SDcard, RunSdCard_Test)
 {
+    ResetMeasDataFlags();
+
+    SDcard.measBufferCtr = 12;
+    SDcard.measDataCtr = 4;
     RC.isCrcValid = true;
-    //setup
-    SDcard.MainState = SD_INIT;
-    SDcard.SDInitStatus = SDINIT_CMD0;
-    SDcard.SDCommandState = SDCOMMAND_SEND;
-    RunSdCard();
-    EXPECT_EQ(SDcard.MainState, SD_INIT);
-    SDcard.MainState = SD_INIT;
-    SDcard.SDInitStatus = SDINIT_FAILURE;
-    SDcard.SDCommandState = SDCOMMAND_SEND;
-    RunSdCard();
-    EXPECT_EQ(SDcard.MainState, SD_DO_NOTHING);
-    SDcard.MainState = SD_INIT;
-    SDcard.SDInitStatus = SDINIT_SUCCESS;
-    SDcard.SDCommandState = SDCOMMAND_SEND;
-    RunSdCard();
-    EXPECT_EQ(SDcard.MainState, SD_WAIT_4_MEASUREMENT);
     //wait 4 meas
-    SDcard.loadingDataCounter = 1;
-    SDcard.loadingDataPointer[1] = ' ';
-    SDcard.loadingDataPointer[2] = ' ';
+    SDcard.measBuffer[0].data[0] = ' ';
+    SDcard.measBuffer[0].data[1] = ' ';
     RC.IBUS_channel[5] = 1000;
     SDcard.MainState = SD_WAIT_4_MEASUREMENT;
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_WAIT_4_MEASUREMENT);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], ' ');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], ' ');
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], ' ');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], ' ');
     RC.IBUS_channel[5] = 2000;
     SDcard.MainState = SD_WAIT_4_MEASUREMENT;
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], 'R');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '\n');
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], 'R');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '\n');
     //meas ongoing
+    SDcard.measBuffer[0].data[0] = ' ';
+    SDcard.measBuffer[0].data[1] = ' ';
+    SDcard.measBuffer[0].data[2] = ' ';
     SDcard.measTickPrev = 1.500 * 10500000;
     sysTimer.sysTick = 1.501 * 10500000;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
-    SDcard.writeMeasData = false;
-    SDcard.loadingDataCounter = 1;
-    SDcard.loadingDataPointer[1] = ' ';
-    SDcard.loadingDataPointer[2] = ' ';
-    SDcard.loadingDataPointer[3] = ' ';
+    SDcard.measDataCtr = 0;
+    SDcard.measBuffer[0].data[0] = ' ';
+    SDcard.measBuffer[0].data[1] = ' ';
+    SDcard.measBuffer[0].data[2] = ' ';
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
     EXPECT_NEAR(SDcard.measTickPrev, 1.500 * 10500000, 0.01);
@@ -2682,55 +2758,83 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     SDcard.measTickPrev = 1.500 * 10500000;
     sysTimer.sysTick = 1.511 * 10500000;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
-    SDcard.writeMeasData = false;
-    SDcard.loadingDataCounter = 1;
-    SDcard.loadingDataPointer[1] = ' ';
-    SDcard.loadingDataPointer[2] = ' ';
-    SDcard.loadingDataPointer[3] = ' ';
+    SDcard.measDataCtr = 0;
+    SDcard.measBuffer[0].data[0] = ' ';
+    SDcard.measBuffer[0].data[1] = ' ';
+    SDcard.measBuffer[0].data[2] = ' ';
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
     EXPECT_NEAR(SDcard.measTickPrev, 1.511 * 10500000, 1);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '5');
-    EXPECT_EQ(SDcard.writeMeasData, false);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '5');
     //
     SDcard.measTickPrev = 1.510 * 10500000;
     sysTimer.sysTick = 1.521 * 10500000;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
-    SDcard.writeMeasData = false;
-    SDcard.loadingDataCounter = 512;
-    SDcard.loadingDataPointer[1] = ' ';
-    SDcard.loadingDataPointer[2] = ' ';
-    SDcard.loadingDataPointer[3] = ' ';
+    SDcard.measDataCtr = 511;
+    SDcard.measBuffer[0].data[511] = ' ';
+    SDcard.measBuffer[1].data[0] = ' ';
     RC.IBUS_channel[5] = 2000;
     SDcard.SDWriteState = SDWRITE_START;
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
     EXPECT_NEAR(SDcard.measTickPrev, 1.521 * 10500000, 1);
-    EXPECT_EQ(SDcard.sendingDataPointer[512] & 0xFF, '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[0] & 0xFF, 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
-    EXPECT_EQ(SDcard.writeMeasData, true);
+    EXPECT_EQ(SDcard.measBuffer[0].data[511], '1');
+    EXPECT_EQ(SDcard.measBuffer[1].data[0], '5');
     //
     SDcard.measTickPrev = 1.520 * 10500000;
     sysTimer.sysTick = 1.531 * 10500000;
     SDcard.MainState = SD_MEASUREMENT_ONGOING;
-    SDcard.writeMeasData = false;
-    SDcard.loadingDataCounter = 512;
-    SDcard.loadingDataPointer[1] = ' ';
-    SDcard.loadingDataPointer[2] = ' ';
-    SDcard.loadingDataPointer[3] = ' ';
+    SDcard.measDataCtr = 500;
+    SDcard.measBuffer[1].data[500] = ' ';
+    SDcard.measBuffer[1].data[501] = ' ';
+    SDcard.measBuffer[1].data[502] = ' ';
+    SDcard.measBuffer[1].data[503] = ' ';
     RC.IBUS_channel[5] = 1000;
     RunSdCard();
+    EXPECT_EQ(SDcard.MainState, SD_POST_INIT);
+    EXPECT_NEAR(SDcard.measTickPrev, 1.531 * 10500000, 1);
+    EXPECT_EQ(SDcard.measBuffer[1].data[500], '1');
+    EXPECT_EQ(SDcard.measBuffer[1].data[501], '5');
+    EXPECT_EQ(SDcard.measBuffer[1].data[502], '3');
+    EXPECT_EQ(SDcard.measBuffer[1].data[503], '1');
+    EXPECT_EQ(SDcard.measBuffer[1].data[504], '\n');
+    EXPECT_EQ(SDcard.measBuffer[1].data[505], 0x00);
+    EXPECT_EQ(SDcard.measBuffer[1].data[506], 0x00);
+    EXPECT_EQ(SDcard.measBuffer[1].data[507], 0x00);
+    EXPECT_EQ(SDcard.measBuffer[1].data[508], 0x00);
+    EXPECT_EQ(SDcard.measBuffer[1].data[509], 0x00);
+    EXPECT_EQ(SDcard.measBuffer[1].data[510], 0x00);
+    EXPECT_EQ(SDcard.measBuffer[1].data[511], 0x00);
+    //post init
+    SDcard.postInitTick = 10;
+    sysTimer.sysTick = 110000;
+    SDcard.MainState = SD_POST_INIT;
+    SDcard.SDInitStatus = SDINIT_CMD0;
+    SDcard.SDCommandState = SDCOMMAND_SEND;
+    RunSdCard();
+    EXPECT_EQ(SDcard.MainState, SD_POST_INIT);
+    SDcard.MainState = SD_POST_INIT;
+    SDcard.SDInitStatus = SDINIT_FAILURE;
+    SDcard.SDCommandState = SDCOMMAND_SEND;
+    RunSdCard();
+    EXPECT_EQ(SDcard.MainState, SD_DO_NOTHING);
+    SDcard.MainState = SD_POST_INIT;
+    SDcard.SDInitStatus = SDINIT_SUCCESS;
+    SDcard.SDCommandState = SDCOMMAND_SEND;
+    RunSdCard();
+    EXPECT_EQ(SDcard.MainState, SD_WRITE_DATA);
+    //write data
+    SDcard.MainState = SD_WRITE_DATA;
+    SDcard.SDWriteState = SDWRITE_START;
+    RunSdCard();
+    EXPECT_EQ(SDcard.MainState, SD_WRITE_DATA);
+    SDcard.sendBufferIndex = 2;
+    SDcard.measBufferCtr = 2;
+    SDcard.MainState = SD_WRITE_DATA;
     SDcard.SDWriteState = SDWRITE_FINISHED;
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
-    EXPECT_NEAR(SDcard.measTickPrev, 1.531 * 10500000, 1);
-    EXPECT_EQ(SDcard.sendingDataPointer[512] & 0xFF, '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[0] & 0xFF, 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], '5');
-    EXPECT_EQ(SDcard.writeMeasData, false);
     //write root
     SDcard.MainState = SD_WRITE_ROOT;
     SDcard.SDWriteState = SDWRITE_START;
@@ -2796,6 +2900,8 @@ TEST(test_BT_SDcard, WriteFlow_Test)
     meas2Card.measureGyroRawY = true;
     meas2Card.measureGyroRawZ = true;
 
+    SDcard.SDInitStatus = SDINIT_CMD0;
+
     //wait 4 meas
     SPI.spiActivityGyro = INACTIVE;
     SPI.spiActivityAcc = INACTIVE;
@@ -2807,33 +2913,42 @@ TEST(test_BT_SDcard, WriteFlow_Test)
     //measuring
     SDcard.measTickPrev = 2.000 * 10500000;
     sysTimer.sysTick = 2.101 * 10500000;
-    RC.IBUS_channel[5] = 1000;
-    do
+    for (uint8_t i = 0; i < 255; i++)
     {
         sysTimer.sysTick += 0.101 * 10500000;
         RunSdCard();
-
-    } while (false == SDcard.writeMeasData);
-    EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_RESPONSE);
+    }
+    //measuring ends
+    RC.IBUS_channel[4] = 1000;
+    RC.IBUS_channel[5] = 1000;
+    RunSdCard();
+    EXPECT_EQ(SDcard.MainState, SD_POST_INIT);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD0);
+    EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_SEND);
+    SDcard.SDInitStatus = SDINIT_SUCCESS;
+    SDcard.postInitTick = 10;
+    sysTimer.sysTick = 110000;
+    RunSdCard();
+    EXPECT_EQ(SDcard.MainState, SD_WRITE_DATA);
     //write measured data
+    RunSdCard();
     SDcard.SdRx[7] = 0;
     sysTimer.sysTick = 4.000 * 10500000;
     DMAC_Handler();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_DATA);
     SDcard.SdRx[515] = 0b0100;
     sysTimer.sysTick = 4.020 * 10500000;
-    SPI.spiActivityGyro = PENDING;
     DMAC_Handler();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_WRITE_FINISH);
-    SPI.spiActivityGyro = INACTIVE;
     DMAC_Handler();
     SDcard.SdRx[0] = 0;
     RunSdCard();
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_WAIT_WRITE_FINISH);
     DMAC_Handler();
     SDcard.SdRx[0] = 0xFE;
+    SDcard.sendBufferIndex = 10;
+    SDcard.measBufferCtr = 10;
     RunSdCard();
-    EXPECT_EQ(SDcard.writeMeasData, false);
     EXPECT_EQ(SDcard.SDWriteState, SDWRITE_START);
     EXPECT_EQ(SDcard.MainState, SD_WRITE_ROOT);
     EXPECT_EQ(SDcard.rootDirInfo[161], 'M');
@@ -2958,20 +3073,47 @@ TEST(test_BT_SDcard, measureData_i32)
 {
     pid_st testPID;
 
-    SDcard.loadingDataPointer[0] = 0xFE;
-    SDcard.loadingDataCounter = 1;
+    SDcard.measBuffer[0].data[0] = 0;
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
     testPID.refSig_i.x = 13421568;
-    measureData(true, true, testPID.refSig_i.x, 0, false, "test: ");
-    EXPECT_EQ(SDcard.loadingDataCounter, 10);
-    EXPECT_EQ(SDcard.loadingDataPointer[0], 0xFE);
-    EXPECT_EQ(SDcard.loadingDataPointer[1], ',');
-    EXPECT_EQ(SDcard.loadingDataPointer[2], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[3], '3');
-    EXPECT_EQ(SDcard.loadingDataPointer[4], '4');
-    EXPECT_EQ(SDcard.loadingDataPointer[5], '2');
-    EXPECT_EQ(SDcard.loadingDataPointer[6], '1');
-    EXPECT_EQ(SDcard.loadingDataPointer[7], '5');
-    EXPECT_EQ(SDcard.loadingDataPointer[8], '6');
-    EXPECT_EQ(SDcard.loadingDataPointer[9], '8');
+    measureData(true, true, testPID.refSig_i.x, 0u, false, "test: ");
+    EXPECT_EQ(SDcard.measDataCtr, 9);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], '6');
+    EXPECT_EQ(SDcard.measBuffer[0].data[8], '8');
 }
 
+
+TEST(test_BT_SDcard, DetectReInitAndWrite_Test)
+{
+    // not trigger
+    SDcard.MainState = SD_DO_NOTHING;
+    SDcard.SDInitStatus = SDINIT_SUCCESS;
+    SDcard.SDCommandState = SDCOMMAND_WAIT4RX;
+    SDcard.acmd41TryCtr = 3;
+    SDcard.lastSwitch2Way = 1000;
+    DetectReInitAndWrite(1000);
+    EXPECT_EQ(SDcard.MainState, SD_DO_NOTHING);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_SUCCESS);
+    EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_WAIT4RX);
+    EXPECT_EQ(SDcard.acmd41TryCtr, 3);
+    // switch to 2000
+    DetectReInitAndWrite(2000);
+    EXPECT_EQ(SDcard.MainState, SD_DO_NOTHING);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_SUCCESS);
+    EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_WAIT4RX);
+    EXPECT_EQ(SDcard.acmd41TryCtr, 3);
+    // trigger reinit
+    DetectReInitAndWrite(1000);
+    EXPECT_EQ(SDcard.MainState, SD_POST_INIT);
+    EXPECT_EQ(SDcard.SDInitStatus, SDINIT_CMD0);
+    EXPECT_EQ(SDcard.SDCommandState, SDCOMMAND_SEND);
+    EXPECT_EQ(SDcard.acmd41TryCtr, 0);
+}

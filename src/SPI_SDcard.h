@@ -3,13 +3,17 @@
 #include "stdint.h"
 #include "SPI_common.h"
 
+#define MAX_MEAS_BUFFER_SIZE 150
+
 typedef enum E_SDMainStates
 {
-	SD_INIT = 0,
+	SD_PRE_INIT = 0,
 	SD_WAIT_4_MEASUREMENT = 1,
 	SD_MEASUREMENT_ONGOING = 2,
-	SD_WRITE_ROOT = 3,
-	SD_WRITE_FAT = 4,
+    SD_POST_INIT = 3,
+    SD_WRITE_DATA = 4,
+	SD_WRITE_ROOT = 5,
+	SD_WRITE_FAT = 6,
 
 	SD_DO_NOTHING = 10
 }E_SDMainStates;
@@ -90,15 +94,11 @@ typedef struct date
 	uint8_t sec{ 0 };
 }date;
 
-typedef struct block_st
+typedef struct data512_st
 {
-    uint8_t block[512];
-}block_st;
+    uint8_t data[512];
+}data512_st;
 
-typedef struct cluster_st
-{
-    block_st block[8];
-}cluster_st;
 
 typedef struct SpiSDcard_st
 {
@@ -120,9 +120,7 @@ typedef struct SpiSDcard_st
 	E_SDReadStates SDReadState{ SDREAD_START };
 	volatile E_SDWriteStates SDWriteState{ SDWRITE_START };
 	E_SDInitStates SDInitStatus{ SDINIT_CMD0 };
-	E_SDMainStates MainState{ SD_INIT };
-
-	bool  sdCardInitFinished{ false };	// flags init state be done successfully or not
+	E_SDMainStates MainState{ SD_WAIT_4_MEASUREMENT };
 
 	uint32_t blockPerCluster{ 0 };
 	uint32_t bootSectorAddr{ 0 };
@@ -136,26 +134,27 @@ typedef struct SpiSDcard_st
 	fileInfo lastFile;
 	fileInfo newFile;
 
-	//1 data collection buffer, 1 sending buffer, both start with 0xFE(start token of CMD24)
-	uint32_t dataBuffer1[517] = { 0xFE };
-	uint32_t dataBuffer2[517] = { 0xFE };
-	uint32_t* sendingDataPointer = dataBuffer1;
-	uint32_t* loadingDataPointer = dataBuffer2;
-	uint16_t loadingDataCounter{ 1 };	//0th element is always 0xFE(start token)
+    data512_st measBuffer[MAX_MEAS_BUFFER_SIZE];
+    uint16_t measDataCtr{ 0 };  //0..511 count of data
+    uint8_t measBufferCtr{ 0 }; //0..149 count of buffer
+
+	//sending buffer, start with 0xFE(start token of CMD24)
+	uint32_t sendingBuffer[517] = { 0xFE };
+    uint8_t sendBufferIndex{ 0 }; //0..149 count of buffer
 
     uint32_t writeStartTick{ 0 };
     bool writingMultiFATBlock{ false };
 	uint32_t measTickPrev{ 0 };
-    bool writeMeasData{ false };
 
 	date globalDateAndTime{};
     uint64_t sysTickAtGlobalTick{ 0 };
 
+    uint64_t postInitTick{ 0 };
+    uint64_t timeoutTick{ 0 };
     uint64_t rootOrFatWriteTick{ 0 };
+    uint8_t acmd41TryCtr{ 0 };  //count of how many acmd41 was finished
 
-    //cluster_st measBuffer[100];
-    //uint32_t bufferCtr{ 0 };
-
+    uint16_t lastSwitch2Way{1000};
 
 }SpiSDcard_st;
 
@@ -167,7 +166,7 @@ typedef struct Meas2Card
     bool measureGyroRawX{ false };
     bool measureGyroRawY{ false };
     bool measureGyroRawZ{ false };
-    bool measureGyroPT1X{ true };
+    bool measureGyroPT1X{ false };
     bool measureGyroPT1Y{ false };
     bool measureGyroPT1Z{ false };
     bool measureGyroRealX{ false };
@@ -192,13 +191,13 @@ typedef struct Meas2Card
     //angle
     //bool measureAngleRawRoll{ false };
     //bool measureAngleRawPitch{ false };
-    bool measureAnglePT1Roll{ true };
+    bool measureAnglePT1Roll{ false };
     bool measureAnglePT1Pitch{ false };
  //   bool measureAnglePT2Roll{ false };
  //   bool measureAnglePT2Pitch{ false };
  //   bool measureAngleKFRawRoll{ false };
  //   bool measureAngleKFRawPitch{ false };
-    bool measureAngleKFPT11Roll{ true };
+    bool measureAngleKFPT11Roll{ false };
     bool measureAngleKFPT11Pitch{ false };
  //   bool measureAngleCFRawRoll{ false };
  //   bool measureAngleCFRawPitch{ false };
@@ -220,10 +219,10 @@ typedef struct Meas2Card
 	bool measurePIDPoutX{ true };
 	bool measurePIDPoutY{ false };
 	bool measurePIDPoutZ{ false };
-	bool measurePIDIoutX{ true };
+	bool measurePIDIoutX{ false };
 	bool measurePIDIoutY{ false };
 	bool measurePIDIoutZ{ false };
-	bool measurePIDDoutX{ true };
+	bool measurePIDDoutX{ false };
 	bool measurePIDDoutY{ false };
 	bool measurePIDDoutZ{ false };
 	bool measurePIDFFoutX{ true };
@@ -299,6 +298,9 @@ void SDWriteWaitResponse(void);
 // Method to trigger and check data received flag
 void SDWriteWaitData(void);
 
+// Method to prep sendingBuffer with the current measBuffer data
+void prepSendingBuffer();
+
 // Function to write a block to sd card
 E_SDWriteStates writeBlock(uint32_t blockOffset, volatile uint32_t* txBuf);
 
@@ -323,11 +325,8 @@ void printFileInfo(fileInfo* fileInfo);
 // Method to append chip select flag for write
 void appendCsSdCard(volatile uint32_t* block, uint16_t blockSize);
 
-// Method to swap loading and sending pointer in between the databuffers
-void swapDataBufferPointers(void);
-
 // Method to convert data into characters
-void convert2String(uint32_t* buffer, uint8_t* startPos, float value, uint8_t numberOfFractions, bool explicitPlusSign);
+void convert2CharStream(uint8_t* buffer, uint8_t* startPos, float value, uint8_t numberOfFractions, bool explicitPlusSign);
 
 // Method to store 1 measured data into loading buffer
 void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFrac, bool isExplicitPlus, char* debugName);
@@ -336,13 +335,13 @@ void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFr
 void saveMeasData();	
 
 // Method to load data chararacters into loading buffer
-void loadData2Buffer(uint32_t* chars2Add, uint8_t numberOfChar);
+void loadData2Buffer(uint8_t* chars2Add, uint8_t numberOfChar);
+
+// Function to check buffer and data counter if they need incrementing
+int8_t checkCtrs(void);
 
 // Method to append comma to loadingBuffer
-void appendComma(void);
-
-// Method to append '\n' to loadingBuffer
-void appendNewLine(void);
+void appendChar(const char c);
 
 // Method to add measured signals names to header
 void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numberOfChar);
@@ -351,7 +350,7 @@ void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numb
 void addMeasHeader(void);
 
 // Method to write data to sd card paralel to saving
-void writeData(uint16_t measSwitch, uint64_t sysTick);
+void writeData(uint64_t sysTick);
 
 // Method to write data to sd card paralel to saving
 void writeRoot(uint64_t sysTick);
@@ -378,3 +377,6 @@ E_SDMainStates ReinitSDCard(void);
 // data is copied due to temp value and only done a few times per power cycle
 void setGlobalTime(const date newTime, const uint64_t currentSysTick);
 void setGlobalDate(const date newTime);
+
+// Method to detect retrigger post-init and write to sdcard
+void DetectReInitAndWrite(const uint16_t switch2way);
