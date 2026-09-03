@@ -1751,8 +1751,8 @@ void saveMeasData()
  //   measureData(meas2Card.measureAnglePT2Pitch, true, accData->pitchAnglePT2Acc, 3, false, "pitchAnglePT2: ");
  //   measureData(meas2Card.measureAngleKFRawRoll, true, accData->angleKF.roll.angle, 3, false, "angleKFRoll: ");
  //   measureData(meas2Card.measureAngleKFRawPitch, true, accData->angleKF.pitch.angle, 3, false, "angleKFPitch: ");
-    measureData(meas2Card.measureAngleKFPT11Roll, true, accData->angleKF.roll.angle, 3, false, "angleKFPT10Roll: ");
-    measureData(meas2Card.measureAngleKFPT11Pitch, true, accData->angleKF.pitch.angle, 3, false, "angleKFPT10Pitch: ");
+    measureData(meas2Card.measureAngleKFPT11Roll, true, accData->angleKF.roll.angle, 0, false, "angleKFPT10Roll: ");
+    measureData(meas2Card.measureAngleKFPT11Pitch, true, accData->angleKF.pitch.angle, 0, false, "angleKFPT10Pitch: ");
 	//measureData(meas2Card.measureAngleCFRawRoll, true, accData->rollAngleCF, 3, false, "angleCFRoll: ");
 	//measureData(meas2Card.measureAngleCFRawPitch, true, accData->pitchAngleCF, 3, false, "angleCFPitch: ");
 	//measureData(meas2Card.measureAngleCFPT10Roll, true, accData->rollAngleCF10, 3, false, "angleCFPT10Roll: ");

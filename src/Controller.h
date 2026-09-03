@@ -43,7 +43,7 @@ typedef struct pid_st
     axis_i32 signalPT1Prev_i;
     axis_i32 iRelaxWeight;
 
-    const uint32_t deltaTicks{ 5250 };  //0.5ms
+    const int32_t deltaTicks{ 5250 };  //0.5ms
     const int32_t inverseDt{ 2000 };  //2kHz
 
     int32_t iRelaxRefThold_i;
@@ -63,10 +63,10 @@ typedef struct
     int32_t angle;      // internal angle units (30� = 78747)
     int32_t bias;       // gyro bias (raw gyro counts)
 
-    int32_t P00{1024};
-    int32_t P01;
-    int32_t P10;
-    int32_t P11{1024};
+    int64_t P00{1024};
+    int64_t P01;
+    int64_t P10;
+    int64_t P11{1024};
 }kfAngle_st;
 
 typedef struct
@@ -79,14 +79,14 @@ typedef struct
     int32_t rMeasTick{ 1000 };
 }kfAngle2d_st;
 
-//typedef struct 
-//{
-//    double angle{ 0.0 };     // The angle calculated by the Kalman filter
-//    double bias{ 0.0 };      // The gyro bias calculated by the Kalman filter
-//    double rate{ 0.0 };      // Unbiased rate
-//
-//    double P[2][2];   // Error covariance matrix
-//} kalmanFilterAngle_st;
+typedef struct 
+{
+    double angle{ 0.0 };     // The angle calculated by the Kalman filter
+    double bias{ 0.0 };      // The gyro bias calculated by the Kalman filter
+    double rate{ 0.0 };      // Unbiased rate
+
+    double P[2][2];   // Error covariance matrix
+} kalmanFilterAngle_st;
 //
 //typedef struct 
 //{
@@ -102,7 +102,6 @@ typedef struct accData_st
     int32_t accumulatedGyroRoll_i;
 
     kfAngle2d_st angleKF;
-    kfAngle2d_st angleKF_ai;
 
 
 
@@ -123,9 +122,9 @@ typedef struct accData_st
     //float rollAngleCFw01;
     //float pitchAngleCFw01;
 
-    //double q_angle{ 0.0001 };   // Process noise variance for angle
-    //double q_bias{ 0.003 };    // Process noise variance for gyro bias
-    //double r_measure{ 50.0 }; // Measurement noise variance
+    double q_angle{ 0.1 };   // Process noise variance for angle
+    double q_bias{ 0.003 };    // Process noise variance for gyro bias
+    double r_measure{ 20.0 }; // Measurement noise variance
     //kalmanFilterAngle3d_st angleKF;
     //kalmanFilterAngle3d_st angleKFPT10;
 
@@ -155,12 +154,6 @@ inline int32_t expo(const uint16_t channel);
 
 // Function to optimally linear interpolate to ~-8192-8192
 inline int32_t linearScale_8192(uint16_t ch);
-
-// Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
-//void CalcPID_wo_Dkick(pid_st* pidSt, axis* u);
-
-// Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
-//void CalcPID_wo_Dkick_FF(pid_st* pidSt, axis* u);
 
 // Method to calculate PID "u" output based on "pidSt" input, avoiding derivative kick
 //void CalcPID_wo_Dkick_FF_IRelax_Dmax(pid_st* pidSt, axis* u, uint16_t twoWayswitch);
@@ -205,7 +198,9 @@ accData_st* getAccData();
 int32_t CalcAccAngle(const int32_t numerator, const int32_t denominator1, const int32_t denominator2);
 
 //Method to calculate kalman filter angle from gyro and acc sources
-void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro);
+void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro, const int32_t ticks);
+
+void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime);
 
 //Method to calculate complementary filter of acc angle
 //void ComplementryFilterAngle(float* yOut, const float accAngle, const float gyroIn, const float looptime, const float alpha);

@@ -27,6 +27,7 @@ public:
     size_t write(const uint8_t* buffer, size_t size) { return 0; }
 
     size_t print(long, int = DEC) { return 0; }
+    size_t print(long long, int = DEC) { return 0; }
     size_t print(unsigned long, int = DEC) { return 0; }
     size_t print(double, int = 2) { return 0; }
     size_t print(char, int = 2) { return 0; }
