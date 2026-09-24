@@ -897,7 +897,7 @@ TEST(test_BT, CalcCharAndFillOutput_Test)
 TEST(test_BT, BTTransmit_Test)
 {
 	pid_st* pidRate{ getPIDrates() };
-	gyroData_st* gyroData{ getGyroData() };
+	spi_st* spi{ getSPI() };
 
 	BT.txFrame.streamDataFlags = 0;
 	BT.output.vector[1] = '$';
@@ -1040,7 +1040,7 @@ TEST(test_BT, BTTransmit_Test)
 	BT.output.vector[4] = 0;
 	BT.output.vector[5] = 0;
 	pidRate->sensor.signalPT1.x = 1234;
-	gyroData->PT1.signalPT1.x = 2345;
+	spi->gyro.signalsPT1.x = 2345;
 	BTTransmit();
 	EXPECT_EQ(BT.output.vector[0], 18);
 	EXPECT_EQ(BT.output.vector[1], '$');
@@ -1074,8 +1074,8 @@ TEST(test_BT, BTTransmit_Test)
     BT.output.vector[4] = 0;
     BT.output.vector[5] = 0;
 	pidRate->sensor.signalPT1.x = 1234;
-	gyroData->PT1.signalPT1.x = 2345;
-	gyroData->PT1.signalPT1.y = 9875;
+	spi->gyro.signalsPT1.x = 2345;
+	spi->gyro.signalsPT1.y = 9875;
     BT.txFrame.sendParam = true;
     BT.txFrame.paramData = 5;
     BT.txFrame.numberOfFrac = 0;

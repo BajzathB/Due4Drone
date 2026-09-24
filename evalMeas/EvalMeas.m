@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_08_24";
-fileNumber = 8; %1 is ., 2 is ..
+directory = "2026_09_20";
+fileNumber = 3; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -26,6 +26,16 @@ opts = detectImportOptions(file, ...
     'NumHeaderLines', 3, ...
     'Delimiter', ',');
 meas = readtable(file, opts);
+
+%recalc values to absolute values
+for i = 1 : width(meas)
+    for j = 2 : height(meas)
+        meas{j, i} = meas{j-1, i} + meas{j, i};
+    end
+end
+%make systick 1st coulomb
+ticks = linspace(header.StartTickMs, header.StartTickMs+header.measCycleMs*(height(meas)-1), height(meas));
+meas = [table(ticks', 'VariableNames', {'sysTickMs'}) meas];
 
 %% plot gyro
 % figure(1);
@@ -54,17 +64,20 @@ meas = readtable(file, opts);
 % title('Acc')
 
 %% plot angle
-% trim = 150;
-% figure(3);
-% clf(3);
-% subplot(2,1,1);
+trim = 1;
+gyroMulti = 2000/32767;
+angleMulti = 30/78747;
+figure(3);
+clf(3);
+subplot(2,1,1);
 % plot(meas.sysTime(trim:(end-trim)), [meas.aRawR(trim:(end-trim)) meas.aPT2R(trim:(end-trim)) meas.aKFRawR(trim:(end-trim))]);
-% title('Angle')
+plot( [meas.GPT1X(trim:(end-trim))*gyroMulti meas.aPT1R(trim:(end-trim))*angleMulti meas.aKFPT11R(trim:(end-trim))*angleMulti]);
+title('Angle')
 % subplot(2,1,2);
 % plot(meas.sysTime(trim:(end-trim)), [meas.aRawP(trim:(end-trim)) meas.aPT2P(trim:(end-trim)) meas.aKFRawP(trim:(end-trim))]);
 % ylabel('°angle');
-% legend('raw', 'pt2', 'kfraw');
-% xlabel('time');
+legend('gpt1', 'apt1', 'kfpt11');
+xlabel('time');
 
 %% plot plot angle with parameters
 % figure(4);
@@ -375,49 +388,49 @@ meas = readtable(file, opts);
 
 %% 
 
-ref_int = meas.PIDRefXi*17.5;
-gyro_int = meas.PIDSensXi/ (2000.0 / 32767.0);
-error = meas.PIDRefXi - meas.PIDSensXi;
-error_int = ref_int - gyro_int;
-
-P = header.Px/1000;
-Pout = P*error;
-
-figure(12);
-clf(12);
-usedParams = "PID" + newline ...
-    + sprintf("rate: %.f", header.Px) ...
-    + sprintf(", %.f", header.Ix) ...
-    + sprintf(", %.f", header.Dx) ...
-    + sprintf(", %.f", header.FFrx) ...
-    + sprintf(", %.f", header.FFdrx);
-h(1) = subplot(2,2,1);
-plot(meas.sysTickMs, [meas.PIDRefXi meas.PIDSensXi]);
-title(usedParams, 'Interpreter', 'none');
-legend("ref", "gyro");
-h(2) = subplot(2,2,3);
-plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDUXi]);
-% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
-% legend("Pout", "Iout", "Dout");
-legend("Pout", "U");
-
-
-h(3) = subplot(2,2,2);
-plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDFFoutXi]);
-legend("Pout", "FFout")
-% h(4) = subplot(2,2,4);
-% plot(meas.sysTickMs, [ meas.PIDUXi]);
-% legend("Uout");
-
-fprintf("maxPout: %.2fM\n", max(abs(meas.PIDPoutXi))/1000000);
-% max(abs(meas.PIDUXi))
-% disp("maxIout: " + max(abs(meas.PIDIoutXi)));
-% disp("maxDout: " + max(abs(meas.PIDDoutXi)));
-fprintf("maxFFout: %.2fM\n", max(abs(meas.PIDFFoutXi))/1000000);
-fprintf("maxU: %.2fM\n", max(abs(meas.PIDUXi))/1000000);
-
-linkaxes(h, 'x');
-xlim(h(1), [meas.sysTickMs(1), meas.sysTickMs(end)]);
+% ref_int = meas.PIDRefXi*17.5;
+% gyro_int = meas.PIDSensXi/ (2000.0 / 32767.0);
+% error = meas.PIDRefXi - meas.PIDSensXi;
+% error_int = ref_int - gyro_int;
+% 
+% P = header.Px/1000;
+% Pout = P*error;
+% 
+% figure(12);
+% clf(12);
+% usedParams = "PID" + newline ...
+%     + sprintf("rate: %.f", header.Px) ...
+%     + sprintf(", %.f", header.Ix) ...
+%     + sprintf(", %.f", header.Dx) ...
+%     + sprintf(", %.f", header.FFrx) ...
+%     + sprintf(", %.f", header.FFdrx);
+% h(1) = subplot(2,2,1);
+% plot(meas.sysTickMs, [meas.PIDRefXi meas.PIDSensXi]);
+% title(usedParams, 'Interpreter', 'none');
+% legend("ref", "gyro");
+% h(2) = subplot(2,2,3);
+% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDUXi]);
+% % plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
+% % legend("Pout", "Iout", "Dout");
+% legend("Pout", "U");
+% 
+% 
+% h(3) = subplot(2,2,2);
+% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDFFoutXi]);
+% legend("Pout", "FFout")
+% % h(4) = subplot(2,2,4);
+% % plot(meas.sysTickMs, [ meas.PIDUXi]);
+% % legend("Uout");
+% 
+% fprintf("maxPout: %.2fM\n", max(abs(meas.PIDPoutXi))/1000000);
+% % max(abs(meas.PIDUXi))
+% % disp("maxIout: " + max(abs(meas.PIDIoutXi)));
+% % disp("maxDout: " + max(abs(meas.PIDDoutXi)));
+% fprintf("maxFFout: %.2fM\n", max(abs(meas.PIDFFoutXi))/1000000);
+% fprintf("maxU: %.2fM\n", max(abs(meas.PIDUXi))/1000000);
+% 
+% linkaxes(h, 'x');
+% xlim(h(1), [meas.sysTickMs(1), meas.sysTickMs(end)]);
 
 
 

@@ -1,7 +1,7 @@
 clear all, clc
 
 %reading files from folder
-directory = "2026_08_21";
+directory = "2026_09_20";
 files = dir(directory);
 files = files(3:end);
 % fileList = strings(1, length(files));
@@ -14,29 +14,8 @@ files = files(3:end);
 
 %manually select files
 fileList = [
-% "MEAS359.txt" //PD
 
-% "MEAS372.txt"
-% "MEAS374.txt"
-% "MEAS375.txt"
-
-% "MEAS377.txt"
-% "MEAS379.txt"
-
-% "MEAS2.txt"
-% "MEAS3.txt"
-% "MEAS4.txt"
-% "MEAS5.txt"
-% "MEAS7.txt"
-
-"MEAS27.txt"
-% "MEAS28.txt"
-"MEAS29.txt"
-% "MEAS30.txt"
-"MEAS31.txt"
-% "MEAS33.txt"
-"MEAS34.txt"
-% "MEAS36.txt"
+"MEAS116.txt"
 
 ];
 
@@ -53,6 +32,15 @@ for n = 1:length(fileList)
         'NumHeaderLines', 3, ...
         'Delimiter', ',');
     meas{n} = readtable(file, opts);
+    %recalc values to absolute values
+    for i = 1 : width(meas{n})
+        for j = 2 : height(meas{n})
+            meas{n}{j, i} = meas{n}{j-1, i} + meas{n}{j, i};
+        end
+    end
+    %make systick 1st coulomb
+    ticks = linspace(headers{n}.StartTickMs, headers{n}.StartTickMs+headers{n}.measCycleMs*(height(meas{n})-1), height(meas{n}));
+    meas{n} = [table(ticks', 'VariableNames', {'sysTickMs'}) meas{n}];
 end
 
 trim = 1;

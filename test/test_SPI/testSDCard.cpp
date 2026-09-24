@@ -116,6 +116,8 @@ uint8_t FAT1Base2[514] = { 0xF8,0xFF,0xFF,0x0F, 0xFF,0xFF,0xFF,0x7F,  0xFF,0xFF,
 
 void ResetMeasDataFlags(void)
 {
+    meas2Card.commaFlag = false;
+
     meas2Card.measureSysTick = true;
 
     meas2Card.measureGyroRawX = false;
@@ -124,12 +126,12 @@ void ResetMeasDataFlags(void)
     meas2Card.measureGyroPT1X = false;
     meas2Card.measureGyroPT1Y = false;
     meas2Card.measureGyroPT1Z = false;
-    meas2Card.measureGyroRealX = false;
-    meas2Card.measureGyroRealY = false;
-    meas2Card.measureGyroRealZ = false;
-    meas2Card.measureGyroRealPT1X = false;
-    meas2Card.measureGyroRealPT1Y = false;
-    meas2Card.measureGyroRealPT1Z = false;
+    //meas2Card.measureGyroRealX = false;
+    //meas2Card.measureGyroRealY = false;
+    //meas2Card.measureGyroRealZ = false;
+    //meas2Card.measureGyroRealPT1X = false;
+    //meas2Card.measureGyroRealPT1Y = false;
+    //meas2Card.measureGyroRealPT1Z = false;
 
     meas2Card.measureAccRawX = false;
     meas2Card.measureAccRawY = false;
@@ -137,12 +139,12 @@ void ResetMeasDataFlags(void)
     meas2Card.measureAccPT1X = false;
     meas2Card.measureAccPT1Y = false;
     meas2Card.measureAccPT1Z = false;
-    meas2Card.measureAccRealX = false;
-    meas2Card.measureAccRealY = false;
-    meas2Card.measureAccRealZ = false;
-    meas2Card.measureAccRealPT1X = false;
-    meas2Card.measureAccRealPT1Y = false;
-    meas2Card.measureAccRealPT1Z = false;
+    //meas2Card.measureAccRealX = false;
+    //meas2Card.measureAccRealY = false;
+    //meas2Card.measureAccRealZ = false;
+    //meas2Card.measureAccRealPT1X = false;
+    //meas2Card.measureAccRealPT1Y = false;
+    //meas2Card.measureAccRealPT1Z = false;
 
     //meas2Card.measureAngleRawRoll = false;
     //meas2Card.measureAngleRawPitch = false;
@@ -187,15 +189,15 @@ void ResetMeasDataFlags(void)
     meas2Card.measurePIDUY = false;
     meas2Card.measurePIDUZ = false;
 
-    meas2Card.measurePIDerrorX = false;
-    meas2Card.measurePIDerrorY = false;
-    meas2Card.measurePIDerrorZ = false;
-    meas2Card.measurePIDerrorSumX = false;
-    meas2Card.measurePIDerrorSumY = false;
-    meas2Card.measurePIDerrorSumZ = false;
-    meas2Card.measurePIDerrorDotPT1X = false;
-    meas2Card.measurePIDerrorDotPT1Y = false;
-    meas2Card.measurePIDerrorDotPT1Z = false;
+    //meas2Card.measurePIDerrorX = false;
+    //meas2Card.measurePIDerrorY = false;
+    //meas2Card.measurePIDerrorZ = false;
+    //meas2Card.measurePIDerrorSumX = false;
+    //meas2Card.measurePIDerrorSumY = false;
+    //meas2Card.measurePIDerrorSumZ = false;
+    //meas2Card.measurePIDerrorDotPT1X = false;
+    //meas2Card.measurePIDerrorDotPT1Y = false;
+    //meas2Card.measurePIDerrorDotPT1Z = false;
     meas2Card.measurePIDrefSigDotPT1X = false;
     meas2Card.measurePIDrefSigDotPT1Y = false;
     meas2Card.measurePIDrefSigDotPT1Z = false;
@@ -239,12 +241,16 @@ TEST(test_BT_SDcard, SDcard_Call)
     uint8_t testbuffer[514];
     uint8_t testNumber{ 1 };
     convert2CharStream(testbuffer, &testNumber, 1, 0, false);
-    measureData(false, false, 1.000f, 0, false, "test");
+    bool flag{ false };
+    measureData(&flag, 1.000f, 0, false, "test");
+    int32_t last{0};
+    measureDiffData(&flag, 1234, &last, "test: ");
     saveMeasData();
     loadData2Buffer(testbuffer, 1);
     checkCtrs();
     appendChar(' ');
-    addMeasNameHeader(false, false, "test", 4);
+    addMeasNameHeader(&flag, "test", 4);
+    addMeasValueHeader(&flag, 0);
     addMeasHeader();
     writeData(testTime);
     writeRoot(testTime);
@@ -258,6 +264,8 @@ TEST(test_BT_SDcard, SDcard_Call)
     setGlobalTime(testDate, testTime);
     setGlobalDate(testDate);
     DetectReInitAndWrite(1000);
+    AppendTrailingZeros();
+    StripToLastLineEnd();
 }
 
 TEST(test_BT_SDcard, CMD0_Test)
@@ -1631,19 +1639,19 @@ TEST(test_BT_SDcard, loadData2Buffer_Test)
 
 TEST(test_BT_SDcard, measureData_Test)
 {
-    //not measured
+    bool commaFlag = false;
+    //integer
     SDcard.measBufferCtr = 0;
     SDcard.measDataCtr = 0;
-    measureData(false, false, 1.000f, 0, false, "test");
-    EXPECT_EQ(SDcard.measDataCtr, 0);
-    //integer
-    SDcard.measDataCtr = 0;
-    measureData(true, false, 1.234f, 0, false, "test");
+    commaFlag = false;
+    measureData(&commaFlag, 1.234f, 0, false, "test");
     EXPECT_EQ(SDcard.measDataCtr, 1);
     EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(commaFlag, true);
     //float 3 fractional
     SDcard.measDataCtr = 0;
-    measureData(true, false, 1.234f, 3, false, "test");
+    commaFlag = false;
+    measureData(&commaFlag, 1.234f, 3, false, "test");
     EXPECT_EQ(SDcard.measDataCtr, 5);
     EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
     EXPECT_EQ(SDcard.measBuffer[0].data[1], '.');
@@ -1652,7 +1660,8 @@ TEST(test_BT_SDcard, measureData_Test)
     EXPECT_EQ(SDcard.measBuffer[0].data[4], '4');
     //float 3 fractional negative
     SDcard.measDataCtr = 0;
-    measureData(true, false, -9.876f, 3, false, "test");
+    commaFlag = false;
+    measureData(&commaFlag, -9.876f, 3, false, "test");
     EXPECT_EQ(SDcard.measDataCtr, 6);
     EXPECT_EQ(SDcard.measBuffer[0].data[0], '-');
     EXPECT_EQ(SDcard.measBuffer[0].data[1], '9');
@@ -1661,7 +1670,9 @@ TEST(test_BT_SDcard, measureData_Test)
     EXPECT_EQ(SDcard.measBuffer[0].data[4], '7');
     EXPECT_EQ(SDcard.measBuffer[0].data[5], '6');
     //commaed float 3 fractional explicit sign
-    measureData(true, true, 6.543f, 3, true, "test");
+    commaFlag = true;
+    measureData(&commaFlag, 6.543f, 3, true, "test");
+    EXPECT_EQ(commaFlag, true);
     EXPECT_EQ(SDcard.measDataCtr, 13);
     EXPECT_EQ(SDcard.measBuffer[0].data[6], ',');
     EXPECT_EQ(SDcard.measBuffer[0].data[7], '+');
@@ -1670,6 +1681,104 @@ TEST(test_BT_SDcard, measureData_Test)
     EXPECT_EQ(SDcard.measBuffer[0].data[10], '5');
     EXPECT_EQ(SDcard.measBuffer[0].data[11], '4');
     EXPECT_EQ(SDcard.measBuffer[0].data[12], '3');
+}
+
+TEST(test_BT_SDcard, measureDiffData_Test)
+{
+    //int64
+    int64_t current64;
+    int64_t last64;
+    bool flag64;
+    //
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    current64 = 10;
+    last64 = 0;
+    flag64 = false;
+    measureDiffData(&flag64, current64, &last64, "");
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '0');
+    EXPECT_EQ(last64, 10);
+
+    //int32
+    int32_t current;
+    int32_t last;
+    bool flag;
+    //positive
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    current = 100;
+    last = 10;
+    flag = false;
+    measureDiffData(&flag, current, &last, "");
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '9');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '0');
+    EXPECT_EQ(last, 100);
+    //negative
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    current = -200;
+    last = -10;
+    flag = false;
+    measureDiffData(&flag, current, &last, "");
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '-');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '9');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '0');
+    EXPECT_EQ(last, -200);
+    //consecutive
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    current = -50;
+    flag = false;
+    measureDiffData(&flag, current, &last, "");
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '0');
+    EXPECT_EQ(last, -50);
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    current = 200;
+    flag = false;
+    measureDiffData(&flag, current, &last, "");
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '0');
+    EXPECT_EQ(last, 200);
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    current = -500;
+    measureDiffData(&flag, current, &last, "");
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '-');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '0');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], '0');
+    EXPECT_EQ(last, -500);
+}
+
+TEST(test_BT_SDcard, addMeasValueHeader_Test)
+{
+    bool commaFlag = false;
+    //integer
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    commaFlag = false;
+    addMeasValueHeader(&commaFlag, 1234);
+    EXPECT_EQ(SDcard.measDataCtr, 4);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '4');
+    EXPECT_EQ(commaFlag, true);
+    //float to int
+    SDcard.measDataCtr = 0;
+    commaFlag = true;
+    addMeasValueHeader(&commaFlag, 1.234f);
+    EXPECT_EQ(SDcard.measDataCtr, 2);
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '1');
+    EXPECT_EQ(commaFlag, true);
 }
 
 TEST(test_BT_SDcard, saveMeasData_Test)
@@ -1682,35 +1791,38 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = false;
     meas2Card.measureGyroRawY = false;
-    meas2Card.measureGyroRealZ = false;
+    meas2Card.measureGyroRawZ = false;
     sysTimer.sysTick = 1.234 * 10500000;
     spiData->gyro.signals.x = 2345;
     spiData->gyro.signals.y = 456;
     spiData->gyro.signals.z = -129;
+    meas2Card.lastSysTick = 1.220 * 1000;
+    meas2Card.lastGyroRawX = 100;
+    meas2Card.lastGyroRawY = 200;
+    meas2Card.lastGyroRawZ = -100;
     SDcard.measBufferCtr = 0;
     SDcard.measDataCtr = 0;
     saveMeasData();
     EXPECT_EQ(SDcard.measBuffer[0].data[0], '1');
-    EXPECT_EQ(SDcard.measBuffer[0].data[1], '2');
-    EXPECT_EQ(SDcard.measBuffer[0].data[2], '3');
-    EXPECT_EQ(SDcard.measBuffer[0].data[3], '4');
-    EXPECT_EQ(SDcard.measBuffer[0].data[4], '\n');
-    EXPECT_EQ(SDcard.measDataCtr, 5);
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '\n');
+    EXPECT_EQ(SDcard.measDataCtr, 3);
+    EXPECT_EQ(meas2Card.lastSysTick, 1234);
     // systime+gyroX measured
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = true;
     meas2Card.measureGyroRawY = false;
-    meas2Card.measureGyroRealZ = false;
+    meas2Card.measureGyroRawZ = false;
     sysTimer.sysTick = 5.678 * 10500000;
     SDcard.measDataCtr = 0;
     saveMeasData();
-    EXPECT_EQ(SDcard.measBuffer[0].data[0], '5');
-    EXPECT_EQ(SDcard.measBuffer[0].data[1], '6');
-    EXPECT_EQ(SDcard.measBuffer[0].data[2], '7');
-    EXPECT_EQ(SDcard.measBuffer[0].data[3], '8');
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], '4');
     EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
     EXPECT_EQ(SDcard.measBuffer[0].data[5], '2');
-    EXPECT_EQ(SDcard.measBuffer[0].data[6], '3');
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], '2');
     EXPECT_EQ(SDcard.measBuffer[0].data[7], '4');
     EXPECT_EQ(SDcard.measBuffer[0].data[8], '5');
     EXPECT_EQ(SDcard.measBuffer[0].data[9], '\n');
@@ -1719,26 +1831,23 @@ TEST(test_BT_SDcard, saveMeasData_Test)
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = false;
     meas2Card.measureGyroRawY = true;
-    meas2Card.measureGyroRealZ = true;
+    meas2Card.measureGyroRawZ = true;
     sysTimer.sysTick = 8.271 * 10500000;
     saveMeasData();
-    EXPECT_EQ(SDcard.measBuffer[0].data[10], '8');
-    EXPECT_EQ(SDcard.measBuffer[0].data[11], '2');
-    EXPECT_EQ(SDcard.measBuffer[0].data[12], '7');
-    EXPECT_EQ(SDcard.measBuffer[0].data[13], '1');
+    EXPECT_EQ(SDcard.measBuffer[0].data[10], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[11], '5');
+    EXPECT_EQ(SDcard.measBuffer[0].data[12], '9');
+    EXPECT_EQ(SDcard.measBuffer[0].data[13], '3');
     EXPECT_EQ(SDcard.measBuffer[0].data[14], ',');
-    EXPECT_EQ(SDcard.measBuffer[0].data[15], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[15], '2');
     EXPECT_EQ(SDcard.measBuffer[0].data[16], '5');
     EXPECT_EQ(SDcard.measBuffer[0].data[17], '6');
     EXPECT_EQ(SDcard.measBuffer[0].data[18], ',');
     EXPECT_EQ(SDcard.measBuffer[0].data[19], '-');
-    EXPECT_EQ(SDcard.measBuffer[0].data[20], '7');
-    EXPECT_EQ(SDcard.measBuffer[0].data[21], '.');
-    EXPECT_EQ(SDcard.measBuffer[0].data[22], '8');
-    EXPECT_EQ(SDcard.measBuffer[0].data[23], '7');
-    EXPECT_EQ(SDcard.measBuffer[0].data[24], '4');
-    EXPECT_EQ(SDcard.measBuffer[0].data[25], '\n');
-    EXPECT_EQ(SDcard.measDataCtr, 26);
+    EXPECT_EQ(SDcard.measBuffer[0].data[20], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[21], '9');
+    EXPECT_EQ(SDcard.measBuffer[0].data[22], '\n');
+    EXPECT_EQ(SDcard.measDataCtr, 23);
 }
 
 TEST(test_BT_SDcard, saveMeasData_Getpid_Test)
@@ -1753,20 +1862,101 @@ TEST(test_BT_SDcard, saveMeasData_Getpid_Test)
     sysTimer.sysTick = 9.876 * 10500000;
     pid->refSig_i.x = -12345;
     meas2Card.measurePIDRefsigX = true;
+    meas2Card.lastSysTick = 5.220 * 1000;
+    meas2Card.lastPIDRefsigX = -2000;
     saveMeasData(); 
-    EXPECT_EQ(SDcard.measBuffer[0].data[0], '9');
-    EXPECT_EQ(SDcard.measBuffer[0].data[1], '8');
-    EXPECT_EQ(SDcard.measBuffer[0].data[2], '7');
+    EXPECT_EQ(SDcard.measBuffer[0].data[0], '4');
+    EXPECT_EQ(SDcard.measBuffer[0].data[1], '6');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], '5');
     EXPECT_EQ(SDcard.measBuffer[0].data[3], '6');
     EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
     EXPECT_EQ(SDcard.measBuffer[0].data[5], '-');
     EXPECT_EQ(SDcard.measBuffer[0].data[6], '1');
-    EXPECT_EQ(SDcard.measBuffer[0].data[7], '2');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], '0');
     EXPECT_EQ(SDcard.measBuffer[0].data[8], '3');
     EXPECT_EQ(SDcard.measBuffer[0].data[9], '4');
     EXPECT_EQ(SDcard.measBuffer[0].data[10], '5');
     EXPECT_EQ(SDcard.measBuffer[0].data[11], '\n');
     EXPECT_EQ(SDcard.measDataCtr, 12);
+}
+
+TEST(test_BT_SDcard, StripToLastLineEnd_Test)
+{
+    SDcard.measBufferCtr = 1;
+    SDcard.measDataCtr = 0;
+    SDcard.measBuffer[0].data[0] = '0';
+    SDcard.measBuffer[0].data[1] = '1';
+    SDcard.measBuffer[0].data[2] = '2';
+    SDcard.measBuffer[0].data[509] = '\n';
+    SDcard.measBuffer[0].data[510] = '9';
+    SDcard.measBuffer[0].data[511] = '0';
+    SDcard.measBuffer[1].data[0] = '1';
+    SDcard.measBuffer[1].data[1] = '2';
+    SDcard.measBuffer[1].data[2] = '3';
+    SDcard.measBuffer[1].data[3] = '4';
+    SDcard.measBuffer[1].data[4] = '5';
+    SDcard.measBuffer[1].data[5] = '\n';
+    SDcard.measBuffer[1].data[6] = '6';
+    SDcard.measBuffer[1].data[7] = '7';
+    SDcard.measBuffer[1].data[8] = '8';
+    SDcard.measBuffer[1].data[9] = '9';
+    SDcard.measBuffer[1].data[10] = '\n';
+
+    //end is newline
+    SDcard.measDataCtr = 11;
+    StripToLastLineEnd();
+    EXPECT_EQ(SDcard.measDataCtr, 11);
+
+    //strip back to newline
+    SDcard.measDataCtr = 10;
+    StripToLastLineEnd();
+    EXPECT_EQ(SDcard.measDataCtr, 6);
+
+    //strip back to preveious block
+    SDcard.measDataCtr = 5;
+    StripToLastLineEnd();
+    EXPECT_EQ(SDcard.measDataCtr, 510);
+
+    //reach buffer and data 0 ctr
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 3;
+    StripToLastLineEnd();
+    EXPECT_EQ(SDcard.measDataCtr, 0);
+}
+
+TEST(test_BT_SDcard, AppendTrailingZeros_Test)
+{
+    SDcard.measBufferCtr = 0;
+    SDcard.measDataCtr = 0;
+    SDcard.measBuffer[SDcard.measBufferCtr].data[500] = '1';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[501] = '2';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[502] = '3';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[503] = '4';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[504] = '5';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[505] = '\n';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[506] = '6';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[507] = '7';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[508] = '8';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[509] = '9';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[510] = '\n';
+    SDcard.measBuffer[SDcard.measBufferCtr].data[511] = '0';
+
+    //append 1
+    SDcard.measDataCtr = 511;
+    AppendTrailingZeros();
+    EXPECT_EQ(SDcard.measDataCtr, 512);
+    EXPECT_EQ(SDcard.measBuffer[SDcard.measBufferCtr].data[511], 0);
+
+    //append multiple bytes
+    SDcard.measDataCtr = 506;
+    AppendTrailingZeros();
+    EXPECT_EQ(SDcard.measDataCtr, 512);
+    EXPECT_EQ(SDcard.measBuffer[SDcard.measBufferCtr].data[506], 0);
+    EXPECT_EQ(SDcard.measBuffer[SDcard.measBufferCtr].data[507], 0);
+    EXPECT_EQ(SDcard.measBuffer[SDcard.measBufferCtr].data[508], 0);
+    EXPECT_EQ(SDcard.measBuffer[SDcard.measBufferCtr].data[509], 0);
+    EXPECT_EQ(SDcard.measBuffer[SDcard.measBufferCtr].data[510], 0);
+    EXPECT_EQ(SDcard.measBuffer[SDcard.measBufferCtr].data[511], 0);
 }
 
 TEST(test_BT_SDcard, writeBlock_Test)
@@ -2481,21 +2671,20 @@ TEST(test_BT_SDcard, writeData_Test)
 
 TEST(test_BT_SDcard, addMeasNameHeader_Test)
 {
-    //not measured
+    bool flag{ false };
+    //
     SDcard.measBufferCtr = 0;
     SDcard.measDataCtr = 0;
-    addMeasNameHeader(false, false, "test", 4);
-    EXPECT_EQ(SDcard.measDataCtr, 0);
-    //measured
-    SDcard.measDataCtr = 0;
-    addMeasNameHeader(true, false, "test", 4);
+    flag = false;
+    addMeasNameHeader(&flag, "test", 4);
     EXPECT_EQ(SDcard.measDataCtr, 4);
     EXPECT_EQ(SDcard.measBuffer[0].data[0], 't');
     EXPECT_EQ(SDcard.measBuffer[0].data[1], 'e');
     EXPECT_EQ(SDcard.measBuffer[0].data[2], 's');
     EXPECT_EQ(SDcard.measBuffer[0].data[3], 't');
-    //measured + comma
-    addMeasNameHeader(true, true, "sysTime", 7);
+    // + comma
+    flag = true;
+    addMeasNameHeader(&flag, "sysTime", 7);
     EXPECT_EQ(SDcard.measDataCtr, 12);
     EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
     EXPECT_EQ(SDcard.measBuffer[0].data[5], 's');
@@ -2506,7 +2695,7 @@ TEST(test_BT_SDcard, addMeasNameHeader_Test)
     EXPECT_EQ(SDcard.measBuffer[0].data[10], 'm');
     EXPECT_EQ(SDcard.measBuffer[0].data[11], 'e');
     //
-    addMeasNameHeader(true, true, "°RawR", 5);
+    addMeasNameHeader(&flag, "°RawR", 5);
     EXPECT_EQ(SDcard.measDataCtr, 18);
     EXPECT_EQ(SDcard.measBuffer[0].data[12], ',');
     EXPECT_EQ(SDcard.measBuffer[0].data[13], 0xB0);//°
@@ -2518,6 +2707,7 @@ TEST(test_BT_SDcard, addMeasNameHeader_Test)
 
 TEST(test_BT_SDcard, addMeasHeader_Test)
 {
+    spi_st* spiData{ getSPI() };
     SDcard.measBufferCtr = 0;
     SDcard.measDataCtr = 0;
     pidRate.P_i.x = 150;
@@ -2527,39 +2717,66 @@ TEST(test_BT_SDcard, addMeasHeader_Test)
     meas2Card.measureSysTick = true;
     meas2Card.measureGyroRawX = true;
     meas2Card.measureGyroRawZ = true;
+    sysTimer.sysTick = 105000;
+    spiData->gyro.signals.x = 12345;
+    spiData->gyro.signals.z = 9876;
     addMeasHeader();
     //1st line
     EXPECT_EQ(SDcard.measBuffer[0].data[0], 'R');
     EXPECT_EQ(SDcard.measBuffer[0].data[1], '\n');
     //2nd line
-    EXPECT_EQ(SDcard.measBuffer[0].data[2], 'P');
-    EXPECT_EQ(SDcard.measBuffer[0].data[3], 'x');
-    EXPECT_EQ(SDcard.measBuffer[0].data[4], ',');
-    EXPECT_EQ(SDcard.measBuffer[0].data[5], 'I');
-    EXPECT_EQ(SDcard.measBuffer[0].data[6], 'x');
-    EXPECT_EQ(SDcard.measBuffer[0].data[7], ',');
-    EXPECT_EQ(SDcard.measBuffer[0].data[8], 'D');
-    EXPECT_EQ(SDcard.measBuffer[0].data[9], 'x');
-    EXPECT_EQ(SDcard.measBuffer[0].data[10], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[2], 'S');
+    EXPECT_EQ(SDcard.measBuffer[0].data[3], 't');
+    EXPECT_EQ(SDcard.measBuffer[0].data[4], 'a');
+    EXPECT_EQ(SDcard.measBuffer[0].data[5], 'r');
+    EXPECT_EQ(SDcard.measBuffer[0].data[6], 't');
+    EXPECT_EQ(SDcard.measBuffer[0].data[7], 'T');
+    EXPECT_EQ(SDcard.measBuffer[0].data[8], 'i');
+    EXPECT_EQ(SDcard.measBuffer[0].data[9], 'c');
+    EXPECT_EQ(SDcard.measBuffer[0].data[10], 'k');
+    EXPECT_EQ(SDcard.measBuffer[0].data[11], 'M');
+    EXPECT_EQ(SDcard.measBuffer[0].data[12], 's');
+    EXPECT_EQ(SDcard.measBuffer[0].data[13], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[14], 'm');
+    EXPECT_EQ(SDcard.measBuffer[0].data[15], 'e');
+    EXPECT_EQ(SDcard.measBuffer[0].data[16], 'a');
+    EXPECT_EQ(SDcard.measBuffer[0].data[17], 's');
+    EXPECT_EQ(SDcard.measBuffer[0].data[18], 'C');
+    EXPECT_EQ(SDcard.measBuffer[0].data[19], 'y');
+    EXPECT_EQ(SDcard.measBuffer[0].data[20], 'c');
+    EXPECT_EQ(SDcard.measBuffer[0].data[21], 'l');
+    EXPECT_EQ(SDcard.measBuffer[0].data[22], 'e');
+    EXPECT_EQ(SDcard.measBuffer[0].data[23], 'M');
+    EXPECT_EQ(SDcard.measBuffer[0].data[24], 's');
+    EXPECT_EQ(SDcard.measBuffer[0].data[25], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[26], 'P');
+    EXPECT_EQ(SDcard.measBuffer[0].data[27], 'x');
+    EXPECT_EQ(SDcard.measBuffer[0].data[28], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[29], 'I');
+    EXPECT_EQ(SDcard.measBuffer[0].data[30], 'x');
+    EXPECT_EQ(SDcard.measBuffer[0].data[31], ',');
+    EXPECT_EQ(SDcard.measBuffer[0].data[32], 'D');
+    EXPECT_EQ(SDcard.measBuffer[0].data[33], 'x');
+    EXPECT_EQ(SDcard.measBuffer[0].data[34], ',');
     //...
-    EXPECT_EQ(SDcard.measBuffer[0].data[26], 'F');
-    EXPECT_EQ(SDcard.measBuffer[0].data[27], 'F');
-    EXPECT_EQ(SDcard.measBuffer[0].data[28], 'r');
-    EXPECT_EQ(SDcard.measBuffer[0].data[29], 'x');
-    EXPECT_EQ(SDcard.measBuffer[0].data[30], ',');
-    EXPECT_EQ(SDcard.measBuffer[0].data[31], 'F');
-    EXPECT_EQ(SDcard.measBuffer[0].data[32], 'F');
-    EXPECT_EQ(SDcard.measBuffer[0].data[33], 'r');
-    EXPECT_EQ(SDcard.measBuffer[0].data[34], 'y');
-    EXPECT_EQ(SDcard.measBuffer[0].data[35], ',');
-    //...
-    EXPECT_EQ(SDcard.measBuffer[0].data[53], 's');
-    EXPECT_EQ(SDcard.measBuffer[0].data[54], 'a');
-    EXPECT_EQ(SDcard.measBuffer[0].data[55], 't');
-    EXPECT_EQ(SDcard.measBuffer[0].data[56], 'P');
-    EXPECT_EQ(SDcard.measBuffer[0].data[57], 'I');
-    EXPECT_EQ(SDcard.measBuffer[0].data[58], 'D');
-    EXPECT_EQ(SDcard.measBuffer[0].data[59], ',');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[26], 'F');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[27], 'F');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[28], 'r');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[29], 'x');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[30], ',');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[31], 'F');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[32], 'F');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[33], 'r');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[34], 'y');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[35], ',');
+    ////...
+    //EXPECT_EQ(SDcard.measBuffer[0].data[53], 's');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[54], 'a');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[55], 't');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[56], 'P');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[57], 'I');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[58], 'D');
+    //EXPECT_EQ(SDcard.measBuffer[0].data[59], ',');
     //...
     //EXPECT_EQ(SDcard.loadingDataPointer[76], 'A');
     //EXPECT_EQ(SDcard.loadingDataPointer[77], 'p');
@@ -2627,6 +2844,10 @@ TEST(test_BT_SDcard, addMeasHeader_Test)
     //EXPECT_EQ(SDcard.loadingDataPointer[261], 'Z');
     EXPECT_EQ(SDcard.measBuffer[0].data[SDcard.measDataCtr -1], '\n');
     std::cout << "Header counter value: " << (SDcard.measDataCtr - 1) << "\n";
+    //5th line: last value update
+    EXPECT_EQ(meas2Card.lastSysTick, 10);
+    EXPECT_EQ(meas2Card.lastGyroRawX, 12345);
+    EXPECT_EQ(meas2Card.lastGyroRawZ, 9876);
 }
 
 TEST(test_BT_SDcard, writeRoot_Test)
@@ -2776,11 +2997,12 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     SDcard.measBuffer[1].data[0] = ' ';
     RC.IBUS_channel[5] = 2000;
     SDcard.SDWriteState = SDWRITE_START;
+    meas2Card.lastSysTick = 1.510 * 1000;
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_MEASUREMENT_ONGOING);
     EXPECT_NEAR(SDcard.measTickPrev, 1.521 * 10500000, 1);
     EXPECT_EQ(SDcard.measBuffer[0].data[511], '1');
-    EXPECT_EQ(SDcard.measBuffer[1].data[0], '5');
+    EXPECT_EQ(SDcard.measBuffer[1].data[0], '0');
     //
     SDcard.measTickPrev = 1.520 * 10500000;
     sysTimer.sysTick = 1.531 * 10500000;
@@ -2791,14 +3013,15 @@ TEST(test_BT_SDcard, RunSdCard_Test)
     SDcard.measBuffer[1].data[502] = ' ';
     SDcard.measBuffer[1].data[503] = ' ';
     RC.IBUS_channel[5] = 1000;
+    meas2Card.lastSysTick = 1.520 * 1000;
     RunSdCard();
     EXPECT_EQ(SDcard.MainState, SD_POST_INIT);
     EXPECT_NEAR(SDcard.measTickPrev, 1.531 * 10500000, 1);
     EXPECT_EQ(SDcard.measBuffer[1].data[500], '1');
-    EXPECT_EQ(SDcard.measBuffer[1].data[501], '5');
-    EXPECT_EQ(SDcard.measBuffer[1].data[502], '3');
-    EXPECT_EQ(SDcard.measBuffer[1].data[503], '1');
-    EXPECT_EQ(SDcard.measBuffer[1].data[504], '\n');
+    EXPECT_EQ(SDcard.measBuffer[1].data[501], '1');
+    EXPECT_EQ(SDcard.measBuffer[1].data[502], '\n');
+    EXPECT_EQ(SDcard.measBuffer[1].data[503], 0x00);
+    EXPECT_EQ(SDcard.measBuffer[1].data[504], 0x00);
     EXPECT_EQ(SDcard.measBuffer[1].data[505], 0x00);
     EXPECT_EQ(SDcard.measBuffer[1].data[506], 0x00);
     EXPECT_EQ(SDcard.measBuffer[1].data[507], 0x00);
@@ -3072,12 +3295,13 @@ TEST(test_BT_SDcard, setGlobalDate_Test)
 TEST(test_BT_SDcard, measureData_i32)
 {
     pid_st testPID;
+    bool commaFlag = true;
 
     SDcard.measBuffer[0].data[0] = 0;
     SDcard.measBufferCtr = 0;
     SDcard.measDataCtr = 0;
     testPID.refSig_i.x = 13421568;
-    measureData(true, true, testPID.refSig_i.x, 0u, false, "test: ");
+    measureData(&commaFlag, testPID.refSig_i.x, 0u, false, "test: ");
     EXPECT_EQ(SDcard.measDataCtr, 9);
     EXPECT_EQ(SDcard.measBuffer[0].data[0], ',');
     EXPECT_EQ(SDcard.measBuffer[0].data[1], '1');

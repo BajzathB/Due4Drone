@@ -160,45 +160,46 @@ typedef struct SpiSDcard_st
 
 typedef struct Meas2Card
 {
+	bool commaFlag{ false };
     //timestamp
-    bool measureSysTick{ true };
+	bool measureSysTick{ false }; int64_t lastSysTick{ 0 };
     //gyro
-    bool measureGyroRawX{ false };
-    bool measureGyroRawY{ false };
-    bool measureGyroRawZ{ false };
-    bool measureGyroPT1X{ true };
-    bool measureGyroPT1Y{ false };
-    bool measureGyroPT1Z{ false };
-    bool measureGyroRealX{ false };
-    bool measureGyroRealY{ false };
-    bool measureGyroRealZ{ false };
-    bool measureGyroRealPT1X{ false };
-    bool measureGyroRealPT1Y{ false };
-    bool measureGyroRealPT1Z{ false };
+    bool measureGyroRawX{ false }; int32_t lastGyroRawX{ 0 };
+    bool measureGyroRawY{ false }; int32_t lastGyroRawY{ 0 };
+    bool measureGyroRawZ{ false }; int32_t lastGyroRawZ{ 0 };
+	bool measureGyroPT1X{ true }; int32_t lastGyroPT1X{ 0 };
+    bool measureGyroPT1Y{ false }; int32_t lastGyroPT1Y{ 0 };
+    bool measureGyroPT1Z{ false }; int32_t lastGyroPT1Z{ 0 };
+    //bool measureGyroRealX{ false }; int32_t lastGyroRealX{ 0 };
+    //bool measureGyroRealY{ false }; int32_t lastGyroRealY{ 0 };
+    //bool measureGyroRealZ{ false }; int32_t lastGyroRealZ{ 0 };
+    //bool measureGyroRealPT1X{ false }; int32_t lastGyroRealPT1X{ 0 };
+    //bool measureGyroRealPT1Y{ false }; int32_t lastGyroRealPT1Y{ 0 };
+    //bool measureGyroRealPT1Z{ false }; int32_t lastGyroRealPT1Z{ 0 };
     //acc
-    bool measureAccRawX{ false };
-    bool measureAccRawY{ false };
-    bool measureAccRawZ{ false };
-    bool measureAccPT1X{ false };
-    bool measureAccPT1Y{ false };
-    bool measureAccPT1Z{ false };
-	bool measureAccRealX{ false };
-	bool measureAccRealY{ false };
-	bool measureAccRealZ{ false };
-	bool measureAccRealPT1X{ false };
-	bool measureAccRealPT1Y{ false };
-	bool measureAccRealPT1Z{ false };
+    bool measureAccRawX{ false }; int32_t lastAccRawX{ 0 };
+    bool measureAccRawY{ false }; int32_t lastAccRawY{ 0 };
+    bool measureAccRawZ{ false }; int32_t lastAccRawZ{ 0 };
+    bool measureAccPT1X{ false }; int32_t lastAccPT1X{ 0 };
+    bool measureAccPT1Y{ false }; int32_t lastAccPT1Y{ 0 };
+    bool measureAccPT1Z{ false }; int32_t lastAccPT1Z{ 0 };
+	//bool measureAccRealX{ false }; int32_t lastAccRealX{ 0 };
+	//bool measureAccRealY{ false }; int32_t lastAccRealY{ 0 };
+	//bool measureAccRealZ{ false }; int32_t lastAccRealZ{ 0 };
+	//bool measureAccRealPT1X{ false }; int32_t lastAccRealPT1X{ 0 };
+	//bool measureAccRealPT1Y{ false }; int32_t lastAccRealPT1Y{ 0 };
+	//bool measureAccRealPT1Z{ false }; int32_t lastAccRealPT1Z{ 0 };
     //angle
     //bool measureAngleRawRoll{ false };
     //bool measureAngleRawPitch{ false };
-    bool measureAnglePT1Roll{ true };
-    bool measureAnglePT1Pitch{ false };
+	bool measureAnglePT1Roll{ true }; int32_t lastAnglePT1Roll{ 0 };
+	bool measureAnglePT1Pitch{ false }; int32_t lastAnglePT1Pitch{ 0 };
  //   bool measureAnglePT2Roll{ false };
  //   bool measureAnglePT2Pitch{ false };
  //   bool measureAngleKFRawRoll{ false };
  //   bool measureAngleKFRawPitch{ false };
-    bool measureAngleKFPT11Roll{ true };
-    bool measureAngleKFPT11Pitch{ false };
+    bool measureAngleKFPT11Roll{ true }; int32_t lastAngleKFPT11Roll{ 0 };
+    bool measureAngleKFPT11Pitch{ false }; int32_t lastAngleKFPT11Pitch{ 0 };
  //   bool measureAngleCFRawRoll{ false };
  //   bool measureAngleCFRawPitch{ false };
 	//bool measureAngleCFPT10Roll{ false };
@@ -210,43 +211,43 @@ typedef struct Meas2Card
 	//bool measureAngleCFWeightedPT01Roll{ false };
 	//bool measureAngleCFWeightedPT01Pitch{ false };
     //PID control
-	bool measurePIDRefsigX{ false };
-	bool measurePIDRefsigY{ false };
-	bool measurePIDRefsigZ{ false };
-	bool measurePIDSensorX{ false };
-	bool measurePIDSensorY{ false };
-	bool measurePIDSensorZ{ false };
-	bool measurePIDPoutX{ false };
-	bool measurePIDPoutY{ false };
-	bool measurePIDPoutZ{ false };
-	bool measurePIDIoutX{ false };
-	bool measurePIDIoutY{ false };
-	bool measurePIDIoutZ{ false };
-	bool measurePIDDoutX{ false };
-	bool measurePIDDoutY{ false };
-	bool measurePIDDoutZ{ false };
-	bool measurePIDFFoutX{ false };
-	bool measurePIDFFoutY{ false };
-	bool measurePIDFFoutZ{ false };
-	bool measurePIDUX{ false };
-	bool measurePIDUY{ false };
-	bool measurePIDUZ{ false };
+	bool measurePIDRefsigX{ false }; int32_t lastPIDRefsigX{ 0 };
+	bool measurePIDRefsigY{ false }; int32_t lastPIDRefsigY{ 0 };
+	bool measurePIDRefsigZ{ false }; int32_t lastPIDRefsigZ{ 0 };
+	bool measurePIDSensorX{ false }; int32_t lastPIDSensorX{ 0 };
+	bool measurePIDSensorY{ false }; int32_t lastPIDSensorY{ 0 };
+	bool measurePIDSensorZ{ false }; int32_t lastPIDSensorZ{ 0 };
+	bool measurePIDPoutX{ false }; int32_t lastPIDPoutX{ 0 };
+	bool measurePIDPoutY{ false }; int32_t lastPIDPoutY{ 0 };
+	bool measurePIDPoutZ{ false }; int32_t lastPIDPoutZ{ 0 };
+	bool measurePIDIoutX{ false }; int32_t lastPIDIoutX{ 0 };
+	bool measurePIDIoutY{ false }; int32_t lastPIDIoutY{ 0 };
+	bool measurePIDIoutZ{ false }; int32_t lastPIDIoutZ{ 0 };
+	bool measurePIDDoutX{ false }; int32_t lastPIDDoutX{ 0 };
+	bool measurePIDDoutY{ false }; int32_t lastPIDDoutY{ 0 };
+	bool measurePIDDoutZ{ false }; int32_t lastPIDDoutZ{ 0 };
+	bool measurePIDFFoutX{ false }; int32_t lastPIDFFoutX{ 0 };
+	bool measurePIDFFoutY{ false }; int32_t lastPIDFFoutY{ 0 };
+	bool measurePIDFFoutZ{ false }; int32_t lastPIDFFoutZ{ 0 };
+	bool measurePIDUX{ false }; int32_t lastPIDUX{ 0 };
+	bool measurePIDUY{ false }; int32_t lastPIDUY{ 0 };
+	bool measurePIDUZ{ false }; int32_t lastPIDUZ{ 0 };
     //PID internals
-    bool measurePIDerrorX{ false };
-    bool measurePIDerrorY{ false };
-    bool measurePIDerrorZ{ false };
-    bool measurePIDerrorSumX{ false };
-    bool measurePIDerrorSumY{ false };
-    bool measurePIDerrorSumZ{ false };
-    bool measurePIDerrorDotPT1X{ false };
-    bool measurePIDerrorDotPT1Y{ false };
-    bool measurePIDerrorDotPT1Z{ false };
-    bool measurePIDrefSigDotPT1X{ false };
-    bool measurePIDrefSigDotPT1Y{ false };
-    bool measurePIDrefSigDotPT1Z{ false };
-    bool measurePIDiRelaxWeightX{ false };
-    bool measurePIDiRelaxWeightY{ false };
-    bool measurePIDiRelaxWeightZ{ false };
+    //bool measurePIDerrorX{ false }; int32_t lastPIDerrorX{ 0 };
+    //bool measurePIDerrorY{ false }; int32_t lastPIDerrorY{ 0 };
+    //bool measurePIDerrorZ{ false }; int32_t lastPIDerrotZ{ 0 };
+    //bool measurePIDerrorSumX{ false }; int32_t lastPIDerrorSumX{ 0 };
+    //bool measurePIDerrorSumY{ false }; int32_t lastPIDerrorSumY{ 0 };
+    //bool measurePIDerrorSumZ{ false }; int32_t lastPIDerrorSumZ{ 0 };
+    //bool measurePIDerrorDotPT1X{ false }; int32_t lastPIDerrorDotPT1X{ 0 };
+    //bool measurePIDerrorDotPT1Y{ false }; int32_t lastPIDerrorDotPT1Y{ 0 };
+    //bool measurePIDerrorDotPT1Z{ false }; int32_t lastPIDerrorDotPT1Z{ 0 };
+    bool measurePIDrefSigDotPT1X{ false }; int32_t lastPIDrefSigDotPT1X{ 0 };
+    bool measurePIDrefSigDotPT1Y{ false }; int32_t lastPIDrefSigDotPT1Y{ 0 };
+    bool measurePIDrefSigDotPT1Z{ false }; int32_t lastPIDrefSigDotPT1Z{ 0 };
+    bool measurePIDiRelaxWeightX{ false }; int32_t lastPIDiRelaxWeightX{ 0 };
+    bool measurePIDiRelaxWeightY{ false }; int32_t lastPIDiRelaxWeightY{ 0 };
+    bool measurePIDiRelaxWeightZ{ false }; int32_t lastPIDiRelaxWeightZ{ 0 };
 
 }Meas2Card;
 
@@ -329,10 +330,14 @@ void appendCsSdCard(volatile uint32_t* block, uint16_t blockSize);
 void convert2CharStream(uint8_t* buffer, uint8_t* startPos, float value, uint8_t numberOfFractions, bool explicitPlusSign);
 
 // Method to store 1 measured data into loading buffer
-void measureData(bool isMeasured, bool isCommaed, float data, uint8_t numberOfFrac, bool isExplicitPlus, char* debugName);
+void measureData(bool* isCommaed, float data, uint8_t numberOfFrac, bool isExplicitPlus, char* debugName);
 
 // Method to save data for measurement snapshots
-void saveMeasData();	
+void saveMeasData();
+
+// Method to save current to last difference of data
+void measureDiffData(bool* comma, int64_t current, int64_t* last, char* debugName);
+void measureDiffData(bool* comma, int32_t current, int32_t* last, char* debugName);
 
 // Method to load data chararacters into loading buffer
 void loadData2Buffer(uint8_t* chars2Add, uint8_t numberOfChar);
@@ -344,7 +349,10 @@ int8_t checkCtrs(void);
 void appendChar(const char c);
 
 // Method to add measured signals names to header
-void addMeasNameHeader(bool isMeasured, bool isCommaed, char* name, uint8_t numberOfChar);
+void addMeasNameHeader(bool* isCommaed, char* name, uint8_t numberOfChar);
+
+// Method to add measured signals value to header
+void addMeasValueHeader(bool* comma, const int32_t data);
 
 // Method to add header to the beginning of the file
 void addMeasHeader(void);
@@ -380,3 +388,9 @@ void setGlobalDate(const date newTime);
 
 // Method to detect retrigger post-init and write to sdcard
 void DetectReInitAndWrite(const uint16_t switch2way);
+
+// Method to delete end chars back to newline
+void StripToLastLineEnd(void);
+
+// Method to fill data block with trailing zeros
+void AppendTrailingZeros(void);

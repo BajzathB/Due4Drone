@@ -110,7 +110,7 @@ typedef struct accData_st
     //float rollAnglePT2Acc;
     //float pitchAnglePT2Acc;
 
-    float alpha{0.995};
+    //float alpha{0.995};
     //float rollAngleCF;
     //float pitchAngleCF;
     //float rollAngleCF10;
@@ -187,9 +187,6 @@ pid_st* getPIDrates();
 
 // Function to return PID cascade outter values
 pid_st* getPIDcascade();
-
-// Function to return gyro data values
-gyroData_st* getGyroData();
 
 // Function to return acc data values
 accData_st* getAccData();

@@ -218,7 +218,6 @@ void BTTransmit()
         if (BT.txFrame.streamDataFlags > 0 || BT.txFrame.streamDataFlags2 > 0)
         {
             pid_st* pidRate{ getPIDrates() };
-            gyroData_st* gyroData{ getGyroData()};
 			accData_st* accData{ getAccData() };
 			spi_st* spi{ getSPI() };
             MotorSpeeds motorSpeeds;
@@ -236,9 +235,9 @@ void BTTransmit()
             if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_RL - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_RL, motorSpeeds.RL_tick);
             if ((BT.txFrame.streamDataFlags & (1 << (ID_motorCommand_RR - ID_bitshift_substracter))) > 0) SetStreamData(ID_motorCommand_RR, motorSpeeds.RR_tick);
 
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_X, gyroData->PT1.signalPT1.x);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Y, gyroData->PT1.signalPT1.y);
-            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Z, gyroData->PT1.signalPT1.z);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_X, spi->gyro.signalsPT1.x);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Y, spi->gyro.signalsPT1.y);
+            if ((BT.txFrame.streamDataFlags & (1 << (ID_gyro_PT1_Z - ID_bitshift_substracter))) > 0) SetStreamData(ID_gyro_PT1_Z, spi->gyro.signalsPT1.z);
 
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_X - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_X, spi->acc.signalsPT1.x);
 			if ((BT.txFrame.streamDataFlags & (1 << (ID_acc_PT1_Y - ID_bitshift_substracter))) > 0) SetStreamData(ID_acc_PT1_Y, spi->acc.signalsPT1.y);
@@ -313,7 +312,6 @@ void ProcessRxFrame()
 		{
 			pid_st* pidRateSet{ getPIDrates() };
 			pid_st* pidCascadseSet{ getPIDcascade() };
-			gyroData_st* gyroDataSet{ getGyroData() };
 			accData_st* accDataSet{ getAccData() };
 			spi_st* spi{ getSPI() };
 			Meas2Card* meas2card{ getMeas2Card() };
@@ -327,7 +325,7 @@ void ProcessRxFrame()
 				//case ID_control_PID_rate_D_max_X: pidRateSet->Dmax.x = ConvertStrToDouble(&BT.input); break;
 				//case ID_control_PID_rate_D_max_Y: pidRateSet->Dmax.y = ConvertStrToDouble(&BT.input); break;
 				//case ID_control_PID_rate_D_max_Z: pidRateSet->Dmax.z = ConvertStrToDouble(&BT.input); break;
-				case ID_complementary_filter_alpha: accDataSet->alpha = ConvertStrToDouble(&BT.input); break;
+				//case ID_complementary_filter_alpha: accDataSet->alpha = ConvertStrToDouble(&BT.input); break;
 				case ID_acc_kalman_filter_q_angle: accDataSet->angleKF.qAngleTick = ConvertStrToInt32(&BT.input);	break;
 				case ID_acc_kalman_filter_q_bias: accDataSet->angleKF.qBiasTick = ConvertStrToInt32(&BT.input);	break;
 				case ID_acc_kalman_filter_r: accDataSet->angleKF.rMeasTick = ConvertStrToInt32(&BT.input);	break;
@@ -364,12 +362,12 @@ void ProcessRxFrame()
 				case ID_meas_2_card_gyro_PT1_X: meas2card->measureGyroPT1X = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_gyro_PT1_Y: meas2card->measureGyroPT1Y = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_gyro_PT1_Z: meas2card->measureGyroPT1Z = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_real_X: meas2card->measureGyroRealX = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_real_Y: meas2card->measureGyroRealY = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_real_Z: meas2card->measureGyroRealZ = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_real_PT1_X: meas2card->measureGyroRealPT1X = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_real_PT1_Y: meas2card->measureGyroRealPT1Y = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_gyro_real_PT1_Z: meas2card->measureGyroRealPT1Z = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_gyro_real_X: meas2card->measureGyroRealX = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_gyro_real_Y: meas2card->measureGyroRealY = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_gyro_real_Z: meas2card->measureGyroRealZ = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_gyro_real_PT1_X: meas2card->measureGyroRealPT1X = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_gyro_real_PT1_Y: meas2card->measureGyroRealPT1Y = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_gyro_real_PT1_Z: meas2card->measureGyroRealPT1Z = ConvertStrToBool(&BT.input); break;
                 //acc
 				case ID_meas_2_card_acc_raw_X: meas2card->measureAccRawX = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_raw_Y: meas2card->measureAccRawY = ConvertStrToBool(&BT.input); break;
@@ -377,12 +375,12 @@ void ProcessRxFrame()
 				case ID_meas_2_card_acc_PT1_X: meas2card->measureAccPT1X = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_PT1_Y: meas2card->measureAccPT1Y = ConvertStrToBool(&BT.input); break;
 				case ID_meas_2_card_acc_PT1_Z: meas2card->measureAccPT1Z = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_real_X: meas2card->measureAccRealX = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_real_Y: meas2card->measureAccRealY = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_real_Z: meas2card->measureAccRealZ = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_real_PT1_X: meas2card->measureAccRealPT1X = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_real_PT1_Y: meas2card->measureAccRealPT1Y = ConvertStrToBool(&BT.input); break;
-				case ID_meas_2_card_acc_real_PT1_Z: meas2card->measureAccRealPT1Z = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_acc_real_X: meas2card->measureAccRealX = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_acc_real_Y: meas2card->measureAccRealY = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_acc_real_Z: meas2card->measureAccRealZ = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_acc_real_PT1_X: meas2card->measureAccRealPT1X = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_acc_real_PT1_Y: meas2card->measureAccRealPT1Y = ConvertStrToBool(&BT.input); break;
+				//case ID_meas_2_card_acc_real_PT1_Z: meas2card->measureAccRealPT1Z = ConvertStrToBool(&BT.input); break;
                 //angle
 				//case ID_meas_2_card_angle_raw_roll: meas2card->measureAngleRawRoll = ConvertStrToBool(&BT.input); break;
 				//case ID_meas_2_card_angle_raw_pitch: meas2card->measureAngleRawPitch = ConvertStrToBool(&BT.input); break;
@@ -436,7 +434,6 @@ void ProcessRxFrame()
 			BT.txFrame.sendParam = true;
 			pid_st* pidRateGet{ getPIDrates() };
             pid_st* pidCascadseSet{ getPIDcascade() };
-			gyroData_st* gyroDataGet{ getGyroData() };
 			accData_st* accDataSet{ getAccData() };
 			spi_st* spi{ getSPI() };
             SpiSDcard_st* sdcard{ getSPISdCard() };
@@ -451,7 +448,7 @@ void ProcessRxFrame()
 				//case ID_control_PID_rate_D_max_X: BT.txFrame.paramData = pidRateGet->Dmax.x; BT.txFrame.numberOfFrac = 1; break;
 				//case ID_control_PID_rate_D_max_Y: BT.txFrame.paramData = pidRateGet->Dmax.y; BT.txFrame.numberOfFrac = 1; break;
 				//case ID_control_PID_rate_D_max_Z: BT.txFrame.paramData = pidRateGet->Dmax.z; BT.txFrame.numberOfFrac = 1; break;
-				case ID_complementary_filter_alpha: BT.txFrame.paramData = accDataSet->alpha; BT.txFrame.numberOfFrac = 3; break;
+				//case ID_complementary_filter_alpha: BT.txFrame.paramData = accDataSet->alpha; BT.txFrame.numberOfFrac = 3; break;
 				case ID_acc_kalman_filter_q_angle: BT.txFrame.paramData = accDataSet->angleKF.qAngleTick; BT.txFrame.numberOfFrac = 6; break;
 				case ID_acc_kalman_filter_q_bias: BT.txFrame.paramData = accDataSet->angleKF.qBiasTick; BT.txFrame.numberOfFrac = 6; break;
 				case ID_acc_kalman_filter_r: BT.txFrame.paramData = accDataSet->angleKF.rMeasTick; BT.txFrame.numberOfFrac = 2; break;
@@ -491,12 +488,12 @@ void ProcessRxFrame()
 				case ID_meas_2_card_gyro_PT1_X: BT.txFrame.paramData = meas2card->measureGyroPT1X; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_gyro_PT1_Y: BT.txFrame.paramData = meas2card->measureGyroPT1Y; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_gyro_PT1_Z: BT.txFrame.paramData = meas2card->measureGyroPT1Z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_real_X: BT.txFrame.paramData = meas2card->measureGyroRealX; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_real_Y: BT.txFrame.paramData = meas2card->measureGyroRealY; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_real_Z: BT.txFrame.paramData = meas2card->measureGyroRealZ; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_real_PT1_X: BT.txFrame.paramData = meas2card->measureGyroRealPT1X; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_real_PT1_Y: BT.txFrame.paramData = meas2card->measureGyroRealPT1Y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_gyro_real_PT1_Z: BT.txFrame.paramData = meas2card->measureGyroRealPT1Z; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_gyro_real_X: BT.txFrame.paramData = meas2card->measureGyroRealX; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_gyro_real_Y: BT.txFrame.paramData = meas2card->measureGyroRealY; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_gyro_real_Z: BT.txFrame.paramData = meas2card->measureGyroRealZ; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_gyro_real_PT1_X: BT.txFrame.paramData = meas2card->measureGyroRealPT1X; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_gyro_real_PT1_Y: BT.txFrame.paramData = meas2card->measureGyroRealPT1Y; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_gyro_real_PT1_Z: BT.txFrame.paramData = meas2card->measureGyroRealPT1Z; BT.txFrame.numberOfFrac = 0; break;
                 //acc
 				case ID_meas_2_card_acc_raw_X: BT.txFrame.paramData = meas2card->measureAccRawX; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_raw_Y: BT.txFrame.paramData = meas2card->measureAccRawY; BT.txFrame.numberOfFrac = 0; break;
@@ -504,12 +501,12 @@ void ProcessRxFrame()
 				case ID_meas_2_card_acc_PT1_X: BT.txFrame.paramData = meas2card->measureAccPT1X; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_PT1_Y: BT.txFrame.paramData = meas2card->measureAccPT1Y; BT.txFrame.numberOfFrac = 0; break;
 				case ID_meas_2_card_acc_PT1_Z: BT.txFrame.paramData = meas2card->measureAccPT1Z; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_real_X: BT.txFrame.paramData = meas2card->measureAccRealX; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_real_Y: BT.txFrame.paramData = meas2card->measureAccRealY; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_real_Z: BT.txFrame.paramData = meas2card->measureAccRealZ; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_real_PT1_X: BT.txFrame.paramData = meas2card->measureAccRealPT1X; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_real_PT1_Y: BT.txFrame.paramData = meas2card->measureAccRealPT1Y; BT.txFrame.numberOfFrac = 0; break;
-				case ID_meas_2_card_acc_real_PT1_Z: BT.txFrame.paramData = meas2card->measureAccRealPT1Z; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_acc_real_X: BT.txFrame.paramData = meas2card->measureAccRealX; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_acc_real_Y: BT.txFrame.paramData = meas2card->measureAccRealY; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_acc_real_Z: BT.txFrame.paramData = meas2card->measureAccRealZ; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_acc_real_PT1_X: BT.txFrame.paramData = meas2card->measureAccRealPT1X; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_acc_real_PT1_Y: BT.txFrame.paramData = meas2card->measureAccRealPT1Y; BT.txFrame.numberOfFrac = 0; break;
+				//case ID_meas_2_card_acc_real_PT1_Z: BT.txFrame.paramData = meas2card->measureAccRealPT1Z; BT.txFrame.numberOfFrac = 0; break;
                 //angle
 				//case ID_meas_2_card_angle_raw_roll: BT.txFrame.paramData = meas2card->measureAngleRawRoll; BT.txFrame.numberOfFrac = 0; break;
 				//case ID_meas_2_card_angle_raw_pitch: BT.txFrame.paramData = meas2card->measureAngleRawPitch; BT.txFrame.numberOfFrac = 0; break;

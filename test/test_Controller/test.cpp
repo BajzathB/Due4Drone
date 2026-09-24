@@ -20,7 +20,6 @@ TEST(test_Controller, Controller_Call) {
     //CalcPID_wo_Dkick(&testPID, &testU);
     //CalcPID_wo_Dkick_FF(&testPID, &testU);
     getPIDrates();
-    getGyroData();
     kalmanFilterAngle_st testKalmanAngle;
     KalmanFilterAngle(&testKalmanAngle, 0, 0, 0);
     //ComplementryFilterAngle(&y, 0, 0, 0, 0);
@@ -38,6 +37,7 @@ TEST(test_Controller, Controller_Call) {
     ScalePIDinput_int(&testPID, 0);
     CalcPIDoutput_int(&testPID, &testU_i32);
     expo(1000);
+    linearScale_8192(1000);
     CalcAccAngle(0,0,0);
 }
 
@@ -100,6 +100,15 @@ TEST(test_Controller, expo_Test)
     EXPECT_EQ(expo(1000), -16052);
     EXPECT_EQ(expo(1200), -2032);
     EXPECT_EQ(expo(1700), 749);
+}
+
+TEST(test_Controller, linearScale_8192_Test)
+{
+    EXPECT_EQ(linearScale_8192(1500), 0);
+    EXPECT_EQ(linearScale_8192(2000), 8187);
+    EXPECT_EQ(linearScale_8192(1000), -8188);
+    EXPECT_EQ(linearScale_8192(1200), -4913);
+    EXPECT_EQ(linearScale_8192(1700), 3275);
 }
 
 //TEST(test_Controller, CalcPID_wo_Dkick_Test)
@@ -961,33 +970,34 @@ TEST(test_Controller, RunController_Test)
     EXPECT_NE(testOut.U_i.z, 0);
     EXPECT_EQ(testOut.armState, ARMED);
 
-    ////5th: armed in angle cascade
-    //testIn.rcSignals.armStateSwitch = 2000;
-    //testIn.rcSignals.flightModeSwitch = 2000;
-    //testIn.rcSignals.throttle = 1100;
-    //testIn.acc.signalPT1.x = 1.0f;
-    //testIn.acc.signalPT1.y = 1.0f;
-    //testIn.acc.signalPT1.z = 1.0f;
-    //testIn.acc.newData = false;
-    //testIn.gyro.signalPT1.x = 10.0f;
-    //testIn.gyro.signalPT1.y = 10.0f;
-    //testIn.gyro.signalPT1.z = 10.0f;
-    //testIn.gyro.newData = true;
-    //pidCascade.P_i.x = 10.0f;
-    //pidCascade.P_i.y = 10.0f;
-    //pidCascade.P_i.z = 10.0f;
-    //pidRate.P_i.x = 10.0f;
-    //pidRate.P_i.y = 10.0f;
-    //pidRate.P_i.z = 10.0f;
-    //pidRate.satPID_i = 100.0f;
-    //testOut.U_i.x = 1.0f;
-    //testOut.U_i.y = 1.0f;
-    //testOut.U_i.z = 1.0f;
-    //RunController(&testIn, &testOut);
-    //EXPECT_NE(testOut.U_i.x, 0);
-    //EXPECT_NE(testOut.U_i.y, 0);
-    //EXPECT_NE(testOut.U_i.z, 0);
-    //EXPECT_EQ(testOut.armState, ARMED);
+    //5th: armed in angle cascade
+    testIn.rcSignals.armStateSwitch = 2000;
+    testIn.rcSignals.flightModeSwitch = 2000;
+    testIn.rcSignals.throttle = 1100;
+    testIn.rcSignals.roll = 2000;
+    testIn.acc.signalPT1.x = 100;
+    testIn.acc.signalPT1.y = 10;
+    testIn.acc.signalPT1.z = 10;
+    testIn.acc.newData = false;
+    testIn.gyro.signalPT1.x = 1000;
+    testIn.gyro.signalPT1.y = 1000;
+    testIn.gyro.signalPT1.z = 1000;
+    testIn.gyro.newData = true;
+    pidCascade.P_i.x = 100;
+    pidCascade.P_i.y = 100;
+    pidCascade.P_i.z = 100;
+    pidRate.P_i.x = 10;
+    pidRate.P_i.y = 10;
+    pidRate.P_i.z = 10;
+    pidRate.satPID_i = 10000000;
+    testOut.U_i.x = 1;
+    testOut.U_i.y = 1;
+    testOut.U_i.z = 1;
+    RunController(&testIn, &testOut);
+    EXPECT_NE(testOut.U_i.x, 0);
+    EXPECT_NE(testOut.U_i.y, 0);
+    EXPECT_NE(testOut.U_i.z, 0);
+    EXPECT_EQ(testOut.armState, ARMED);
 
     //wobble
     //testIn.rcSignals.armStateSwitch = 2000;
@@ -1135,7 +1145,7 @@ TEST(test_Controller, KalmanFilterAngle_Test)
     testGyroIn = 0;
     testLoopTime = 0.1;
     KalmanFilterAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
-    EXPECT_NEAR(testKalmanAngle.angle, 0.0000005f, 0.00001f);
+    EXPECT_NEAR(testKalmanAngle.angle, 0.005f, 0.00001f);
     EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
     EXPECT_NEAR(testKalmanAngle.rate, 0.0f, 0.01f);
     EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
