@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_09_20";
-fileNumber = 3; %1 is ., 2 is ..
+directory = "2026_09_28";
+fileNumber = 6; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -64,20 +64,27 @@ meas = [table(ticks', 'VariableNames', {'sysTickMs'}) meas];
 % title('Acc')
 
 %% plot angle
-trim = 1;
-gyroMulti = 2000/32767;
-angleMulti = 30/78747;
-figure(3);
-clf(3);
-subplot(2,1,1);
-% plot(meas.sysTime(trim:(end-trim)), [meas.aRawR(trim:(end-trim)) meas.aPT2R(trim:(end-trim)) meas.aKFRawR(trim:(end-trim))]);
-plot( [meas.GPT1X(trim:(end-trim))*gyroMulti meas.aPT1R(trim:(end-trim))*angleMulti meas.aKFPT11R(trim:(end-trim))*angleMulti]);
-title('Angle')
-% subplot(2,1,2);
-% plot(meas.sysTime(trim:(end-trim)), [meas.aRawP(trim:(end-trim)) meas.aPT2P(trim:(end-trim)) meas.aKFRawP(trim:(end-trim))]);
-% ylabel('°angle');
-legend('gpt1', 'apt1', 'kfpt11');
-xlabel('time');
+% trim = 1;
+% gyroMulti = 2000/32767/10;
+% angleMulti = 30/78747;
+% figure(3);
+% clf(3);
+% % subplot(2,1,1);
+% % plot( [meas.GPT1X(trim:(end-trim))*gyroMulti meas.aPT1R(trim:(end-trim))*angleMulti meas.aKFPT11R(trim:(end-trim))*angleMulti]);
+% % usedParams = sprintf('Roll angle\nKF(%g,%g,%g)', ...
+% %         header.KFQAng, ...
+% %         header.KFQbias, ...
+% %         header.KFRmeas);
+% % title(usedParams, 'Interpreter', 'none');
+% % subplot(2,1,2);
+% plot( [meas.aPT1P(trim:(end-trim))*angleMulti meas.aKFPT11P(trim:(end-trim))*angleMulti]);
+% usedParams = sprintf('Pitch angle\nKF(%g,%g,%g)', ...
+%         header.KFQAng, ...
+%         header.KFQbias, ...
+%         header.KFRmeas);
+% title(usedParams, 'Interpreter', 'none');
+% legend('gpt1(scaled)', 'apt1', 'kfpt11');
+% xlabel('time');
 
 %% plot plot angle with parameters
 % figure(4);
@@ -125,33 +132,53 @@ xlabel('time');
 
 %% FFT angle
 
-% trim = 150;
-% L = length(meas.sysTime(trim:(end-100)));
-% Fs = 1/mean(diff(meas.sysTime(trim:(end-trim))));   %sampling frequency
-% f = Fs*(0:(L/2))/L;
-% 
-% freq1 = calcFrequency(meas.aRawR(trim:(end-trim)), L);
-% freq2 = calcFrequency(meas.aPT2R(trim:(end-trim)), L);
-% freq3 = calcFrequency(meas.aKFRawR(trim:(end-trim)), L);
-% freq4 = calcFrequency(meas.aRawP(trim:(end-trim)), L);
+angleMulti = 30/78747;
+trim = 1;
+L = length(meas.sysTickMs(trim:(end-trim)));
+Fs = 1/(header.measCycleMs/10500);   %sampling frequency
+f = Fs*(0:(L/2))/L;
+index_50hz = find(f > 50, 1, 'first');
+
+% freq1 = calcFrequency(meas.aPT1R(trim:(end-trim)), L);
+% freq2 = calcFrequency(meas.aKFPT11R(trim:(end-trim)), L);
+freq3 = calcFrequency(meas.aPT1P(trim:(end-trim)), L);
+freq4 = calcFrequency(meas.aKFPT11P(trim:(end-trim)), L);
 % freq5 = calcFrequency(meas.aPT2P(trim:(end-trim)), L);
 % freq6 = calcFrequency(meas.aKFRawP(trim:(end-trim)), L);
-% 
+
+
+
 % figure(5)
 % clf(5);
-% subplot(2,2,1);
-% plot([ meas.aPT2R(trim:(end-trim)) meas.aKFRawR(trim:(end-trim))]);
-% title('Measurements');
-% subplot(2,2,2);
-% plot(f, [ freq2 freq3])
-% ylim([0 2]);
+% subplot(2,1,1);
+% plot([ meas.aPT1R(trim:(end-trim))*angleMulti meas.aKFPT11R(trim:(end-trim))*angleMulti]);
+% usedParams = sprintf('Roll: KF(%g,%g,%g)', ...
+%         header.KFQAng, ...
+%         header.KFQbias, ...
+%         header.KFRmeas);
+% title(usedParams, 'Interpreter', 'none');
+% subplot(2,1,2);
+% plot(f, [ freq1 freq2])
+% ylim([0 1000]);
 % title('FFT');
-% subplot(2,2,3);
-% plot([ meas.aPT2P(trim:(end-trim)) meas.aKFRawP(trim:(end-trim))]);
-% subplot(2,2,4);
-% plot(f, [ freq5 freq6])
-% legend('pt2','kfraw');
-% ylim([0 2]);
+% usedParams = sprintf('Roll FFT:\nKF max[50+Hz]: %g', ...
+%         round(max(freq2(index_50hz:end))));
+% title(usedParams, 'Interpreter', 'none');
+% legend('apt1', 'kfpt11');
+% subplot(2,1,1);
+% plot(meas.sysTickMs(trim:(end-trim))/10500, [meas.aPT1P(trim:(end-trim))*angleMulti meas.aKFPT11P(trim:(end-trim))*angleMulti]);
+% usedParams = sprintf('Pitch: KF(%g,%g,%g)', ...
+%         header.KFQAng, ...
+%         header.KFQbias, ...
+%         header.KFRmeas);
+% title(usedParams, 'Interpreter', 'none');
+% legend('apt1', 'kfpt11');
+% subplot(2,1,2);
+% plot(f, [ freq3 freq4])
+% usedParams = sprintf('Pitch FFT:\nKF max[50+Hz]: %g', ...
+%         round(max(freq4(index_50hz:end))));
+% title(usedParams, 'Interpreter', 'none');
+% ylim([0 1000]);
 % xlabel('f (Hz)')
 
 %% recalc KF
@@ -386,7 +413,7 @@ xlabel('time');
 % yline(0,'--');
 % legend('PoutX', 'IoutX', 'DoutX');
 
-%% 
+%% rate PID
 
 % ref_int = meas.PIDRefXi*17.5;
 % gyro_int = meas.PIDSensXi/ (2000.0 / 32767.0);
@@ -432,8 +459,23 @@ xlabel('time');
 % linkaxes(h, 'x');
 % xlim(h(1), [meas.sysTickMs(1), meas.sysTickMs(end)]);
 
+%% cascade PID
 
+angleMulti = 30/78747/1024;
 
+figure(12);
+clf(12);
+usedParams = "PID" + sprintf(" cascade (%.f,%.f)", header.CPx, header.CIx);
 
+h(1) = subplot(2,1,1);
+plot(meas.sysTickMs/1000, [meas.PIDCRefXi*angleMulti meas.PIDCSensXi*angleMulti]);
+title(usedParams, 'Interpreter', 'none');
+legend("ref", "angle");
+
+h(2) = subplot(2,1,2);
+plot(meas.sysTickMs/1000, [ meas.PIDCUXi]);
+
+linkaxes(h, 'x');
+xlim(h(1), [meas.sysTickMs(1)/1000, meas.sysTickMs(end)/1000]);
 
 

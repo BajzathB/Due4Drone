@@ -29,6 +29,7 @@ public:
     size_t print(long, int = DEC) { return 0; }
     size_t print(long long, int = DEC) { return 0; }
     size_t print(unsigned long, int = DEC) { return 0; }
+    size_t print(float, int = 2) { return 0; }
     size_t print(double, int = 2) { return 0; }
     size_t print(char, int = 2) { return 0; }
     size_t print(char[], int = 2) { return 0; }

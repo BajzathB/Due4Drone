@@ -468,21 +468,21 @@ public class MainActivity extends BaseActivity {
         {
             List<Pair<EditText, Integer>> setList = new ArrayList<>();
 
-            setList.add(new Pair<>(findViewById(R.id.editTextPx), 2000));
-            setList.add(new Pair<>(findViewById(R.id.editTextIx), 2001));
-            setList.add(new Pair<>(findViewById(R.id.editTextDx), 2002));
-            setList.add(new Pair<>(findViewById(R.id.editTextPy), 2003));
-            setList.add(new Pair<>(findViewById(R.id.editTextIy), 2004));
-            setList.add(new Pair<>(findViewById(R.id.editTextDy), 2005));
-            setList.add(new Pair<>(findViewById(R.id.editTextPz), 2006));
-            setList.add(new Pair<>(findViewById(R.id.editTextIz), 2007));
-            setList.add(new Pair<>(findViewById(R.id.editTextDz), 2008));
-            setList.add(new Pair<>(findViewById(R.id.editTextFFx), 2034));
-            setList.add(new Pair<>(findViewById(R.id.editTextFFy), 2035));
-            setList.add(new Pair<>(findViewById(R.id.editTextFFdx), 2036));
-            setList.add(new Pair<>(findViewById(R.id.editTextFFdy), 2037));
-            setList.add(new Pair<>(findViewById(R.id.editTextSatI), 2009));
-            setList.add(new Pair<>(findViewById(R.id.editTextSatPID), 2010));
+            setList.add(new Pair<>(findViewById(R.id.editTextPx), 1006));
+            setList.add(new Pair<>(findViewById(R.id.editTextIx), 1007));
+            setList.add(new Pair<>(findViewById(R.id.editTextDx), 1008));
+            setList.add(new Pair<>(findViewById(R.id.editTextPy), 1009));
+            setList.add(new Pair<>(findViewById(R.id.editTextIy), 1010));
+            setList.add(new Pair<>(findViewById(R.id.editTextDy), 1011));
+            setList.add(new Pair<>(findViewById(R.id.editTextPz), 1012));
+            setList.add(new Pair<>(findViewById(R.id.editTextIz), 1013));
+            setList.add(new Pair<>(findViewById(R.id.editTextDz), 1014));
+            setList.add(new Pair<>(findViewById(R.id.editTextFFx), 1015));
+            setList.add(new Pair<>(findViewById(R.id.editTextFFy), 1016));
+            setList.add(new Pair<>(findViewById(R.id.editTextFFdx), 1017));
+            setList.add(new Pair<>(findViewById(R.id.editTextFFdy), 1018));
+            setList.add(new Pair<>(findViewById(R.id.editTextSatI), 1019));
+            setList.add(new Pair<>(findViewById(R.id.editTextSatPID), 1020));
             Thread tSetAll = new Thread() {
                 @Override
                 public void run() {
@@ -665,7 +665,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onSwipeRight() {
         Log.d("BT", "MainActivty - onTouchEvent - swiped right");
-        Intent intent = new Intent(MainActivity.this, StreamAccActivity.class);
+        Intent intent = new Intent(MainActivity.this, CascadeActivity.class);
         startActivity(intent);
     }
 
@@ -902,9 +902,10 @@ public class MainActivity extends BaseActivity {
             val = 1019;
         } else if (checkBoxSatPID.isChecked()) {
             val = 1020;
-        } else if (checkBoxDTermC.isChecked()) {
-            val = 2011;
         }
+//        else if (checkBoxDTermC.isChecked()) {
+//            val = 2011;
+//        }
 //        else if (checkBoxCPx.isChecked()) {
 //            val = 2022;
 //        } else if (checkBoxCIx.isChecked()) {

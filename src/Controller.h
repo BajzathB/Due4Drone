@@ -74,9 +74,9 @@ typedef struct
     kfAngle_st roll;
     kfAngle_st pitch;
 
-    int32_t qAngleTick{ 10 };
+    int32_t qAngleTick{ 500 };
     int32_t qBiasTick{ 1 };
-    int32_t rMeasTick{ 1000 };
+    int32_t rMeasTick{ 10000 };
 }kfAngle2d_st;
 
 typedef struct 
@@ -122,9 +122,9 @@ typedef struct accData_st
     //float rollAngleCFw01;
     //float pitchAngleCFw01;
 
-    double q_angle{ 0.1 };   // Process noise variance for angle
-    double q_bias{ 0.003 };    // Process noise variance for gyro bias
-    double r_measure{ 20.0 }; // Measurement noise variance
+    //double q_angle{ 0.1 };   // Process noise variance for angle
+    //double q_bias{ 0.003 };    // Process noise variance for gyro bias
+    //double r_measure{ 20.0 }; // Measurement noise variance
     //kalmanFilterAngle3d_st angleKF;
     //kalmanFilterAngle3d_st angleKFPT10;
 
@@ -224,6 +224,7 @@ float wobble(uint16_t pot1, uint16_t poti2);
 // Function to clamp value inbetween bounds
 inline int32_t clamp_i32(int32_t x, int32_t min, int32_t max);
 
-void setPIDParam(int32_t value, E_pid pid, E_direction dir);
+void setPIDRate(int32_t value, E_pid pid, E_direction dir);
+void setPIDCascade(int32_t value, E_pid pid, E_direction dir);
 
 #endif // !CONTROLLER_HEADER

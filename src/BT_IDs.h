@@ -108,6 +108,19 @@
 #define ID_control_PID_rate_FF_DY 1018
 #define ID_control_PID_rate_sat_I 1019
 #define ID_control_PID_rate_sat_PID 1020
+#define ID_control_PID_cascade_P_X 1021
+#define ID_control_PID_cascade_I_X 1022
+#define ID_control_PID_cascade_D_X 1023
+#define ID_control_PID_cascade_P_Y 1024
+#define ID_control_PID_cascade_I_Y 1025
+#define ID_control_PID_cascade_D_Y 1026
+#define ID_control_PID_cascade_P_Z 1027
+#define ID_control_PID_cascade_I_Z 1028
+#define ID_control_PID_cascade_D_Z 1029
+#define ID_control_PID_cascade_sat_I 1030
+#define ID_control_PID_cascade_sat_PID 1031
+#define ID_control_PID_cascade_FF_DX 1032
+#define ID_control_PID_cascade_FF_DY 1033
 
 
 
@@ -125,23 +138,9 @@
 #define ID_spi_acc_offset_x 2019
 #define ID_spi_acc_offset_y 2020
 #define ID_spi_acc_offset_z 2021
-#define ID_control_PID_cascade_P_X 2022
-#define ID_control_PID_cascade_I_X 2023
-#define ID_control_PID_cascade_D_X 2024
-#define ID_control_PID_cascade_P_Y 2025
-#define ID_control_PID_cascade_I_Y 2026
-#define ID_control_PID_cascade_D_Y 2027
-#define ID_control_PID_cascade_P_Z 2028
-#define ID_control_PID_cascade_I_Z 2029
-#define ID_control_PID_cascade_D_Z 2030
-#define ID_control_PID_cascade_saturation_I 2031
-#define ID_control_PID_cascade_saturation_PID 2032
-#define ID_control_PID_cascade_Dterm_C 2033
 
 #define ID_control_PID_cascade_FF_X 2038
 #define ID_control_PID_cascade_FF_Y 2039
-#define ID_control_PID_cascade_FF_DX 2040
-#define ID_control_PID_cascade_FF_DY 2041
 #define ID_complementary_filter_alpha 2042
 
 #define ID_control_PID_rate_I_relax_ref_threshhold 2044

@@ -3,7 +3,80 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    android:id="@+id/cascade"
+    tools:context=".CascadeActivity">
+
+    <TextView
+        android:id="@+id/textViewPlusMinusVal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="16dp"
+        android:text="±1"
+        app:layout_constraintStart_toEndOf="@+id/buttonInc"
+        app:layout_constraintTop_toTopOf="@+id/textBTcmd" />
+
+    <Button
+        android:id="@+id/buttonDec"
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="-16dp"
+        android:includeFontPadding="false"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp"
+        android:rotation="180"
+        android:text="^"
+        app:layout_constraintStart_toEndOf="@+id/buttonGet"
+        app:layout_constraintTop_toBottomOf="@+id/buttonGet" />
+
+    <Button
+        android:id="@+id/buttonSet"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="32dp"
+        android:text="Set"
+        app:layout_constraintStart_toEndOf="@+id/buttonGet"
+        app:layout_constraintTop_toTopOf="@+id/buttonGet" />
+
+    <Button
+        android:id="@+id/buttonInc"
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="-16dp"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:paddingLeft="0dp"
+        android:paddingTop="0dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="0dp"
+        android:text="^"
+        android:textFontWeight="15"
+        app:layout_constraintBottom_toTopOf="@+id/buttonGet"
+        app:layout_constraintStart_toEndOf="@+id/buttonGet" />
+
+    <Button
+        android:id="@+id/buttonGet"
+        android:layout_width="80dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="44dp"
+        android:text="Get"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textBTcmd" />
+
+    <TextView
+        android:id="@+id/textBTcmd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="65dp"
+        android:text="no command result"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView58" />
 
     <EditText
         android:id="@+id/editTextCFFdx"
@@ -61,8 +134,8 @@
         android:id="@+id/textView58"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="120dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginStart="100dp"
+        android:layout_marginTop="64dp"
         android:text="Cascade:"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -79,11 +152,10 @@
         android:id="@+id/checkBoxCPx"
         android:layout_width="85dp"
         android:layout_height="35dp"
-        android:layout_marginStart="-60dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="16dp"
         android:text="Px:"
-        app:layout_constraintStart_toStartOf="@+id/textView58"
-        app:layout_constraintTop_toBottomOf="@+id/textView58" />
+        app:layout_constraintStart_toEndOf="@+id/buttonSet"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
         android:id="@+id/editTextCIx"

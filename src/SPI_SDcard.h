@@ -167,7 +167,7 @@ typedef struct Meas2Card
     bool measureGyroRawX{ false }; int32_t lastGyroRawX{ 0 };
     bool measureGyroRawY{ false }; int32_t lastGyroRawY{ 0 };
     bool measureGyroRawZ{ false }; int32_t lastGyroRawZ{ 0 };
-	bool measureGyroPT1X{ true }; int32_t lastGyroPT1X{ 0 };
+	bool measureGyroPT1X{ false }; int32_t lastGyroPT1X{ 0 };
     bool measureGyroPT1Y{ false }; int32_t lastGyroPT1Y{ 0 };
     bool measureGyroPT1Z{ false }; int32_t lastGyroPT1Z{ 0 };
     //bool measureGyroRealX{ false }; int32_t lastGyroRealX{ 0 };
@@ -192,14 +192,14 @@ typedef struct Meas2Card
     //angle
     //bool measureAngleRawRoll{ false };
     //bool measureAngleRawPitch{ false };
-	bool measureAnglePT1Roll{ true }; int32_t lastAnglePT1Roll{ 0 };
-	bool measureAnglePT1Pitch{ false }; int32_t lastAnglePT1Pitch{ 0 };
+	bool measureAnglePT1Roll{ false }; int32_t lastAnglePT1Roll{ 0 };
+	bool measureAnglePT1Pitch{ true }; int32_t lastAnglePT1Pitch{ 0 };
  //   bool measureAnglePT2Roll{ false };
  //   bool measureAnglePT2Pitch{ false };
  //   bool measureAngleKFRawRoll{ false };
  //   bool measureAngleKFRawPitch{ false };
-    bool measureAngleKFPT11Roll{ true }; int32_t lastAngleKFPT11Roll{ 0 };
-    bool measureAngleKFPT11Pitch{ false }; int32_t lastAngleKFPT11Pitch{ 0 };
+    bool measureAngleKFPT11Roll{ false }; int32_t lastAngleKFPT11Roll{ 0 };
+    bool measureAngleKFPT11Pitch{ true }; int32_t lastAngleKFPT11Pitch{ 0 };
  //   bool measureAngleCFRawRoll{ false };
  //   bool measureAngleCFRawPitch{ false };
 	//bool measureAngleCFPT10Roll{ false };
@@ -232,6 +232,12 @@ typedef struct Meas2Card
 	bool measurePIDUX{ false }; int32_t lastPIDUX{ 0 };
 	bool measurePIDUY{ false }; int32_t lastPIDUY{ 0 };
 	bool measurePIDUZ{ false }; int32_t lastPIDUZ{ 0 };
+    bool measurePIDCasRefSigX{ true }; int32_t lastPIDCasRefSigX{ 0 };
+    bool measurePIDCasRefSigY{ false }; int32_t lastPIDCasRefSigY{ 0 };
+    bool measurePIDCasSensorX{ true }; int32_t lastPIDCasSensorX{ 0 };
+    bool measurePIDCasSensorY{ false }; int32_t lastPIDCasSensorY{ 0 };
+    bool measurePIDCasUX{ true }; int32_t lastPIDCasUX{ 0 };
+    bool measurePIDCasUY{ false }; int32_t lastPIDCasUY{ 0 };
     //PID internals
     //bool measurePIDerrorX{ false }; int32_t lastPIDerrorX{ 0 };
     //bool measurePIDerrorY{ false }; int32_t lastPIDerrorY{ 0 };

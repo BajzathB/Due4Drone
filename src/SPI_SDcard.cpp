@@ -1731,6 +1731,7 @@ void saveMeasData()
 {
     accData_st* accData{ getAccData() };
     pid_st* pidData{ getPIDrates() };
+    pid_st* pidCascade{ getPIDcascade() };
 	spi_st* spiData{ getSPI() };
 
 	//reset flag
@@ -1807,6 +1808,12 @@ void saveMeasData()
 	if(meas2Card.measurePIDUX) measureDiffData(&meas2Card.commaFlag, pidData->u_i.x, &meas2Card.lastPIDUX, "PIDUXi: ");
 	if(meas2Card.measurePIDUY) measureDiffData(&meas2Card.commaFlag, pidData->u_i.y, &meas2Card.lastPIDUY, "PIDUYi: ");
 	if(meas2Card.measurePIDUZ) measureDiffData(&meas2Card.commaFlag, pidData->u_i.z, &meas2Card.lastPIDUZ, "PIDUZi: ");
+    if(meas2Card.measurePIDCasRefSigX) measureDiffData(&meas2Card.commaFlag, pidCascade->refSig_i.x, &meas2Card.lastPIDCasRefSigX, "PIDCasRefSigXi: ");
+    if(meas2Card.measurePIDCasRefSigY) measureDiffData(&meas2Card.commaFlag, pidCascade->refSig_i.y, &meas2Card.lastPIDCasRefSigY, "PIDCasRefSigYi: ");
+    if(meas2Card.measurePIDCasSensorX) measureDiffData(&meas2Card.commaFlag, pidCascade->sensor.signalPT1.x, &meas2Card.lastPIDCasSensorX, "PIDCasSensorXi: ");
+    if(meas2Card.measurePIDCasSensorY) measureDiffData(&meas2Card.commaFlag, pidCascade->sensor.signalPT1.y, &meas2Card.lastPIDCasSensorY, "PIDCasSensorYi: ");
+    if(meas2Card.measurePIDCasUX) measureDiffData(&meas2Card.commaFlag, pidCascade->u_i.x, &meas2Card.lastPIDCasUX, "PIDCasUXi: ");
+    if(meas2Card.measurePIDCasUY) measureDiffData(&meas2Card.commaFlag, pidCascade->u_i.y, &meas2Card.lastPIDCasUY, "PIDCasUYi: ");
 	//PID internals
 	if(meas2Card.measurePIDrefSigDotPT1X) measureDiffData(&meas2Card.commaFlag, pidData->refSigDotPT1_i.x, &meas2Card.lastPIDrefSigDotPT1X, "PIDRefDotPT1Xi: ");
 	if(meas2Card.measurePIDrefSigDotPT1Y) measureDiffData(&meas2Card.commaFlag, pidData->refSigDotPT1_i.y, &meas2Card.lastPIDrefSigDotPT1Y, "PIDRefDotPT1Yi: ");
@@ -1991,7 +1998,6 @@ void addMeasHeader(void)
 		addMeasValueHeader(&commaFlag, pidRate->D_i.y);
 		addMeasValueHeader(&commaFlag, pidRate->P_i.z);
 		addMeasValueHeader(&commaFlag, pidRate->I_i.z);
-		addMeasValueHeader(&commaFlag, pidRate->D_i.z);
 		addMeasValueHeader(&commaFlag, pidRate->FFr_i.x);
 		addMeasValueHeader(&commaFlag, pidRate->FFr_i.y);
 		addMeasValueHeader(&commaFlag, pidRate->FFdr_i.x);
@@ -2090,7 +2096,13 @@ void addMeasHeader(void)
 		if(meas2Card.measurePIDUX) addMeasNameHeader(&commaFlag, "PIDUXi", 6);
 		if(meas2Card.measurePIDUY) addMeasNameHeader(&commaFlag, "PIDUYi", 6);
 		if(meas2Card.measurePIDUZ) addMeasNameHeader(&commaFlag, "PIDUZi", 6);
-
+        if(meas2Card.measurePIDCasRefSigX) addMeasNameHeader(&commaFlag, "PIDCRefXi", 9);
+        if(meas2Card.measurePIDCasRefSigY) addMeasNameHeader(&commaFlag, "PIDCRefYi", 9);
+        if(meas2Card.measurePIDCasSensorX) addMeasNameHeader(&commaFlag, "PIDCSensXi", 10);
+        if(meas2Card.measurePIDCasSensorY) addMeasNameHeader(&commaFlag, "PIDCSensYi", 10);
+        if(meas2Card.measurePIDCasUX) addMeasNameHeader(&commaFlag, "PIDCUXi", 7);
+        if(meas2Card.measurePIDCasUY) addMeasNameHeader(&commaFlag, "PIDCUYi", 7);
+        //PID internals
 		if(meas2Card.measurePIDrefSigDotPT1X) addMeasNameHeader(&commaFlag, "PIDRefDotPT1Xi", 14);
 		if(meas2Card.measurePIDrefSigDotPT1Y) addMeasNameHeader(&commaFlag, "PIDRefDotPT1Yi", 14);
 		if(meas2Card.measurePIDrefSigDotPT1Z) addMeasNameHeader(&commaFlag, "PIDRefDotPT1Zi", 14);
@@ -2108,6 +2120,7 @@ void addMeasHeader(void)
 	{
 		accData_st* accData{ getAccData() };
 		pid_st* pidData{ getPIDrates() };
+        pid_st* pidCascade{ getPIDcascade() };
 		spi_st* spiData{ getSPI() };
 		bool commaFlag{ false };
 		//timestamp
@@ -2165,6 +2178,12 @@ void addMeasHeader(void)
 		if (meas2Card.measurePIDUX) { meas2Card.lastPIDUX = pidData->u_i.x; addMeasValueHeader(&commaFlag, meas2Card.lastPIDUX); }
 		if (meas2Card.measurePIDUY) { meas2Card.lastPIDUY = pidData->u_i.y; addMeasValueHeader(&commaFlag, meas2Card.lastPIDUY); }
 		if (meas2Card.measurePIDUZ) { meas2Card.lastPIDUZ = pidData->u_i.z; addMeasValueHeader(&commaFlag, meas2Card.lastPIDUZ); }
+        if (meas2Card.measurePIDCasRefSigX) { meas2Card.lastPIDCasRefSigX = pidCascade->refSig_i.x; addMeasValueHeader(&commaFlag, meas2Card.lastPIDCasRefSigX); }
+        if (meas2Card.measurePIDCasRefSigY) { meas2Card.lastPIDCasRefSigY = pidCascade->refSig_i.y; addMeasValueHeader(&commaFlag, meas2Card.lastPIDCasRefSigY); }
+        if (meas2Card.measurePIDCasSensorX) { meas2Card.lastPIDCasSensorX = pidCascade->sensor.signalPT1.x; addMeasValueHeader(&commaFlag, meas2Card.lastPIDCasSensorX); }
+        if (meas2Card.measurePIDCasSensorY) { meas2Card.lastPIDCasSensorY = pidCascade->sensor.signalPT1.y; addMeasValueHeader(&commaFlag, meas2Card.lastPIDCasSensorY); }
+        if (meas2Card.measurePIDCasUX) { meas2Card.lastPIDCasUX = pidCascade->u_i.x; addMeasValueHeader(&commaFlag, meas2Card.lastPIDCasUX); }
+        if (meas2Card.measurePIDCasUY) { meas2Card.lastPIDCasUY = pidCascade->u_i.y; addMeasValueHeader(&commaFlag, meas2Card.lastPIDCasUY); }
 		//PID internals
 		if (meas2Card.measurePIDrefSigDotPT1X) { meas2Card.lastPIDrefSigDotPT1X = pidData->refSigDotPT1_i.x; addMeasValueHeader(&commaFlag, meas2Card.lastPIDrefSigDotPT1X); }
 		if (meas2Card.measurePIDrefSigDotPT1Y) { meas2Card.lastPIDrefSigDotPT1Y = pidData->refSigDotPT1_i.y; addMeasValueHeader(&commaFlag, meas2Card.lastPIDrefSigDotPT1Y); }

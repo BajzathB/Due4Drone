@@ -68,6 +68,7 @@ extern Dmac* DMAC;
 //#define DEBUG_GYRO_INT
 //#define DEBUG_ACC_INT
 //#define DEBUG_SD_INT
+//#define TUNE_ACC_OFFSET
 
 spi_st SPI;
 
@@ -130,18 +131,30 @@ void RunSPI()
 	SerialUSB.print(testCtrGyroActive); SerialUSB.print("\t");
 	SerialUSB.print(testCtrGyroPending); SerialUSB.print("\t");
 	SerialUSB.print(testCtrGyroFinish); SerialUSB.print("\t");
-	SerialUSB.print(testCtrGyroGoActive); SerialUSB.print("\t");
+	SerialUSB.println(testCtrGyroGoActive);
 #endif // DEBUG_GYRO_INT
 #ifdef DEBUG_ACC_INT
 	SerialUSB.print(testCtrAccActive); SerialUSB.print("\t");
 	SerialUSB.print(testCtrAccPending); SerialUSB.print("\t");
 	SerialUSB.print(testCtrAccFinish); SerialUSB.print("\t");
-	SerialUSB.print(testCtrAccGoActive); SerialUSB.print("\t");
+	SerialUSB.println(testCtrAccGoActive);
 #endif // DEBUG_ACC_INT
 #ifdef DEBUG_SD_INT
 	SerialUSB.print(testCtrSDFinish); SerialUSB.print("\t");
-	SerialUSB.print(testCtrSDGoActive); SerialUSB.print("\t");
+	SerialUSB.println(testCtrSDGoActive);
 #endif // DEBUG_ACC_INT
+#ifdef TUNE_ACC_OFFSET
+    static uint64_t lastTime{ 0 };
+
+    if (getSysTick() - lastTime > 525000) //50ms
+    {
+        lastTime = getSysTick();
+        SerialUSB.print(SPI.acc.signals.x); SerialUSB.print("\t");
+        SerialUSB.print(SPI.acc.signals.y); SerialUSB.print("\t");
+        SerialUSB.println(SPI.acc.signals.z);
+    }
+#endif // TUNE_ACC_OFFSET
+
 
 
 	//axis accVal;
@@ -483,8 +496,8 @@ void SetupAcc(void)
 {
 	// setting default acc values
     //offset manually tuned
-    SPI.acc.offset.x = 18;
-    SPI.acc.offset.y = -5;
+    SPI.acc.offset.x = 3;
+    SPI.acc.offset.y = 2;
     SPI.acc.offset.z = 0;
 	//raw to real parameters
     SPI.acc.raw2realMultiplier = 24;	//in g, 1g=9,81m/s2

@@ -1,7 +1,7 @@
 clear all, clc
 
 %reading files from folder
-directory = "2026_09_20";
+directory = "2026_09_27";
 files = dir(directory);
 files = files(3:end);
 % fileList = strings(1, length(files));
@@ -15,7 +15,16 @@ files = files(3:end);
 %manually select files
 fileList = [
 
-"MEAS116.txt"
+% "MEAS116.txt"
+
+"MEAS155.txt"
+"MEAS156.txt"
+"MEAS157.txt"
+"MEAS158.txt"
+"MEAS159.txt"
+"MEAS160.txt"
+"MEAS161.txt"
+"MEAS162.txt"
 
 ];
 
@@ -53,9 +62,10 @@ wnd = 512;
 
 measSize = size(meas);
 for s = 1:measSize(2)
-    stepResp{1,s} = calcStepResponse(meas{1,s}.PIDRefXi(trim:end-trim), meas{1,s}.PIDSensXi(trim:end-trim), wnd);
+%     stepResp{1,s} = calcStepResponse(meas{1,s}.PIDRefXi(trim:end-trim), meas{1,s}.PIDSensXi(trim:end-trim), wnd);
 %     stepResp{2,s} = calcStepResponse(meas{1,s}.PIDRefYi(trim:end-trim), meas{1,s}.PIDSensYi(trim:end-trim), wnd);
 %     stepResp{3,s} = calcStepResponse(meas{1,s}.PIDRefZi(trim:end-trim), meas{1,s}.PIDSensZi(trim:end-trim), wnd);
+stepResp{1,s} = calcStepResponse(meas{1,s}.PIDCRefXi(trim:end-trim), meas{1,s}.PIDCSensXi(trim:end-trim), wnd);
 end
 
 %%
@@ -132,7 +142,8 @@ for p = 1:measSize(2)
     figure(2)
     clf;
     subplot(2,1,1);
-    plot(meas{1,p}.sysTickMs(trim:end-trim), [meas{1,p}.PIDRefXi(trim:end-trim) meas{1,p}.PIDSensXi(trim:end-trim)]);
+%     plot(meas{1,p}.sysTickMs(trim:end-trim), [meas{1,p}.PIDRefXi(trim:end-trim) meas{1,p}.PIDSensXi(trim:end-trim)]);
+    plot(meas{1,p}.sysTickMs(trim:end-trim), [meas{1,p}.PIDCRefXi(trim:end-trim) meas{1,p}.PIDCSensXi(trim:end-trim)]);
     title("gyro" + newline + "ROLL");
     legend('Ref', 'Sens');
     subplot(2,1,2);
