@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_09_28";
-fileNumber = 6; %1 is ., 2 is ..
+directory = "2026_10_17";
+fileNumber = 11; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -35,6 +35,7 @@ for i = 1 : width(meas)
 end
 %make systick 1st coulomb
 ticks = linspace(header.StartTickMs, header.StartTickMs+header.measCycleMs*(height(meas)-1), height(meas));
+header.StartTickMs/1000;
 meas = [table(ticks', 'VariableNames', {'sysTickMs'}) meas];
 
 %% plot gyro
@@ -132,17 +133,17 @@ meas = [table(ticks', 'VariableNames', {'sysTickMs'}) meas];
 
 %% FFT angle
 
-angleMulti = 30/78747;
-trim = 1;
-L = length(meas.sysTickMs(trim:(end-trim)));
-Fs = 1/(header.measCycleMs/10500);   %sampling frequency
-f = Fs*(0:(L/2))/L;
-index_50hz = find(f > 50, 1, 'first');
+% angleMulti = 30/78747;
+% trim = 1;
+% L = length(meas.sysTickMs(trim:(end-trim)));
+% Fs = 1/(header.measCycleMs/10500);   %sampling frequency
+% f = Fs*(0:(L/2))/L;
+% index_50hz = find(f > 50, 1, 'first');
 
 % freq1 = calcFrequency(meas.aPT1R(trim:(end-trim)), L);
 % freq2 = calcFrequency(meas.aKFPT11R(trim:(end-trim)), L);
-freq3 = calcFrequency(meas.aPT1P(trim:(end-trim)), L);
-freq4 = calcFrequency(meas.aKFPT11P(trim:(end-trim)), L);
+% freq3 = calcFrequency(meas.aPT1P(trim:(end-trim)), L);
+% freq4 = calcFrequency(meas.aKFPT11P(trim:(end-trim)), L);
 % freq5 = calcFrequency(meas.aPT2P(trim:(end-trim)), L);
 % freq6 = calcFrequency(meas.aKFRawP(trim:(end-trim)), L);
 
@@ -419,63 +420,70 @@ freq4 = calcFrequency(meas.aKFPT11P(trim:(end-trim)), L);
 % gyro_int = meas.PIDSensXi/ (2000.0 / 32767.0);
 % error = meas.PIDRefXi - meas.PIDSensXi;
 % error_int = ref_int - gyro_int;
-% 
 % P = header.Px/1000;
 % Pout = P*error;
-% 
-% figure(12);
-% clf(12);
-% usedParams = "PID" + newline ...
-%     + sprintf("rate: %.f", header.Px) ...
-%     + sprintf(", %.f", header.Ix) ...
-%     + sprintf(", %.f", header.Dx) ...
-%     + sprintf(", %.f", header.FFrx) ...
-%     + sprintf(", %.f", header.FFdrx);
-% h(1) = subplot(2,2,1);
-% plot(meas.sysTickMs, [meas.PIDRefXi meas.PIDSensXi]);
-% title(usedParams, 'Interpreter', 'none');
-% legend("ref", "gyro");
-% h(2) = subplot(2,2,3);
-% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDUXi]);
-% % plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
-% % legend("Pout", "Iout", "Dout");
-% legend("Pout", "U");
-% 
-% 
-% h(3) = subplot(2,2,2);
-% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDFFoutXi]);
-% legend("Pout", "FFout")
-% % h(4) = subplot(2,2,4);
-% % plot(meas.sysTickMs, [ meas.PIDUXi]);
-% % legend("Uout");
-% 
-% fprintf("maxPout: %.2fM\n", max(abs(meas.PIDPoutXi))/1000000);
-% % max(abs(meas.PIDUXi))
-% % disp("maxIout: " + max(abs(meas.PIDIoutXi)));
-% % disp("maxDout: " + max(abs(meas.PIDDoutXi)));
-% fprintf("maxFFout: %.2fM\n", max(abs(meas.PIDFFoutXi))/1000000);
-% fprintf("maxU: %.2fM\n", max(abs(meas.PIDUXi))/1000000);
-% 
-% linkaxes(h, 'x');
-% xlim(h(1), [meas.sysTickMs(1), meas.sysTickMs(end)]);
 
-%% cascade PID
-
-angleMulti = 30/78747/1024;
+gyro_factor = 2000/32767/1024;
+angle_factor = 30/78747/1024;
 
 figure(12);
 clf(12);
-usedParams = "PID" + sprintf(" cascade (%.f,%.f)", header.CPx, header.CIx);
-
-h(1) = subplot(2,1,1);
-plot(meas.sysTickMs/1000, [meas.PIDCRefXi*angleMulti meas.PIDCSensXi*angleMulti]);
+usedParams = "PID gyro" + newline ...
+    + sprintf("rate: %.f", header.Px) ...
+    + sprintf(", %.f", header.Ix) ...
+    + sprintf(", %.f", header.Dx) ...
+    + sprintf(", %.f", header.FFrx) ...
+    + sprintf(", %.f", header.FFdrx);
+h(1) = subplot(2,2,1);
+plot(meas.sysTickMs, [meas.PIDRefXi*gyro_factor meas.PIDSensXi*gyro_factor]);
 title(usedParams, 'Interpreter', 'none');
-legend("ref", "angle");
+legend("ref", "gyro");
+h(2) = subplot(2,2,3);
+% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDUXi]);
+plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
+legend("Pout", "Iout", "Dout");
+% legend("Pout", "U");
 
-h(2) = subplot(2,1,2);
-plot(meas.sysTickMs/1000, [ meas.PIDCUXi]);
+
+h(3) = subplot(2,2,2);
+plot(meas.sysTickMs, [meas.PIDCRefXi*angle_factor meas.PIDCSensXi*angle_factor]);
+legend("ref", "angle");
+usedParams = "PID angle" + newline ...
+    + sprintf("rate: %.f", header.CPx) ...
+    + sprintf(", %.f", header.CIx);
+title(usedParams, 'Interpreter', 'none');
+
+h(4) = subplot(2,2,4);
+plot(meas.sysTickMs, [ meas.PIDCUXi]);
+legend("Uout");
+
+% fprintf("maxPout: %.2fM\n", max(abs(meas.PIDPoutXi))/1000000);
+% max(abs(meas.PIDUXi))
+% disp("maxIout: " + max(abs(meas.PIDIoutXi)));
+% disp("maxDout: " + max(abs(meas.PIDDoutXi)));
+% fprintf("maxFFout: %.2fM\n", max(abs(meas.PIDFFoutXi))/1000000);
+% fprintf("maxU: %.2fM\n", max(abs(meas.PIDUXi))/1000000);
 
 linkaxes(h, 'x');
-xlim(h(1), [meas.sysTickMs(1)/1000, meas.sysTickMs(end)/1000]);
+xlim(h(1), [meas.sysTickMs(1), meas.sysTickMs(end)]);
+
+%% cascade PID
+
+% angleMulti = 30/78747/1024;
+% 
+% figure(12);
+% clf(12);
+% usedParams = "PID" + sprintf(" cascade (%.f,%.f)", header.CPx, header.CIx);
+% 
+% h(1) = subplot(2,1,1);
+% plot(meas.sysTickMs/1000, [meas.PIDCRefXi*angleMulti meas.PIDCSensXi*angleMulti]);
+% title(usedParams, 'Interpreter', 'none');
+% legend("ref", "angle");
+% 
+% h(2) = subplot(2,1,2);
+% plot(meas.sysTickMs/1000, [ meas.PIDCUXi]);
+% 
+% linkaxes(h, 'x');
+% xlim(h(1), [meas.sysTickMs(1)/1000, meas.sysTickMs(end)/1000]);
 
 

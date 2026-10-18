@@ -10,11 +10,10 @@
 
 typedef enum E_flightMode : uint8_t
 {
-    RATE_CTRL_PT1 = 0,
-    RATE_CTRL_PT1_IRelax_Dmax= 1,
-    ANGLE_CASCADE_CTRL = 2,
+    RATE_CTRL_INT = 0,
+    ANGLE_CASCADE_CTRL = 1,
+    ANGLE_CASCADE_CTRL_v2 = 2,
     GPS_CTRL = 3,
-    RATE_CTRL_INT = 4,
 };
 
 typedef struct controllerIn_st 

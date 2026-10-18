@@ -143,6 +143,12 @@ void SetupController(void)
     pidCascade.P_i.z = 0;
     pidCascade.I_i.z = 0;
     pidCascade.D_i.z = 0;
+    pidCascade.FFr_i.x = 0;
+    pidCascade.FFr_i.y = 0;
+    pidCascade.FFr_i.z = 0;
+    pidCascade.FFdr_i.x = 0;
+    pidCascade.FFdr_i.y = 0;
+    pidCascade.FFdr_i.z = 0;
     pidCascade.satI_i = 100000;
     pidCascade.satPID_i = 1000000000;
     pidCascade.Ki_i.x = pidCascade.I_i.x * pidCascade.deltaTicks;
@@ -346,7 +352,7 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         //CalcKFAngle(&accData.angleKF.pitch, accData.pitchPT1_i, ctrlIn->gyro.signalPT1.y, pidRate.deltaTicks);
     //}
 
-    if (flightMode == ANGLE_CASCADE_CTRL)
+    if (flightMode == ANGLE_CASCADE_CTRL || flightMode == ANGLE_CASCADE_CTRL_v2)
     {
         //notes: 30deg = 78747 count
         //angle from acc
@@ -410,6 +416,30 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
             pidRate.sensor.newData = ctrlIn->gyro.newData;
             CalcPID_int(&pidRate, &ctrlOut->U_i);
         
+            break;
+        }
+        case ANGLE_CASCADE_CTRL_v2:
+        {
+            axis_i32 intermidiateSignal;
+
+            //outter cascade: angle
+            pidCascade.refSig_i.x = rollScaled_int << 2;        // 64204 = 24.45deg
+            pidCascade.refSig_i.y = -(pitchScaled_int << 2);    // 64204 = 24.45deg
+            pidCascade.sensor.signalPT1.x = -accData.angleKF.roll.angle;
+            pidCascade.sensor.signalPT1.y = accData.angleKF.pitch.angle;
+            pidCascade.sensor.newData = false;
+            CalcPID_int(&pidCascade, &intermidiateSignal);
+
+            //inner cascade: rate
+            pidRate.refSig_i.x = intermidiateSignal.x;
+            pidRate.refSig_i.y = intermidiateSignal.y;
+            pidRate.refSig_i.z = yawScaled_int;
+            pidRate.sensor.signalPT1.x = -ctrlIn->gyro.signalPT1.x;
+            pidRate.sensor.signalPT1.y = ctrlIn->gyro.signalPT1.y;
+            pidRate.sensor.signalPT1.z = -ctrlIn->gyro.signalPT1.z;
+            pidRate.sensor.newData = ctrlIn->gyro.newData;
+            CalcPID_int(&pidRate, &ctrlOut->U_i);
+
             break;
         }
         case GPS_CTRL:
@@ -508,7 +538,7 @@ E_flightMode EvalFlightMode(const uint16_t flightModeChannel)
 {
     if (1800u < flightModeChannel)
     {
-        return RATE_CTRL_PT1;
+        return ANGLE_CASCADE_CTRL_v2;
     }
     else if (1450u < flightModeChannel && flightModeChannel < 1550u)
     {
