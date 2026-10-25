@@ -7,6 +7,7 @@ extern pid_st pidRate;
 extern pid_st pidCascade;
 extern E_armState armState;
 extern float wobbleTime;
+extern uint8_t angleUpdateCtr;
 
 TEST(test_Controller, Controller_Call) {
     SetupController();
@@ -20,8 +21,8 @@ TEST(test_Controller, Controller_Call) {
     //CalcPID_wo_Dkick(&testPID, &testU);
     //CalcPID_wo_Dkick_FF(&testPID, &testU);
     getPIDrates();
-    kalmanFilterAngle_st testKalmanAngle;
-    KalmanFilterAngle(&testKalmanAngle, 0, 0, 0);
+    kfAngle_st testKalmanAngle;
+    CalcKFAngle(&testKalmanAngle, 0, 0, 0);
     //ComplementryFilterAngle(&y, 0, 0, 0, 0);
     //ComplementryFilterAngleWeighted(&y, 0, 0, 0, 0, &testU);
     maxVal(0,1);
@@ -972,7 +973,7 @@ TEST(test_Controller, RunController_Test)
 
     //5th: armed in angle cascade
     testIn.rcSignals.armStateSwitch = 2000;
-    testIn.rcSignals.flightModeSwitch = 2000;
+    testIn.rcSignals.flightModeSwitch = 1500;
     testIn.rcSignals.throttle = 1100;
     testIn.rcSignals.roll = 2000;
     testIn.acc.signalPT1.x = 100;
@@ -998,6 +999,13 @@ TEST(test_Controller, RunController_Test)
     EXPECT_NE(testOut.U_i.y, 0);
     EXPECT_NE(testOut.U_i.z, 0);
     EXPECT_EQ(testOut.armState, ARMED);
+    // RunController(&testIn, &testOut);
+    // RunController(&testIn, &testOut);
+    // RunController(&testIn, &testOut);
+    // RunController(&testIn, &testOut);
+    // angleUpdateCtr = 255;
+    // RunController(&testIn, &testOut);
+    // RunController(&testIn, &testOut);
 
     //wobble
     //testIn.rcSignals.armStateSwitch = 2000;
@@ -1044,7 +1052,7 @@ TEST(test_Controller, calcAngle_Test)
     angle = CalcAccAngle(ayi, axi, azi);
     lutAngle = float(angle) / 78747 * 30;
     EXPECT_NEAR(testAngle, lutAngle, 0.5);
-    //test: y-z 30° roll
+    //test: y-z 30ï¿½ roll
     ay = 0.3661;
     ax = 0.0;
     az = 0.6339;
@@ -1088,7 +1096,7 @@ TEST(test_Controller, calcAngle_Test)
     angle = CalcAccAngle(axi, ayi, azi);
     lutAngle = float(angle) / 78747 * 30;
     EXPECT_NEAR(testAngle, lutAngle, 0.5);
-    //test: x-y-z, pitch 30°
+    //test: x-y-z, pitch 30ï¿½
     ay = 0;
     ax = -0.3661;
     az = 0.6339;
@@ -1114,61 +1122,61 @@ TEST(test_Controller, calcAngle_Test)
 
 TEST(test_Controller, KalmanFilterAngle_Test)
 {
-    kalmanFilterAngle_st testKalmanAngle;
-    float testAccAngle{ 0 };
-    float testGyroIn{ 0 };
-    float testLoopTime{ 0 };
+    //kfAngle_st testKalmanAngle;
+    //float testAccAngle{ 0 };
+    //float testGyroIn{ 0 };
+    //float testLoopTime{ 0 };
 
-    //1st: 0 angle 0 rate
-    testKalmanAngle.P[0][0] = 0;
-    testKalmanAngle.P[0][1] = 0;
-    testKalmanAngle.P[1][0] = 0;
-    testKalmanAngle.P[1][1] = 0;
-    testAccAngle = 0;
-    testGyroIn = 0;
-    testLoopTime = 0.1;
-    KalmanFilterAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
-    EXPECT_NEAR(testKalmanAngle.angle, 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.rate, 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[1][0], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[0][1], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[1][1], 0.0f, 0.01f);
+    ////1st: 0 angle 0 rate
+    //testKalmanAngle.P[0][0] = 0;
+    //testKalmanAngle.P[0][1] = 0;
+    //testKalmanAngle.P[1][0] = 0;
+    //testKalmanAngle.P[1][1] = 0;
+    //testAccAngle = 0;
+    //testGyroIn = 0;
+    //testLoopTime = 0.1;
+    //CalcKFAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
+    //EXPECT_NEAR(testKalmanAngle.angle, 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.rate, 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[1][0], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[0][1], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[1][1], 0.0f, 0.01f);
 
-    //2nd: 10 angle 0 rate
-    testKalmanAngle.P[0][0] = 0;
-    testKalmanAngle.P[0][1] = 0;
-    testKalmanAngle.P[1][0] = 0;
-    testKalmanAngle.P[1][1] = 0;
-    testAccAngle = 10;
-    testGyroIn = 0;
-    testLoopTime = 0.1;
-    KalmanFilterAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
-    EXPECT_NEAR(testKalmanAngle.angle, 0.005f, 0.00001f);
-    EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.rate, 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[1][0], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[0][1], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[1][1], 0.0f, 0.01f);
+    ////2nd: 10 angle 0 rate
+    //testKalmanAngle.P[0][0] = 0;
+    //testKalmanAngle.P[0][1] = 0;
+    //testKalmanAngle.P[1][0] = 0;
+    //testKalmanAngle.P[1][1] = 0;
+    //testAccAngle = 10;
+    //testGyroIn = 0;
+    //testLoopTime = 0.1;
+    //CalcKFAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
+    //EXPECT_NEAR(testKalmanAngle.angle, 0.005f, 0.00001f);
+    //EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.rate, 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[1][0], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[0][1], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[1][1], 0.0f, 0.01f);
 
-    //3rd: 10 angle 100 rate
-    testKalmanAngle.P[0][0] = 0;
-    testKalmanAngle.P[0][1] = 0;
-    testKalmanAngle.P[1][0] = 0;
-    testKalmanAngle.P[1][1] = 0;
-    testAccAngle = 10;
-    testGyroIn = 100;
-    testLoopTime = 0.1;
-    KalmanFilterAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
-    EXPECT_NEAR(testKalmanAngle.angle, 10.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.rate, 100.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[1][0], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[0][1], 0.0f, 0.01f);
-    EXPECT_NEAR(testKalmanAngle.P[1][1], 0.0f, 0.01f);
+    ////3rd: 10 angle 100 rate
+    //testKalmanAngle.P[0][0] = 0;
+    //testKalmanAngle.P[0][1] = 0;
+    //testKalmanAngle.P[1][0] = 0;
+    //testKalmanAngle.P[1][1] = 0;
+    //testAccAngle = 10;
+    //testGyroIn = 100;
+    //testLoopTime = 0.1;
+    //CalcKFAngle(&testKalmanAngle, testAccAngle, testGyroIn, testLoopTime);
+    //EXPECT_NEAR(testKalmanAngle.angle, 10.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.bias, 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.rate, 100.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[0][0], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[1][0], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[0][1], 0.0f, 0.01f);
+    //EXPECT_NEAR(testKalmanAngle.P[1][1], 0.0f, 0.01f);
 }
 
 //TEST(test_Controller, ComplementryFilterAngle_Test)

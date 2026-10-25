@@ -12,8 +12,7 @@ typedef enum E_flightMode : uint8_t
 {
     RATE_CTRL_INT = 0,
     ANGLE_CASCADE_CTRL = 1,
-    ANGLE_CASCADE_CTRL_v2 = 2,
-    GPS_CTRL = 3,
+    GPS_CTRL = 2,
 };
 
 typedef struct controllerIn_st 
@@ -194,7 +193,7 @@ accData_st* getAccData();
 int32_t CalcAccAngle(const int32_t numerator, const int32_t denominator1, const int32_t denominator2);
 
 //Method to calculate kalman filter angle from gyro and acc sources
-void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro, const int32_t ticks);
+void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro, const int32_t ticks, bool newAngle);
 
 void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime);
 

@@ -70,6 +70,9 @@ pid_st pidRate;
 pid_st pidCascade;
 accData_st accData;
 
+uint8_t angleUpdateCtr{ 0 };
+axis_i32 cascadeAnglePIDOutput;
+
 float timer1;
 float timer2;
 float timer3;
@@ -352,15 +355,18 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         //CalcKFAngle(&accData.angleKF.pitch, accData.pitchPT1_i, ctrlIn->gyro.signalPT1.y, pidRate.deltaTicks);
     //}
 
-    if (flightMode == ANGLE_CASCADE_CTRL || flightMode == ANGLE_CASCADE_CTRL_v2)
+    if (flightMode == ANGLE_CASCADE_CTRL)
     {
         //notes: 30deg = 78747 count
         //angle from acc
-        accData.rollPT1_i = -CalcAccAngle(ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.z);
-        accData.pitchPT1_i = CalcAccAngle(ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.z);
+        if (ctrlIn->acc.newData)
+        {
+            accData.rollPT1_i = -CalcAccAngle(ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.z);
+            accData.pitchPT1_i = CalcAccAngle(ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.z);
+        }
         //kalman filter
-        CalcKFAngle(&accData.angleKF.roll, accData.rollPT1_i, ctrlIn->gyro.signalPT1.x, pidRate.deltaTicks);
-        CalcKFAngle(&accData.angleKF.pitch, accData.pitchPT1_i, ctrlIn->gyro.signalPT1.y, pidRate.deltaTicks);
+        CalcKFAngle(&accData.angleKF.roll, accData.rollPT1_i, ctrlIn->gyro.signalPT1.x, pidRate.deltaTicks, ctrlIn->acc.newData);
+        CalcKFAngle(&accData.angleKF.pitch, accData.pitchPT1_i, ctrlIn->gyro.signalPT1.y, pidRate.deltaTicks, ctrlIn->acc.newData);
     }
 
     //control when armed and on high throttle
@@ -388,8 +394,6 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         }
         case ANGLE_CASCADE_CTRL:
         {
-            axis_i32 intermidiateSignal;
-
             ////notes: 30deg = 78747 count
             ////angle from acc
             //accData.rollPT1_i = -CalcAccAngle(ctrlIn->acc.signalPT1.y, ctrlIn->acc.signalPT1.x, ctrlIn->acc.signalPT1.z);
@@ -397,42 +401,22 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
             ////kalman filter
             //CalcKFAngle(&accData.angleKF.roll, accData.rollPT1_i, ctrlIn->gyro.signalPT1.x, pidRate.deltaTicks);
             //CalcKFAngle(&accData.angleKF.pitch, accData.pitchPT1_i, ctrlIn->gyro.signalPT1.y, pidRate.deltaTicks);
-                    
+            
             //outter cascade: angle
-            pidCascade.refSig_i.x = rollScaled_int << 2;        // 64204 = 24.45deg
-            pidCascade.refSig_i.y = -(pitchScaled_int << 2);    // 64204 = 24.45deg
-            pidCascade.sensor.signalPT1.x = accData.angleKF.roll.angle;
-            pidCascade.sensor.signalPT1.y = accData.angleKF.pitch.angle;
-            pidCascade.sensor.newData = false;
-            CalcPID_int(&pidCascade, &intermidiateSignal);
-        
-            //inner cascade: rate
-            pidRate.refSig_i.x = intermidiateSignal.x;
-            pidRate.refSig_i.y = intermidiateSignal.y;
-            pidRate.refSig_i.z = yawScaled_int;
-            pidRate.sensor.signalPT1.x = -ctrlIn->gyro.signalPT1.x;
-            pidRate.sensor.signalPT1.y = ctrlIn->gyro.signalPT1.y;
-            pidRate.sensor.signalPT1.z = -ctrlIn->gyro.signalPT1.z;
-            pidRate.sensor.newData = ctrlIn->gyro.newData;
-            CalcPID_int(&pidRate, &ctrlOut->U_i);
-        
-            break;
-        }
-        case ANGLE_CASCADE_CTRL_v2:
-        {
-            axis_i32 intermidiateSignal;
-
-            //outter cascade: angle
-            pidCascade.refSig_i.x = rollScaled_int << 2;        // 64204 = 24.45deg
-            pidCascade.refSig_i.y = -(pitchScaled_int << 2);    // 64204 = 24.45deg
-            pidCascade.sensor.signalPT1.x = -accData.angleKF.roll.angle;
-            pidCascade.sensor.signalPT1.y = accData.angleKF.pitch.angle;
-            pidCascade.sensor.newData = false;
-            CalcPID_int(&pidCascade, &intermidiateSignal);
+            //called 500Hz
+            if ((++angleUpdateCtr % 4) == 1)
+            {
+                pidCascade.refSig_i.x = rollScaled_int << 2;        // 64204 = 24.45deg
+                pidCascade.refSig_i.y = -(pitchScaled_int << 2);    // 64204 = 24.45deg
+                pidCascade.sensor.signalPT1.x = -accData.angleKF.roll.angle;
+                pidCascade.sensor.signalPT1.y = accData.angleKF.pitch.angle;
+                pidCascade.sensor.newData = false;
+                CalcPID_int(&pidCascade, &cascadeAnglePIDOutput);
+            }
 
             //inner cascade: rate
-            pidRate.refSig_i.x = intermidiateSignal.x;
-            pidRate.refSig_i.y = intermidiateSignal.y;
+            pidRate.refSig_i.x = cascadeAnglePIDOutput.x;
+            pidRate.refSig_i.y = cascadeAnglePIDOutput.y;
             pidRate.refSig_i.z = yawScaled_int;
             pidRate.sensor.signalPT1.x = -ctrlIn->gyro.signalPT1.x;
             pidRate.sensor.signalPT1.y = ctrlIn->gyro.signalPT1.y;
@@ -496,18 +480,18 @@ void RunController(const controllerIn_st* ctrlIn, controllerOut_st* ctrlOut)
         pidCascade.signalPT1Prev_i.y = 0.0f;
         pidCascade.signalPT1Prev_i.z = 0.0f;
         //reset KF
-        //accData.angleKF.roll.angle = 0;
-        //accData.angleKF.roll.bias = 0;
-        //accData.angleKF.roll.P00 = 0;
-        //accData.angleKF.roll.P01 = 0;
-        //accData.angleKF.roll.P10 = 0;
-        //accData.angleKF.roll.P11 = 0;
-        //accData.angleKF.pitch.angle = 0;
-        //accData.angleKF.pitch.bias = 0;
-        //accData.angleKF.pitch.P00 = 0;
-        //accData.angleKF.pitch.P01 = 0;
-        //accData.angleKF.pitch.P10 = 0;
-        //accData.angleKF.pitch.P11 = 0;
+        accData.angleKF.roll.angle = 0;
+        accData.angleKF.roll.bias = 0;
+        accData.angleKF.roll.P00 = 0;
+        accData.angleKF.roll.P01 = 0;
+        accData.angleKF.roll.P10 = 0;
+        accData.angleKF.roll.P11 = 0;
+        accData.angleKF.pitch.angle = 0;
+        accData.angleKF.pitch.bias = 0;
+        accData.angleKF.pitch.P00 = 0;
+        accData.angleKF.pitch.P01 = 0;
+        accData.angleKF.pitch.P10 = 0;
+        accData.angleKF.pitch.P11 = 0;
                                                                         }
 
     ctrlOut->armState = armStatus;
@@ -538,7 +522,7 @@ E_flightMode EvalFlightMode(const uint16_t flightModeChannel)
 {
     if (1800u < flightModeChannel)
     {
-        return ANGLE_CASCADE_CTRL_v2;
+        return GPS_CTRL;
     }
     else if (1450u < flightModeChannel && flightModeChannel < 1550u)
     {
@@ -1172,7 +1156,7 @@ int32_t CalcAccAngle(const int32_t numerator, const int32_t denominator1, const 
     return (numerator >= 0) ? angle : -angle;
 }
 
-void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro, const int32_t ticks)
+void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro, const int32_t ticks, bool newAngle)
 {
     //prediction
     int32_t gyroCorrected = gyro - kf->bias;
@@ -1180,27 +1164,32 @@ void CalcKFAngle(kfAngle_st* kf, const int32_t accAngle, const int32_t gyro, con
 
     //covariance prediction
     int64_t dP01 = ((int64_t)ticks * kf->P11) >> 15;
-    kf->P00 += (int64_t)pidRate.deltaTicks * (dP01 - kf->P01 - kf->P10 + accData.angleKF.qAngleTick);
+    kf->P00 += (int64_t)ticks * (dP01 - kf->P01 - kf->P10 + accData.angleKF.qAngleTick);
     kf->P01 -= dP01;
     kf->P10 -= dP01;
     kf->P11 += (int64_t)accData.angleKF.qBiasTick * ticks;
 
-    //kalman gain
-    int64_t S = kf->P00 + accData.angleKF.rMeasTick;
-    if (S <= 0) return;
-    int64_t K0 = (kf->P00 << 15) / S;
-    int64_t K1 = (kf->P10 << 15) / S;
+    if (newAngle)
+    {
+        //kalman gain
+        int64_t S = kf->P00 + accData.angleKF.rMeasTick;
+        if (S <= 0) return;
+        int64_t K0 = (kf->P00 << 15) / S;
+        int64_t K1 = (kf->P10 << 15) / S;
 
-    //innovation + update
-    int32_t y = accAngle - kf->angle;
-    kf->angle += (int32_t)((K0 * y) >> 15);
-    kf->bias  += (int32_t)((K1 * y) >> 15);
+        //innovation + update
+        int32_t y = accAngle - kf->angle;
+        kf->angle += (int32_t)((K0 * y) >> 15);
+        kf->bias += (int32_t)((K1 * y) >> 15);
 
-    //covariance update
-    kf->P00 -= (K0 * kf->P00) >> 15;
-    kf->P01 -= (K0 * kf->P01) >> 15;
-    kf->P10 -= (K1 * kf->P00) >> 15;
-    kf->P11 -= (K1 * kf->P01) >> 15;
+        //covariance update
+        const int64_t P00_temp = kf->P00;
+        const int64_t P01_temp = kf->P01;
+        kf->P00 -= (K0 * P00_temp) >> 15;
+        kf->P01 -= (K0 * P01_temp) >> 15;
+        kf->P10 -= (K1 * P00_temp) >> 15;
+        kf->P11 -= (K1 * P01_temp) >> 15;
+    }
 }
 
 //void KalmanFilterAngle(kalmanFilterAngle_st* kf, const float accAngle, const float gyroIn, const float looptime)

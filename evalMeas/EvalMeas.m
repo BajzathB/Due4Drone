@@ -1,7 +1,7 @@
 clear all, clc
 
-directory = "2026_10_17";
-fileNumber = 11; %1 is ., 2 is ..
+directory = "2026_10_25";
+fileNumber = 9; %1 is ., 2 is ..
 
 %reading file in
 files = dir(directory);
@@ -35,8 +35,7 @@ for i = 1 : width(meas)
 end
 %make systick 1st coulomb
 ticks = linspace(header.StartTickMs, header.StartTickMs+header.measCycleMs*(height(meas)-1), height(meas));
-header.StartTickMs/1000;
-meas = [table(ticks', 'VariableNames', {'sysTickMs'}) meas];
+meas = [table(ticks'/1000, 'VariableNames', {'sysTick'}) meas];
 
 %% plot gyro
 % figure(1);
@@ -90,13 +89,11 @@ meas = [table(ticks', 'VariableNames', {'sysTickMs'}) meas];
 %% plot plot angle with parameters
 % figure(4);
 % clf(4);
-% plot(meas.sysTime, [ meas.aPT1R meas.aKFRawR]);
+% plot(meas.sysTick, [  meas.aKFRawR]);
 % legend( 'aPT1R', 'aKFRawR', 'aKFPT10R');
 % usedParams = file + newline ...
-%     + sprintf("GparamC: %.f", header.GparamC) ...
-%     + sprintf(", AparamC: %.f\n", header.AparamC) ...
-%     + sprintf("KFQangle: %.6f", header.KFQAng) ...
-%     + sprintf(", KFQbias: %.6f", header.KFQbias) ...
+%     + sprintf("KFQangle: %.f", header.KFQAng) ...
+%     + sprintf(", KFQbias: %.f", header.KFQbias) ...
 %     + sprintf(", KFRmeas: %.f\n", header.KFRmeas) ...
 %     + sprintf("CPx: %.f", header.CPx) ...
 %     + sprintf(", CIx: %.f", header.CIx) ...
@@ -428,34 +425,41 @@ angle_factor = 30/78747/1024;
 
 figure(12);
 clf(12);
-usedParams = "PID gyro" + newline ...
-    + sprintf("rate: %.f", header.Px) ...
+usedParams = "PID rate roll" + newline ...
+    + sprintf("%.f", header.Px) ...
     + sprintf(", %.f", header.Ix) ...
     + sprintf(", %.f", header.Dx) ...
     + sprintf(", %.f", header.FFrx) ...
     + sprintf(", %.f", header.FFdrx);
 h(1) = subplot(2,2,1);
-plot(meas.sysTickMs, [meas.PIDRefXi*gyro_factor meas.PIDSensXi*gyro_factor]);
+plot(meas.sysTick, [meas.PIDRefXi*gyro_factor meas.PIDSensXi*gyro_factor]);
 title(usedParams, 'Interpreter', 'none');
 legend("ref", "gyro");
 h(2) = subplot(2,2,3);
-% plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDUXi]);
-plot(meas.sysTickMs, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
-legend("Pout", "Iout", "Dout");
+% plot(meas.sysTick, [meas.PIDPoutXi meas.PIDUXi]);
+% plot(meas.sysTick, [meas.PIDPoutXi meas.PIDIoutXi meas.PIDDoutXi]);
+% plot(meas.sysTick, [ meas.PIDCUYi]);
+plot(meas.sysTick, [meas.PIDRefYi*gyro_factor meas.PIDSensYi*gyro_factor]);
+usedParams = "PID rate pitch";
+title(usedParams, 'Interpreter', 'none');
+legend("ref", "gyro");
 % legend("Pout", "U");
 
 
 h(3) = subplot(2,2,2);
-plot(meas.sysTickMs, [meas.PIDCRefXi*angle_factor meas.PIDCSensXi*angle_factor]);
+plot(meas.sysTick, [meas.PIDCRefXi*angle_factor meas.PIDCSensXi*angle_factor]);
 legend("ref", "angle");
-usedParams = "PID angle" + newline ...
-    + sprintf("rate: %.f", header.CPx) ...
+usedParams = "PID angle roll" + newline ...
+    + sprintf("%.f", header.CPx) ...
     + sprintf(", %.f", header.CIx);
 title(usedParams, 'Interpreter', 'none');
 
 h(4) = subplot(2,2,4);
-plot(meas.sysTickMs, [ meas.PIDCUXi]);
-legend("Uout");
+% plot(meas.sysTick, [ meas.PIDCUXi]);
+plot(meas.sysTick, [meas.PIDCRefYi*angle_factor meas.PIDCSensYi*angle_factor]);
+usedParams = "PID angle pitch";
+title(usedParams, 'Interpreter', 'none');
+legend("ref", "angle");
 
 % fprintf("maxPout: %.2fM\n", max(abs(meas.PIDPoutXi))/1000000);
 % max(abs(meas.PIDUXi))
@@ -465,7 +469,7 @@ legend("Uout");
 % fprintf("maxU: %.2fM\n", max(abs(meas.PIDUXi))/1000000);
 
 linkaxes(h, 'x');
-xlim(h(1), [meas.sysTickMs(1), meas.sysTickMs(end)]);
+xlim(h(1), [meas.sysTick(1), meas.sysTick(end)]);
 
 %% cascade PID
 
