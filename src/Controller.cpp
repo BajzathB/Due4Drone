@@ -4,8 +4,6 @@
 //increase I until iss slow oscillates, take 0.5 of it
 //now start to increase P then D maybe I until it has still good dinamic
 
-#include "pch.h"
-
 #include "Controller.h"
 #include "RC.h"
 #include "sysTime.h"
@@ -24,7 +22,7 @@ extern Tc* TC0;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif

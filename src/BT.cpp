@@ -30,19 +30,19 @@
 //EN pin to be 5V and button pushed on poweron to enter AT mode
 //460800baud 1stop 0pairty
 
-
-#include "pch.h"
 #include "BT.h"
 #include "BT_IDs.h"
 #include "sysTime.h"
 #include "MotorControl.h"
 #include "SPI.h"
 #include "SPI_SDcard.h"
+#include "Controller.h"
 
 #ifdef UNIT_TEST
 
 #include "../test/helper/support4Testing.h"
 #include "../test/helper/support4Testing.hpp"
+#include <cmath>
 
 extern DummySerial SerialUSB;
 extern DummySerial Serial2;
@@ -51,7 +51,7 @@ extern Usart* USART1;
 extern spi_st SPI;
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif
@@ -94,7 +94,7 @@ void SetupBT(void)
 	//start looking for 1 byte
 	USART1->US_CR |= US_CR_RXEN;//enable receive
 	BT.input.ctr = 1;
-	USART1->US_RPR = (uint32_t)BT.input.vector;
+	USART1->US_RPR = (uintptr_t)BT.input.vector;
 	USART1->US_RCR = BT.input.ctr;
 	USART1->US_PTCR |= US_PTCR_RXTEN; //start pdc receive
 	USART1->US_IER |= US_IER_ENDRX; //enable endrx interrupt
@@ -150,7 +150,7 @@ void USART1_Handler(void)
 		if (WAITING_FOR_NUMBEROFBYTES == BT.rxDataState)
 		{
 			BT.input.ctr = BT.input.vector[0];
-			USART1->US_RPR = (uint32_t)BT.input.vector;
+			USART1->US_RPR = (uintptr_t)BT.input.vector;
 			USART1->US_RCR = BT.input.ctr;
 			USART1->US_PTCR |= US_PTCR_RXTEN; //start pdc receive
 
@@ -182,7 +182,7 @@ void BTReceive()
 		ProcessRxFrame();
 
 		//setup new receive
-		USART1->US_RPR = (uint32_t)BT.input.vector;
+		USART1->US_RPR = (uintptr_t)BT.input.vector;
 		USART1->US_RCR = 1;
 		BT.rxDataState = WAITING_FOR_NUMBEROFBYTES;
 		USART1->US_CR |= US_CR_RXEN;
@@ -289,7 +289,7 @@ void BTTransmit()
             BT.output.vector[0] = BT.output.ctr - 1;
 
             //loading tx registers
-            USART1->US_TPR = (uint32_t)BT.output.vector;
+            USART1->US_TPR = (uintptr_t)BT.output.vector;
             USART1->US_TCR = BT.output.ctr;
             //enable uart tx
             USART1->US_CR |= US_CR_TXEN;

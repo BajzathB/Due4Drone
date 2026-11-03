@@ -1,7 +1,5 @@
 // Calulation of loop time with TC0 channel 2 counter
 
-#include "pch.h"
-
 //to switch header on hardware and unit test compilation
 #ifdef UNIT_TEST
 
@@ -14,7 +12,7 @@ extern Tc* TC0;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif

@@ -1,0 +1,6 @@
+{
+    "cmake.sourceDirectory": "/home/bence_linux/git/Due4Drone/test",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build_test"
+    ]
+}

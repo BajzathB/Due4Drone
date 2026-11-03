@@ -1,9 +1,7 @@
 // dummy class/struct code
 
-#include "pch.h"
 #include "support4Testing.h"
 #include "support4Testing.hpp"
-
 
 DummySerial Serial;
 DummySerial SerialUSB;
@@ -65,7 +63,7 @@ Usart* USART4 = &usart4;
 Wdt wdt;
 Wdt* WDT = &wdt;
 
-void __asm__(const char* ch){}
+// void __asm__(const char* ch){}
 
 uint32_t pmc_enable_periph_clk(uint32_t ul_id) { return 0; }
 

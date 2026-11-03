@@ -4,8 +4,7 @@
 #ifndef MOTOR_CONTROL_HEADER
 #define MOTOR_CONTROL_HEADER
 
-#include "Controller.h"
-#include "SPI.h"
+#include "SPI_common.h"
 
 typedef enum E_BeepState : uint8_t
 {
@@ -66,7 +65,7 @@ void Setup_PB2_PB3_for_oneshot_pulse(void);
 void SetTcCompareRegister(MotorCommander* motorCmd);
 
 // Method to SW trigger TC1
-void TriggerTcRegisters(MotorCommander* motorCmd);
+void TriggerTcRegisters();
 
 // Method to get motor speeds
 void getMotorSpeeds(MotorSpeeds* motorSpeeds);

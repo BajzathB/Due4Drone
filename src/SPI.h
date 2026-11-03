@@ -1,7 +1,5 @@
 // Header to configure and set SPI for gyro acc and SD card communication
 
-
-
 #ifndef SPI_HPP
 #define SPI_HPP
 
@@ -64,16 +62,16 @@ void WriteToMEMS(E_ChipSelect CS, uint32_t adr2write, uint32_t data2write);
 void ReadMEMSMeas(E_ChipSelect CS, uint32_t adr2read);
 
 // Method to calculate signal from received buffer
-void calcSignalGyro(volatile signal* gyroSig, volatile uint8_t* buffer);
+void calcSignalGyro(volatile sensor* gyroSig, volatile uint8_t* buffer);
 
 // Method to calculate signal from received buffer
-void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer);
+void calcSignalAcc(volatile sensor* accSig, volatile uint8_t* buffer);
 
 // Method to calculate gyro offset in the very early startup
-void calcOffsetGyro(volatile signal* gyroSig);
+void calcOffsetGyro(volatile sensor* gyroSig);
 
 // Method to compensate gyro data with offset
-void compensateData(volatile signal* Sig);
+void compensateData(volatile sensor* Sig);
 
 // Method to get gyro data consistently
 void getGyroAndAcc(sigOut* axisGyro, sigOut* axisAcc);
@@ -82,9 +80,9 @@ void getGyroAndAcc(sigOut* axisGyro, sigOut* axisAcc);
 spi_st* getSPI();
 
 // Method to filter 3axis integer gyro signal with PT1  with 133Hz cutoff
-void gyroSignalPT1_133Hz(volatile signal* sig);
+void gyroSignalPT1_133Hz(volatile sensor* sig);
 
 // Method to filter 3axis integer acc signal with PT1  with 25Hz cutoff
-void accSignalPT1_25Hz(volatile signal* sig);
+void accSignalPT1_25Hz(volatile sensor* sig);
 
 #endif // !SPI_HPP

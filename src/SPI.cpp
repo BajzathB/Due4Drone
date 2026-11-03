@@ -36,7 +36,6 @@
 //  nameing convention: MEAS1.txt, MEAS2.txt,... MEASXXXX.txt
 //  storing meas in a linear fasion, clusters follow each other, also means FAT is linear
 
-#include "pch.h"
 #include "SPI.h"
 #include "LED.h"
 #include "sysTime.h"
@@ -58,7 +57,7 @@ extern Dmac* DMAC;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif
@@ -649,7 +648,7 @@ void ReadMEMSMeas(E_ChipSelect CS, uint32_t adr2read)
   SpiDmaTxRx(SPI.sensorTx, SPI.sensorRx, ctr, DMAC_CHANNEL_MEMS);
 }
 
-void calcSignalGyro(volatile signal* gyroSig, volatile uint8_t* buffer)
+void calcSignalGyro(volatile sensor* gyroSig, volatile uint8_t* buffer)
 {	
 	int16_t x = (buffer[2] << 8) | buffer[1];
 	int16_t y = (buffer[4] << 8) | buffer[3];
@@ -659,7 +658,7 @@ void calcSignalGyro(volatile signal* gyroSig, volatile uint8_t* buffer)
 	gyroSig->signals.z = (int32_t)(z);
 }
 
-void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer)
+void calcSignalAcc(volatile sensor* accSig, volatile uint8_t* buffer)
 {
     //note difference from gyro is that valid data start from 2nd posiion
 	int16_t x = (buffer[3] << 8) | buffer[2];
@@ -670,7 +669,7 @@ void calcSignalAcc(volatile signal* accSig, volatile uint8_t* buffer)
 	accSig->signals.z = (int32_t)(z);
 }
 
-void calcOffsetGyro(volatile signal* gyroSig)
+void calcOffsetGyro(volatile sensor* gyroSig)
 {
 	static uint16_t n = 0;
 
@@ -707,7 +706,7 @@ void calcOffsetGyro(volatile signal* gyroSig)
 	}
 }
 
-void compensateData(volatile signal* Sig)
+void compensateData(volatile sensor* Sig)
 {
     if (true == Sig->offsetCalcDone)
     {
@@ -722,14 +721,14 @@ void compensateData(volatile signal* Sig)
     }
 }
 
-void gyroSignalPT1_133Hz(volatile signal* sig)
+void gyroSignalPT1_133Hz(volatile sensor* sig)
 {
 	sig->signalsPT1.x = PT1_133Hz(sig->signalsPT1.x, sig->signals.x);
 	sig->signalsPT1.y = PT1_133Hz(sig->signalsPT1.y, sig->signals.y);
 	sig->signalsPT1.z = PT1_133Hz(sig->signalsPT1.z, sig->signals.z);
 }
 
-void accSignalPT1_25Hz(volatile signal* sig)
+void accSignalPT1_25Hz(volatile sensor* sig)
 {
 	sig->signalsPT1.x = PT1_25Hz(sig->signalsPT1.x, sig->signals.x);
 	sig->signalsPT1.y = PT1_25Hz(sig->signalsPT1.y, sig->signals.y);

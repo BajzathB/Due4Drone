@@ -47,18 +47,19 @@
 //		
 //		
 
-
-#include "pch.h"
 #include "SPI_SDcard.h"
 #include "LED.h"
 #include "sysTime.h"
 #include "Controller.h"
+#include "SPI.h"
 
 //to switch header on hardware and unit test compilation
 #ifdef UNIT_TEST
 
 #include "../test/helper/support4Testing.h"
 #include "../test/helper/support4Testing.hpp"
+#include <cstring>
+#include <cmath>
 
 extern DummySerial SerialUSB;
 extern Spi* SPI0;
@@ -66,7 +67,7 @@ extern Dmac* DMAC;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif
@@ -91,8 +92,7 @@ extern Dmac* DMAC;
 
 // Precomputed powers of 10
 const uint32_t powOf10[] = {
-	1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 10000000000
-};
+	1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
 
 extern spi_st SPI;
 
@@ -1837,6 +1837,8 @@ void convert2CharStream(uint8_t* buffer, uint8_t* numberOfChar, float value, uin
 		buffer[(*numberOfChar)++] = '+';
 	}
 
+	// limit to 9 fractional digit
+	if(numberOfFractions >= 10) numberOfFractions = 9;
 	uint32_t scale = powOf10[numberOfFractions];
 	uint32_t scaled = (uint32_t)(value * scale + 0.49f);	//0.49 increment is to solve the numerical accurecy problem
 

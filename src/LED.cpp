@@ -5,7 +5,6 @@
 //LED_SDCARD - PD7  - TIOA8 - BLUE
 //LED_GPS    - PD8  - TIOB8 - GREEN
 
-#include "pch.h"
 #include "LED.h"
 
 #ifdef UNIT_TEST
@@ -20,7 +19,7 @@ extern Tc* TC2;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif

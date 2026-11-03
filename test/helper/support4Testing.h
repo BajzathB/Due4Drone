@@ -3,7 +3,7 @@
 #ifndef SUPPPORT_4_TESTING_H
 #define SUPPPORT_4_TESTING_H
 
-#include "stdint.h"
+#include <stdint.h>
 
 typedef volatile       uint32_t RoReg; /**< Read only 32-bit register (volatile const unsigned int) */
 typedef volatile       uint32_t WoReg; /**< Write only 32-bit register (volatile unsigned int) */
@@ -34,7 +34,7 @@ typedef volatile       uint32_t RwReg; /**< Read-Write 32-bit register (volatile
 #define ID_USART2 (19) /**< \brief USART 2 (USART2) */
 #define ID_USART3 (20) /**< \brief USART 3 (USART3) */
 
-void __asm__(const char* ch);
+//void __asm__(const char* ch);
 uint32_t pmc_enable_periph_clk(uint32_t ul_id);
 void delay(uint32_t dwMs);
 void PIOC_Handler(void);

@@ -4,3 +4,6 @@ packages/
 
 # Visual Studio
 .vs/
+
+# cmake build
+build_test/

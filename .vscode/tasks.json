@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: Configure Unit Tests",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S", "test/",
+                "-B", "${workspaceFolder}/build_test",
+                "-DUNIT_TEST=ON",
+                "-DCMAKE_BUILD_TYPE=Debug"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake: Build Unit Tests",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${workspaceFolder}/build_test",
+                "--parallel"
+            ],
+            "dependsOn": "CMake: Configure Unit Tests",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "CMake: Run Unit Tests",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_test/unit_tests",
+            "args": [],
+            "dependsOn": "CMake: Build Unit Tests",
+            "dependsOrder": "sequence",
+            "group": "test",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        }
+    ]
+}

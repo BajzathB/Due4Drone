@@ -1,6 +1,4 @@
 
-
-#include "pch.h"
 #include "SPI_common.h"
 
 //to switch header on hardware and unit test compilation
@@ -18,7 +16,7 @@ extern Dmac* DMAC;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif
@@ -53,13 +51,13 @@ void SpiDmaTxRx(volatile uint32_t* txBuff, volatile uint8_t* rxBuff, uint32_t ct
 	else;	//do nothing
 
 	//set TX
-	DMAC->DMAC_CH_NUM[txCh].DMAC_SADDR = (uint32_t)txBuff;
-	DMAC->DMAC_CH_NUM[txCh].DMAC_DADDR = (uint32_t)&SPI0->SPI_TDR;
+	DMAC->DMAC_CH_NUM[txCh].DMAC_SADDR = (uintptr_t)txBuff;
+	DMAC->DMAC_CH_NUM[txCh].DMAC_DADDR = (uintptr_t)&SPI0->SPI_TDR;
 	DMAC->DMAC_CH_NUM[txCh].DMAC_CTRLA = ctr | DMAC_CHTX_PRE_CTRLA;	// overwriting register to prevent bit mismatch problem
 	DMAC->DMAC_CH_NUM[txCh].DMAC_CTRLB = txSrcIncr | DMAC_CHTX_PER_CTRLB;	// overwriting register to prevent bit mismatch problem
 	//set RX
-	DMAC->DMAC_CH_NUM[rxCh].DMAC_SADDR = (uint32_t)&SPI0->SPI_RDR;
-	DMAC->DMAC_CH_NUM[rxCh].DMAC_DADDR = (uint32_t)rxBuff;
+	DMAC->DMAC_CH_NUM[rxCh].DMAC_SADDR = (uintptr_t)&SPI0->SPI_RDR;
+	DMAC->DMAC_CH_NUM[rxCh].DMAC_DADDR = (uintptr_t)rxBuff;
 	DMAC->DMAC_CH_NUM[rxCh].DMAC_CTRLA = ctr | DMAC_CHRX_PRE_CTRLA;	// overwriting register to prevent bit mismatch problem
 
 	//trigger AHB DMAC
@@ -92,7 +90,7 @@ int32_t PT1_25Hz(int32_t y, const int32_t x)
 	return y + ((x - y) >> 6);    //equivalent to ~25.4Hz cutoff
 }
 
-float calcRealFromInt(volatile signal* sig, E_direction dir, bool isPT1)
+float calcRealFromInt(volatile sensor* sig, E_direction dir, bool isPT1)
 {
 	int32_t value{ 0 };
 

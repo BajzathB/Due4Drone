@@ -8,7 +8,6 @@
 #define BT_HEADER
 
 #include "stdint.h"
-#include "Controller.h"
 #include "SPI_SDcard.h"
 
 enum E_rxstate : uint8_t

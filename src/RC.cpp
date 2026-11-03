@@ -22,8 +22,6 @@
 //  8 - 3-state switch
 //  9 - 2-state switch
 
-
-#include "pch.h"
 #include "RC.h"
 #include "LED.h"
 
@@ -39,7 +37,7 @@ extern Wdt* WDT;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif
@@ -120,7 +118,7 @@ void SetupUsart2Pin(void)
 
     //start looking for 32 byte
     USART2->US_CR |= US_CR_RXEN;//enable receive
-    USART2->US_RPR = (uint32_t)RC.IBUS_received;
+    USART2->US_RPR = (uintptr_t)RC.IBUS_received;
     USART2->US_RCR = 32u;
     USART2->US_PTCR |= US_PTCR_RXTEN; //start pdc receive
     USART2->US_IER |= US_IER_ENDRX; //enable endrx interrupt
@@ -169,7 +167,7 @@ void USART2_Handler(void)
             }
 
             //look for the next 32 byte
-            USART2->US_RPR = (uint32_t)RC.IBUS_received;
+            USART2->US_RPR = (uintptr_t)RC.IBUS_received;
             USART2->US_RCR = 32u;
         }
         else
@@ -193,7 +191,7 @@ void USART2_Handler(void)
                 if (!(0x20 == RC.IBUS_received[31] && 0x40 == RC.IBUS_received[0]))
                 {
                     //read new 32 byte for retry
-                    USART2->US_RPR = (uint32_t)RC.IBUS_received;
+                    USART2->US_RPR = (uintptr_t)RC.IBUS_received;
                     USART2->US_RCR = 32u;
                     //set channels to init
                     RC.isCrcValid = false;
@@ -213,7 +211,7 @@ void USART2_Handler(void)
             }
 
             //look for the rest of the bytes, head amount of bytes are missing
-            USART2->US_RPR = (uint32_t)(&RC.IBUS_received[after_ctr + 1]);
+            USART2->US_RPR = (uintptr_t)(&RC.IBUS_received[after_ctr + 1]);
             USART2->US_RCR = head;
 
             //set channels to init

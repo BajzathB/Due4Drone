@@ -7,10 +7,7 @@
 //original sensor pulse is 1000-2000 ms
 //1shut pulse is 150-250 us
 
-
-#include "pch.h"
 #include "MotorControl.h"
-#include "sysTime.h"
 
 //to switch header on hardware and unit test compilation
 #ifdef UNIT_TEST
@@ -24,7 +21,7 @@ extern Tc* TC1;
 
 #else
 
-#include "arduino.h"
+//#include "arduino.h"
 #include "variant.h"
 
 #endif
@@ -44,7 +41,7 @@ void UpdateMotorSpeeds(volatile const MotorInput* motorInput)
 	SetTcCompareRegister(&motorCommand);
 
 	//trigger TC channels, not earlier than 250 us
-	TriggerTcRegisters(&motorCommand);
+	TriggerTcRegisters();
 
 //  SerialUSB.print((float)motorInput->x_int);SerialUSB.print("\t");
 //  SerialUSB.print((float)motorInput->y_int);SerialUSB.print("\t");
@@ -106,7 +103,7 @@ void SetupMotorPins(void)
     TC1->TC_BCR = TC_BCR_SYNC;
 }
 
-void TriggerTcRegisters(MotorCommander* motorCmd)
+void TriggerTcRegisters()
 {
 	//software triggering TC1
 	TC1->TC_BCR = TC_BCR_SYNC;

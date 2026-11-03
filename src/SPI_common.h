@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RC.h"
+#include <cstdint>
 
 typedef struct axis_i32
 {
@@ -63,7 +63,7 @@ typedef enum E_ChipSelect : uint32_t
 	CS_SDCARD = 0b0111
 };
 
-typedef struct signal
+typedef struct sensor
 {
 	volatile int32_t raw2realMultiplier{1};
 	volatile int32_t raw2realDivider{1};
@@ -73,7 +73,7 @@ typedef struct signal
 
 	bool offsetCalcDone{ false };
 	volatile bool newData{ false };
-}signal;
+}sensor;
 
 typedef struct spi_st
 {
@@ -84,8 +84,8 @@ typedef struct spi_st
     volatile bool isGyroIntEnabled{ true };
     volatile bool isAccIntEnabled{ true };
 
-	volatile signal gyro;
-	volatile signal acc;
+	volatile sensor gyro;
+	volatile sensor acc;
 }spi_str;
 
 typedef enum E_DMACChannels : uint8_t
@@ -94,7 +94,7 @@ typedef enum E_DMACChannels : uint8_t
 	DMAC_CHANNEL_SDCARD = 1
 };
 
-typedef struct 
+typedef struct MovingAverage
 {
 	static const int32_t window_size{100};
 	int32_t dataX[window_size]{0};
@@ -126,7 +126,7 @@ int32_t PT1_133Hz(int32_t y, const int32_t x);
 int32_t PT1_25Hz(int32_t y, const int32_t x);
 
 // Function to calc float value from raw int
-float calcRealFromInt(volatile signal* sig, direction dir, bool isPT1);
+float calcRealFromInt(volatile sensor* sig, direction dir, bool isPT1);
 
 // Function to calc moving average of 3 axis data
 void calcMovingAverage(MovingAverage* ma, axis_i32* value);

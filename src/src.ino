@@ -1,6 +1,5 @@
 // This is the code for due4drone designed PCB
 
-
 #include "LED.h"
 #include "sysTime.h"
 #include "MotorControl.h"
@@ -8,8 +7,6 @@
 #include "RC.h"
 #include "Controller.h"
 #include "BT.h"
-
-
 
 void setup()
 {

@@ -4,9 +4,8 @@
 #define CONTROLLER_HEADER
 
 #include "stdint.h"
-#include "SPI.h"
+#include "SPI_common.h"
 #include "RC.h"
-#include "sysTime.h"
 
 typedef enum E_flightMode : uint8_t
 {
