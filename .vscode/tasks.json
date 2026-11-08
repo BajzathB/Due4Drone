@@ -8,7 +8,6 @@
             "args": [
                 "-S", "test/",
                 "-B", "${workspaceFolder}/build_test",
-                "-DUNIT_TEST=ON",
                 "-DCMAKE_BUILD_TYPE=Debug"
             ],
             "group": "build",
@@ -34,6 +33,51 @@
             "command": "${workspaceFolder}/build_test/unit_tests",
             "args": [],
             "dependsOn": "CMake: Build Unit Tests",
+            "dependsOrder": "sequence",
+            "group": "test",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "CMake: Configure SIL KF",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S", "sil/",
+                "-B", "${workspaceFolder}/build_sil_kf",
+                "-DCMAKE_BUILD_TYPE=Debug"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake: Build SIL KF",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${workspaceFolder}/build_sil_kf",
+                "--parallel"
+            ],
+            "dependsOn": "CMake: Configure SIL KF",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "CMake: Run SIL KF",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_sil_kf/kalman_sil",
+            "args": [
+                "--input", "${workspaceFolder}/evalMeas/2026_09_26/MEAS153.txt",
+                "--output", "${workspaceFolder}/build_sil_kf/SIL153.txt",
+                "--qAng", "500",
+                "--qBias", "1",
+                "--rMeas", "5000"
+            ],
+            "dependsOn": "CMake: Build SIL KF",
             "dependsOrder": "sequence",
             "group": "test",
             "problemMatcher": [],

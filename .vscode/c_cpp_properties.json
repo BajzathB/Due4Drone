@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Linux Unit Tests",
+            "name": "Linux Config",
             "includePath": [
                 "${workspaceFolder}/**"
             ],

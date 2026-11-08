@@ -6,4 +6,4 @@ packages/
 .vs/
 
 # cmake build
-build_test/
+build_*/
